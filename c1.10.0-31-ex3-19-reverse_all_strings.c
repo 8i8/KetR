@@ -7,25 +7,18 @@
 
 #define maxlength	1000
 
-void readInput(void);
-int readLineByLine(int line[]);
-void reverse(int line[], int length);
+void readLineByLine(char line[]);
+void reverse(char line[], int length);
 
-int main(int argc, char *argv[])
+int main(void)
 {
-	readInput();
+	char line[maxlength];
+
+	readLineByLine(line);
 	return 0;
 }
 
-void readInput()
-{
-	int line[maxlength];
-	int length;
-
-	length = readLineByLine(line);
-}
-
-int readLineByLine(int line[])
+void readLineByLine(char line[])
 {
 	int c;
 	int length = 0;
@@ -33,21 +26,22 @@ int readLineByLine(int line[])
 	while ((c = getchar()) != EOF)
 	{
 		if (c == '\n') {
+			line[length] = '\0';
 			reverse(line, length);
 			length = 0;
+			continue;
 		}
 		line[length] = c;
 		length++;
 	}
 }
 
-void reverse(int line[], int length)
+void reverse(char line[], int length)
 {
 	int i;
 
 	for (i = length; i >= 0; i--)
 		printf("%c",line[i]);
-
-	printf("\n");
+	puts("");
 }
 
