@@ -1,0 +1,5 @@
+*.swp
+*.swo
+scratch
+*a.out
+scratch.c
