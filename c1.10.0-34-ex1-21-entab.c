@@ -44,13 +44,6 @@ void addTabs(char line[], char newLine[], int len, int tabSize)
 	for (i = 0; i < len; i++)
 	{
 		/*
-		 * Store the previous character, used for the count of
-		 * consecutive spaces.
-		 */
-		//if (i > 0)
-		//	prev = line[i-1];
-
-		/*
 		 * If the current value and the previous are both spaces, place
 		 * a marker on the first of the two and start the count.
 		 */
