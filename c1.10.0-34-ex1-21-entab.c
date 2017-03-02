@@ -9,8 +9,8 @@
 #define MAXLINE	1000
 #define SPACES	8
 
-int myGetline(char line[], int lim);
 void addTabs(char str[], char newLine[], int len, int tabSize);
+int myGetline(char line[], int lim);
 
 int main(void) {
 
@@ -28,25 +28,6 @@ int main(void) {
 }
 
 /*
- * Take input line by line.
- */
-int myGetline(char str[], int lim)
-{
-	int i;
-	int c;
-
-	for (i = 0; i < lim-1 && (c = getchar()) != 'Q' && c != '\n'; i++)
-		str[i] = c;
-
-	if (c == '\n') {
-		str[i] = c;
-		++i;
-	}
-	str[i] = '\0';
-	return i;
-}
-
-/*
  * Replace spaces by the correct combination of both tabs and spaces.
  */
 void addTabs(char line[], char newLine[], int len, int tabSize)
@@ -54,8 +35,8 @@ void addTabs(char line[], char newLine[], int len, int tabSize)
 	int i;
 	int j = 0;
 	int k;
-	int prev = 0;
-	int count = 1;
+	int prev = ' ';
+	int count = 0;
 	int marker;
 	int tabs = 0;
 	int spaces;
@@ -66,26 +47,28 @@ void addTabs(char line[], char newLine[], int len, int tabSize)
 		 * Store the previous character, used for the count of
 		 * consecutive spaces.
 		 */
-		if(i < 0)
-			prev = line[i-1];
+		//if (i > 0)
+		//	prev = line[i-1];
 
 		/*
-		 * If the current value and the previous ar both spaces, place
-		 * a marker on the first of the two and start a count.
+		 * If the current value and the previous are both spaces, place
+		 * a marker on the first of the two and start the count.
 		 */
-		if ((line[i] == ' ') && (prev == ' ') && (count == 1))
+		if ((line[i] == ' ') && (line[i-1] == ' ') && (count == 1))
 		{
 			marker = i-1;
 			count++;
+			continue;
 		}
 
 		/*
-		 * If the current value and the previous ar both spaces, place
-		 * a marker on the first of the two and continue the count.
+		 * If the current value and the previous are both spaces,
+		 * continue the count.
 		 */
 		else if ((line[i] == ' ') && (prev == ' '))
 		{
 			count++;
+			continue;
 		}
 
 		/*
@@ -99,10 +82,10 @@ void addTabs(char line[], char newLine[], int len, int tabSize)
 			 * than 0, add to the count, this is to account for
 			 * that first tab.
 			 */
-			if((tabSize - (marker % tabSize)) > 0)
+			if(marker % tabSize > 0 || (marker == 0 && i > tabSize))
 			{
 				tabs++;
-				//count = count - (tabSize-(marker%tabSize));
+				count = count - (tabSize-(marker % tabSize));
 			}
 
 			/*
@@ -128,18 +111,46 @@ void addTabs(char line[], char newLine[], int len, int tabSize)
 
 			/* Reset the values */
 			tabs = 0;
-			count = 1;
+			count = 0;
 
 			/* Write the next character */
-			newLine[j] = line[i];
-			j++;
+			newLine[j++] = line[i];
 		}
 		else
 		{
+			/* If it is the first space */
+			if (line[i] == ' ' && count == 0) {
+				count = 1;
+			}
+			else if (line[i] != ' ' && count == 1) {
+				newLine[j++] = ' ';
+				newLine[j++] = line[i];
+				count = 0;
+			}
 			/* No spaces, write the character */
-			newLine[j] = line[i];
-			j++;
+			else
+				newLine[j++] = line[i];
 		}
 	}
+	newLine[j] = '\0';
+}
+
+/*
+ * Take input line by line.
+ */
+int myGetline(char str[], int lim)
+{
+	int i;
+	int c;
+
+	for (i = 0; i < lim-1 && (c = getchar()) != 'Q' && c != '\n'; i++)
+		str[i] = c;
+
+	if (c == '\n') {
+		str[i] = c;
+		++i;
+	}
+	str[i] = '\0';
+	return i;
 }
 

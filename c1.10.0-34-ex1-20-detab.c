@@ -30,7 +30,7 @@ int main(void) {
 /*
  * Replace tabs with spaces.
  */
-void removeTabs(char str[], char newStr[], int len, int spaces)
+void removeTabs(char line[], char newLine[], int len, int spaces)
 {
 	int i;
 	int j = 0;
@@ -43,8 +43,8 @@ void removeTabs(char str[], char newStr[], int len, int spaces)
  * Advance letter by letter augmenting both i, for the input array, and j for
  * the output.
  */
-		if(str[i] != '\t') {
-			newStr[j] = str[i];
+		if(line[i] != '\t') {
+			newLine[j] = line[i];
 			j++;
 		}
 		else
@@ -57,11 +57,12 @@ void removeTabs(char str[], char newStr[], int len, int spaces)
  */
 			offset = spaces-(j % spaces);
 			for (k = 0; k < offset; k++) {
-				newStr[j] = ' ';
+				newLine[j] = ' ';
 				j++;
 			}
 		}
 	}
+	newLine[j] = '\0';
 }
 
 /*
@@ -72,13 +73,14 @@ int myGetline(char str[], int lim)
 	int i;
 	int c;
 
-	for (i = 0; i < lim-2 && (c = getchar()) != 'Q' && c != '\n'; i++)
+	for (i = 0; i < lim-1 && (c = getchar()) != 'Q' && c != '\n'; i++)
 		str[i] = c;
 
 	if (c == '\n') {
 		str[i] = c;
 		++i;
 	}
+
 	str[i] = '\0';
 	return i;
 }
