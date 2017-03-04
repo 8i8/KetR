@@ -131,13 +131,9 @@ int myGetline(char string[], int lim)
 	for (i = 0; i < lim-1 && (c = getchar()) != 'Q' && c != '\n'; i++)
 	{
 		if(isxdigit(c))
-		{
 			string[i] = c;
-		}
 		else
-		{
 			printf("Please use only hexadecimal characters.\n");
-		}
 	}
 
 	return i;
