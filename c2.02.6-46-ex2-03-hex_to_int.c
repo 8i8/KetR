@@ -13,6 +13,7 @@ int htoi(char string[], int len);
 int myPow(int base, int exp);
 int ipow(int base, int exp);
 int getHexValue(char c);
+int lower(int c);
 int myGetline(char string[], int lim);
 
 int main(void)
@@ -101,23 +102,35 @@ int ipow(int base, int exp)
  */
 int getHexValue(char c)
 {
+	c = lower(c);
 
 	int x;
 
-	if	(c == 'a' || c == 'A')
+	if	(c == 'a')
 		x = 10;
-	else if (c == 'b' || c == 'B')
+	else if (c == 'b')
 		x = 11;
-	else if (c == 'c' || c == 'C')
+	else if (c == 'c')
 		x = 12;
-	else if (c == 'd' || c == 'D')
+	else if (c == 'd')
 		x = 13;
-	else if (c == 'e' || c == 'E')
+	else if (c == 'e')
 		x = 14;
-	else if (c == 'f' || c == 'F')
+	else if (c == 'f')
 		x = 15;
 
 	return x;
+}
+
+/*
+ * Convert to lower case.
+ */
+int lower(int c)
+{
+	if (c >= 'A' && c <= 'F')
+		return c + 'a' - 'A';
+	else
+		return c;
 }
 
 /*
