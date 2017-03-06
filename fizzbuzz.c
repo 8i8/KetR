@@ -1,3 +1,6 @@
+/*
+ * Just in case ...
+ */
 #include <stdio.h>
 
 int main(void)
