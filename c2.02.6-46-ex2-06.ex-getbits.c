@@ -15,10 +15,15 @@
  *  	so it's just a clever way to get n 1-bits in the least significant part
  *  	of the number.
  *
+ *  	x = (x >> (p+1-n)) & ~(~0 << n);
+ *
  *  	The "x bit" you describe has shifted the given number (f994) right far
  *  	enough so that the least significant 3 bits are the ones you want. In
  *  	this example, the bits you're requesting are surrounded by '.'
  *  	characters.
+ *
+ *  	int p = 4;
+ *  	int n = 3;
  *
  *  	ff94             11111111100.101.00  # original number
  *  	>> p+1-n     [2] 0011111111100.101.  # shift desired bits to right

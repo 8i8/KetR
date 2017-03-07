@@ -32,7 +32,7 @@ int main(void)
 }
 
 /*
- * Remove all of the characters found in string two, fron string one.
+ * Remove all of the characters found in string two, from string one.
  */
 void squeeze(char string[], char string2[])
 {
