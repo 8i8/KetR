@@ -3,8 +3,6 @@
  * bits that begin at position p set to the rightmost n bits of y, leaving the
  * other bits unchanged.
  *
- *    y     p
- *         < n> 
  * 010yyyy1xxxx0101
  *
  * x1 = x >> (p+1-n) & ~(~0 << n)
@@ -38,16 +36,8 @@
  */
 #include <stdio.h>
 
-int setbits(int x, int p, int n, int y)
-{
-	int x1;
-	int x2;
-
-	x1 = (x >> (p+1-n) & ~(~0 << n)) << (y+1-n);
-	x2 = x & ~(017 << (y+1-n));
-
-	return x2 | x1;
-}
+int ipow(int base, int exp);
+int setbits(int x, int p, int n, int y);
 
 int main(void)
 {
@@ -61,5 +51,35 @@ int main(void)
 	printf("getbits(%u %x), %d, %d) = %u (%x)\n", x, x, p, n, z, z);
 	if(z == 9785)
 		puts("Woohooo");
+}
+
+/*
+ * Setbits 'n' from position 'x' to position 'y'.
+ */
+int setbits(int x, int p, int n, int y)
+{
+	int x1;
+	int x2;
+
+	x1 = (x >> (p+1-n) & ~(~0 << n)) << (y+1-n);
+	x2 = x & ~((ipow(2, n)-1) << (y+1-n));
+
+	return x2 | x1;
+}
+
+/*
+ * Raise to the power of.
+ */
+int ipow(int base, int exp)
+{
+    int result = 1;
+    while (exp)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+    return result;
 }
 
