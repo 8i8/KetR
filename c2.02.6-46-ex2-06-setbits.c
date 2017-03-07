@@ -9,7 +9,7 @@
  *
  * 000000000000xxxx
  *
- * x1 << 9
+ * x1 << y+1-n
  *
  * 000xxxx000000000
  *
@@ -17,7 +17,7 @@
  *
  * 010yyyy1xxxx0101
  *
- * x2 = x & ~(017 << 9)
+ * x2 = x & ~(017 << y+1-n)
  *
  * 1110000111111111
  *
@@ -62,25 +62,8 @@ int setbits(int x, int p, int n, int y)
 	int x2;
 
 	x1 = (x >> (p+1-n) & ~(~0 << n)) << (y+1-n);
-	x2 = x & ~((ipow(2, n)-1) << (y+1-n));
+	x2 = x & ~((~(~0 << n)) << (y+1-n));
 
 	return x2 | x1;
-}
-
-/*
- * Raise to the power of.
- */
-int ipow(int base, int exp)
-{
-	int result = 1;
-
-	while (exp)
-	{
-		if (exp & 1)
-	    		result *= base;
-		exp >>= 1;
-		base *= base;
-	}
-	return result;
 }
 
