@@ -17,7 +17,7 @@
  *
  * 010yyyy1xxxx0101
  *
- * x2 = x & ~(017 << y+1-n)
+ * x2 = x & ~((~(~0 << n)) << y+1-n)
  *
  * 1110000111111111
  *
@@ -36,7 +36,6 @@
  */
 #include <stdio.h>
 
-int ipow(int base, int exp);
 int setbits(int x, int p, int n, int y);
 
 int main(void)
