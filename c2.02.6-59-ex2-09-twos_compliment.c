@@ -17,7 +17,7 @@
  * When the least significant bit is compaired to 01, if it is a 1 the
  * condition is true, if not then 0 is & with 01 and thus false.
  */
-int bitcount(unsigned int x)
+int bitcount(int x)
 {
 	int b;
 
@@ -32,7 +32,7 @@ int bitcount(unsigned int x)
  * and reduce the value of x by the most prominante value of its own construct
  * in powers of 2, corresponding to that bit.
  */
-int fasterBitcount(unsigned int x)
+int fasterBitcount(int x)
 {
 	int b;
 
@@ -46,13 +46,8 @@ int main(void)
 {
 	int x;
 
-	while(1)
-	{
-		scanf("%d", &x);
-
-		x &= (x-1);
-
-		printf("%d\n", x);
-	}
+	puts("Enter a value of x:");
+	scanf("%d", &x);
+	fasterBitcount(x);
 }
 
