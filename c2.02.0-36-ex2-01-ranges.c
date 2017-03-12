@@ -63,7 +63,7 @@ int main(void)
 	printf("10/3 = %.30f\n", g/h);
 	puts("");
 	printf("Type double :\n\n");
-	printf("double MAX:~ %f\n", DBL_MAX);
+	printf("double MAX:~ %e\n", DBL_MAX);
 	printf("double MIN:~ %f\n", DBL_MIN);
 	printf("double precision:~ %d\n", DBL_DIG);
 	printf("10/3 = %.30f\n", i/j);
@@ -73,6 +73,26 @@ int main(void)
 	printf("long double MIN:~ %Lf\n", LDBL_MIN);
 	printf("long double precision:~ %d\n", LDBL_DIG);
 	printf("10/3 = %.30Le\n", k/l);
+	puts("");
+	puts("Floats");
+	printf("Radix of exponent representation :~ %d\n", FLT_RADIX);
+	printf("Floating-point founding mode for addition :~ %d\n", FLT_ROUNDS);
+	printf("Decimal digits of precision :~ %d\n", FLT_DIG);
+	printf("Smallest number x such that 1.0 + x != 1.0 :~ %e\n", FLT_EPSILON);
+	printf("Number of base FLT_RADIX digits in mantissa :~ %d\n", FLT_MANT_DIG);
+	printf("Maximum floating-point number :~ %e\n", FLT_MAX);
+	printf("Maximum n such that FLT_RADIX^n-1 is representable :~ %d\n", FLT_MAX_EXP);
+	printf("Minimum normalised floating-point number :~ %e\n", FLT_MIN);
+	printf("Minimum n such that 10^n is a normalised number :~ %d\n", FLT_MIN_EXP);
+	puts("");
+	puts("Doubles");
+	printf("Decimal digits of precision :~ %d\n", DBL_DIG);
+	printf("Smallest number x such that 1.0 + x != 1.0 :~ %e\n", DBL_EPSILON);
+	printf("Number of base FLT_RADIX digits in mantissa :~ %d\n", DBL_MANT_DIG);
+	printf("Maximum double floating-point number :~ %e\n", DBL_MAX);
+	printf("Maximum n such that FLT_RADIX^n-1 is representable :~ %d\n", DBL_MAX_EXP);
+	printf("Minimum normalised double floating-point number :~ %e\n", DBL_MIN);
+	printf("Minimum n such that 10^n is a normalised number :~ %d\n", DBL_MIN_EXP);
 
 	return(0);
 }
