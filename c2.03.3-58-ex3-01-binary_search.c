@@ -1,4 +1,6 @@
 /*
+ * c2.03.3-58-ex3-01-binary_search.c
+ *
  * Exercise 3-1. Our binary search makes two tests inside the loop, when one
  * would suffice (at the price of more tests outside.) Write a version with
  * only one test inside the loop and measure the difference in run- time.
@@ -7,9 +9,13 @@
  * an array with that amount of cells. The array is then filled with random
  * values and sorted into ascending order; Passed through three different
  * search functions, each of which is timed.
+ *
+ * TODO finish the timing functionality, this will require the understanding
+ * and the use of timespec.
  */
 #include <stdio.h>
 #include <time.h>
+#include <sys/time.h>
 #include <stdlib.h>
 
 #define DEBUG		0
@@ -97,6 +103,9 @@ int binarySearchTwo(int x, int v[], int n)
 	}
 }
 
+/*
+ * Runs an empty search call, for comparison.
+ */
 int noSearch(int x, int v[], int n)
 {
 	return -1;
@@ -158,49 +167,37 @@ void sortArray(int array[], int len)
 	while(isMod);
 }
 
-int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
-{
-	/* Perform the carry for the later subtraction by updating y. */
-	if (x->tv_usec < y->tv_usec) {
-		int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-		y->tv_usec -= 1000000 * nsec;
-		y->tv_sec += nsec;
-	}
-	if (x->tv_usec - y->tv_usec > 1000000) {
-		int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-		y->tv_usec += 1000000 * nsec;
-		y->tv_sec -= nsec;
-	}
-
-	/* Compute the time remaining to wait.
-		 tv_usec is certainly positive. */
-	result->tv_sec = x->tv_sec - y->tv_sec;
-	result->tv_usec = x->tv_usec - y->tv_usec;
-
-	/* Return 1 if result is negative. */
-	return x->tv_sec < y->tv_sec;
-}
-
 /*
  * Run the provided search function whilst timing the operation.
  */
 void timeIt(char* text, search_fn fn, int x, int v[], int n)
 {
 	int output;
-	clock_t begin = clock();
+	struct timespec tvalBefore, tvalAfter;
+
+	int clock_gettime(clockid_t clock_id, struct timespec *tp);
+
+	gettimeofday (&tvalBefore, NULL);
 	output = (*fn)(x, v, n);
-	clock_t end = clock();
-	double time = (double)(end - begin) / CLOCKS_PER_SEC;
-	if(DEBUG)
-		printf("x --> %9d n --> %9d v[n] --> %9d\n", x, n, v[n-1]);
-	if(output)
-		printf("%s \t: %9d\t\t ~ Time : %f\n", text, output, time);
+	gettimeofday (&tvalAfter, NULL);
+
+	printf("Time in microseconds: %ld microseconds\n",
+		((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L +tvalAfter.tv_usec) - tvalBefore.tv_usec);
+
+	//int output;
+	//clock_t begin = clock();
+	//output = (*fn)(x, v, n);
+	//clock_t end = clock();
+	//double time = (double)(end - begin) / CLOCKS_PER_SEC;
+	//if(DEBUG)
+	//	printf("x --> %9d n --> %9d v[n] --> %9d\n", x, n, v[n-1]);
+	//if(output)
+	//	printf("%s \t: %9d\t\t ~ Time : %f\n", text, output, time);
 }
 
 int main(void)
 {
 	int c;
-
 	puts("Hit a key to start ...");
 
 	while((c = getchar()) != 'q')
@@ -208,14 +205,14 @@ int main(void)
 		int n = myRand(A_MIN, A_LENGTH);
 		int x = myRand(A_MIN, A_LENGTH);
 		int v[n];
-
+		/* */
 		fillArray(v, n);
 		sortArray(v, n);
 
 		search_fn searchOriginal;
 		search_fn searchOne;
 		search_fn searchTwo;
-
+		/* */
 		searchOriginal = binsearch;
 		searchOne = binarySearchOne;
 		searchTwo = binarySearchTwo;
