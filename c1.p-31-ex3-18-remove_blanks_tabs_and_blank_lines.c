@@ -77,7 +77,6 @@ void editArray(char arrayOld[], char arrayNew[], int len)
 
 	tabsSpacesEmptyLines(arrayTemp, arrayNew, len, offset);
 	emptyLinesAtStart(arrayTemp, arrayNew, len, offset);
-
 }
 
 /*
