@@ -4,7 +4,8 @@
  * column of input. Make sure your program does something intelligent with very
  * long lines, and if there are no blanks or tabs before the specified column.
  *
- * TODO check that this code works correctly for tabs.
+ * TODO This code is unfinished the tab folding needs to be worked on, I think
+ * that this could be an interesting problem to write a unit test for.
  */
 #include <stdio.h>
 
