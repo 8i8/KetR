@@ -79,12 +79,8 @@ int main (int argc, char *argv[])
 			}
 		}
 		for (j = lw-1; j >= 0; j--) {
-			k = 0;
-			while (k < wc)
-			{
+			for (k = 0; k < wc; k++)
 				printf("%c", array[k][j]);
-				k++;
-			}
 			printf("\n");
 		}
 		fclose(file);

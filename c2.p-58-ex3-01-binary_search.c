@@ -17,7 +17,9 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <stdint.h>	/* for uint64 definition */
 
+#define BILLION		1000000000L
 #define DEBUG		0
 #define A_LENGTH	10000
 #define A_MIN		1
@@ -47,7 +49,7 @@ int binsearch(int x, int v[], int n)
 	}
 	/* no match */
 	printf("The value is not in the list.\n");
-	return 0;
+	return -1;
 }
 
 /*
@@ -73,7 +75,7 @@ int binarySearchOne(int x, int v[], int n)
 	}
 	/* no match */
 	printf("The value is not in the list.\n");
-	return 0;
+	return -1;
 }
 
 /*
@@ -99,7 +101,7 @@ int binarySearchTwo(int x, int v[], int n)
 	{
 		/* no match */
 		printf("The value is not in the list.\n");
-		return 0;
+		return -1;
 	}
 }
 
@@ -116,8 +118,12 @@ int noSearch(int x, int v[], int n)
  */
 int myRand(int min, int max)
 {
+	struct timespec seed;
+	clock_gettime(CLOCK_MONOTONIC, &seed);
 	int range;
 	int x;
+
+	range = max - min;
 
 	if(min > max) {
 		x = min;
@@ -125,9 +131,9 @@ int myRand(int min, int max)
 		max = x;
 	}
 
-	range = max - min;
-	srand(time(NULL));
+	srand(seed.tv_nsec);
 	x = rand()%range+1;
+
 	return x;
 }
 
@@ -169,30 +175,33 @@ void sortArray(int array[], int len)
 
 /*
  * Run the provided search function whilst timing the operation.
+ * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
+ * time for the individual process.
  */
 void timeIt(char* text, search_fn fn, int x, int v[], int n)
 {
+	uint64_t diff;
+	struct timespec start, end;
 	int output;
-	struct timespec tvalBefore, tvalAfter;
 
-	int clock_gettime(clockid_t clock_id, struct timespec *tp);
 
-	gettimeofday (&tvalBefore, NULL);
+//	clock_gettime(CLOCK_MONOTONIC, &start);
+//	output = (*fn)(x, v, n);
+//	clock_gettime(CLOCK_MONOTONIC, &end);
+//
+//	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+//	if(output)
+//		printf("%s \t: %9d\t\t ~             elapsed time = %llu nanoseconds\n", 
+//				text, output, (long long unsigned int) diff);
+
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 	output = (*fn)(x, v, n);
-	gettimeofday (&tvalAfter, NULL);
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
-	printf("Time in microseconds: %ld microseconds\n",
-		((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L +tvalAfter.tv_usec) - tvalBefore.tv_usec);
-
-	//int output;
-	//clock_t begin = clock();
-	//output = (*fn)(x, v, n);
-	//clock_t end = clock();
-	//double time = (double)(end - begin) / CLOCKS_PER_SEC;
-	//if(DEBUG)
-	//	printf("x --> %9d n --> %9d v[n] --> %9d\n", x, n, v[n-1]);
-	//if(output)
-	//	printf("%s \t: %9d\t\t ~ Time : %f\n", text, output, time);
+	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+	if(output)
+		printf("%s \t: %9d\t\t ~ elapsed process CPU time = %llu nanoseconds\n", 
+				text, output, (long long unsigned int) diff);
 }
 
 int main(void)
