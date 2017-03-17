@@ -10,7 +10,7 @@
 
 /* count lines words and characters in input */
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	int i, c, nl, nw, nc, state;
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 		++nc;
 		if (c == '\n')
 			++nl;
-		if (c == ' ' || c == '\n' || c == '\t')
+		if (c == ' ' || c == '\n' || c == '\t' || c == '\v')
 			state = OUT;
 		else if (state == OUT)
 		{
@@ -31,4 +31,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	printf("nl = %d nw = %d nc = %d\n", nl, nw, nc);
+
+	return 0;
 }

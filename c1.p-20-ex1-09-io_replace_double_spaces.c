@@ -4,7 +4,7 @@
  */
 #include <stdio.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	int i, a, b;
 
@@ -23,4 +23,6 @@ int main(int argc, char *argv[])
 			printf("%c", a);
 		b = a;
 	}
+
+	return 0;
 }

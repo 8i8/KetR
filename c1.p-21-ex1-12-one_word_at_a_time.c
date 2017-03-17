@@ -8,22 +8,20 @@
 
 /* count lines words and characters in input */
 
-int main(int argc, char *argv[])
+int main(void)
 {
-	int i, c, s;
-	int prev = 0;
+	int c, prev;
 
 	while ((c = getchar()) != EOF)
 	{
-		if (c == 'q' && s == ':')
-			break;
-
-		if (c == ' ' && s == ' ')
+		if (c == ' ' && prev == ' ')
 			;
 		else if (c == ' ')
 			printf("\n");
 		else 
-			printf("%c",c);
-		s = c;
+			printf("%c", c);
+		prev = c;
 	}
+
+	return 0;
 }

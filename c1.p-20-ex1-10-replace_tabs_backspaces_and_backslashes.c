@@ -4,17 +4,12 @@
  */
 #include <stdio.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
-	int i, c;
-	int pre;
+	int c;
 
-	while ((c = getchar()) != 'Q')
+	while ((c = getchar()) != '\n')
 	{
-		// End program with :q
-		if ( c == 'q') && (pre == ':')
-			break;
-
 		if (c == '\t')
 			printf("\\t");
 		else if (c == '\b')
@@ -23,7 +18,7 @@ int main(int argc, char *argv[])
 			printf("\\");
 		else
 			printf("%c", c);
-
-		pre = c;
 	}
+
+	return 0;
 }

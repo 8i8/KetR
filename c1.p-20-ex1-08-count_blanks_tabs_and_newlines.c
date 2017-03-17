@@ -3,17 +3,19 @@
  */
 #include <stdio.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	int blk;
 	int tab;
 	int nl;
 	int prev;
-	int i, c;
+	int c;
 
 	blk = 0;
 	tab = 0;
 	nl = 0;
+
+	puts("Please enter your text followed by :q to process."); 
 
 	while ((c = getchar()) != EOF)
 	{
@@ -31,4 +33,6 @@ int main(int argc, char *argv[])
 	printf("spaces = %d\n", blk);
 	printf("tabs = %d\n", tab);
 	printf("newlines = %d\n", nl);
+
+	return 0;
 }

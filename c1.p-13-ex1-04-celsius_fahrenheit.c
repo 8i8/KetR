@@ -13,13 +13,13 @@ int main(int argc, char *argv[])
 
 	lower = 0;
 	upper = 300;
-	step = 20;
+	step  = 20;
 
 	celsius = lower;
 	printf("Celcius     Fahr\n");
 	printf("~~~~~~~~~~~~~~~~\n");
 	while (celsius <= upper) {
-		fahr = (celsius+32.0) / (5.0/9.0);
+		fahr = (celsius+32.0) / (5.0 / 9.0);
 		printf("%3.0f %12.1f\n", celsius, fahr);
 		celsius = celsius + step;
 	}

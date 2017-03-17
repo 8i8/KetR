@@ -10,17 +10,30 @@
  * values and sorted into ascending order; Passed through three different
  * search functions, each of which is timed.
  *
- * TODO finish the timing functionality, this will require the understanding
- * and the use of timespec.
+ * This code uses the <time.h> header to time functions at the lowest system
+ * level thus the highest resolution.
+ *
+ * <time.h>
+ *
+ * typedef __clockid_t clockid_t;
+ * extern int clock_gettime (clockid_t __clock_id, struct timespec *__tp) __THROW;
+ *
+ * https://linux.die.net/man/3/clock_getres
+ * http://pubs.opengroup.org/onlinepubs/9699919799/functions/clock_gettime.html
+ * https://www.cs.rutgers.edu/~pxk/416/notes/c-tutorials/gettime.html
  */
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
-#include <stdint.h>	/* for uint64 definition */
+
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> // equivalent to (K&R) #include "syscalls.h"
 
 #define BILLION		1000000000L
-#define DEBUG		0
 #define A_LENGTH	10000
 #define A_MIN		1
 
@@ -48,7 +61,7 @@ int binsearch(int x, int v[], int n)
 			return mid;
 	}
 	/* no match */
-	printf("The value is not in the list.\n");
+	printf("n/a");
 	return -1;
 }
 
@@ -74,7 +87,7 @@ int binarySearchOne(int x, int v[], int n)
 		mid = (low+high)/2;
 	}
 	/* no match */
-	printf("The value is not in the list.\n");
+	printf("n/a");
 	return -1;
 }
 
@@ -100,7 +113,7 @@ int binarySearchTwo(int x, int v[], int n)
 	else
 	{
 		/* no match */
-		printf("The value is not in the list.\n");
+		printf("n/a");
 		return -1;
 	}
 }
@@ -114,7 +127,10 @@ int noSearch(int x, int v[], int n)
 }
 
 /*
- * Return a random value between the given limits.
+ * Return a random value between the given limits, I have used timespec to
+ * generate the seed for my random value for this reason the program will only
+ * run on a POSIX machine, I shall look further into this subject in the future
+ * as it is clearly a facinating area of the computing landscape.
  */
 int myRand(int min, int max)
 {
@@ -180,42 +196,52 @@ void sortArray(int array[], int len)
  */
 void timeIt(char* text, search_fn fn, int x, int v[], int n)
 {
-	uint64_t diff;
+	unsigned long long diff;
 	struct timespec start, end;
 	int output;
 
-
-//	clock_gettime(CLOCK_MONOTONIC, &start);
-//	output = (*fn)(x, v, n);
-//	clock_gettime(CLOCK_MONOTONIC, &end);
-//
-//	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-//	if(output)
-//		printf("%s \t: %9d\t\t ~             elapsed time = %llu nanoseconds\n", 
-//				text, output, (long long unsigned int) diff);
-
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	output = (*fn)(x, v, n);
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+	clock_gettime(CLOCK_MONOTONIC, &end);
 
 	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
 	if(output)
-		printf("%s \t: %9d\t\t ~ elapsed process CPU time = %llu nanoseconds\n", 
+		printf("%s \t: %9d\t\t ~     MONOTONIC = %5llu nanoseconds\n", 
+				text, output, diff);
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	output = (*fn)(x, v, n);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+
+	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+	if(output)
+		printf("%s \t: %9d\t\t ~ MONOTONIC_RAW = %5llu nanoseconds\n", 
 				text, output, (long long unsigned int) diff);
+
+//	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+//	output = (*fn)(x, v, n);
+//	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+//
+//	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+//	if(output)
+//		printf("%s \t: %9d\t\t ~    CPUTIME_ID = %5llu nanoseconds\n", 
+//				text, output, (long long unsigned int) diff);
+	puts("");
 }
 
 int main(void)
 {
 	int c;
-	puts("Hit a key to start ...");
+	puts("Press a key to start ...");
 
 	while((c = getchar()) != 'q')
 	{
 		int n = myRand(A_MIN, A_LENGTH);
-		int x = myRand(A_MIN, A_LENGTH);
+		int x = myRand(A_MIN, n);
 		int v[n];
 		/* */
 		fillArray(v, n);
+		x = v[x];
 		sortArray(v, n);
 
 		search_fn searchOriginal;

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
 	blk = 0;
 	tab = 0;
-	nl = 0;
+	nl  = 0;
 
 	for (i = 1; i < argc; i++) {
 
@@ -41,3 +41,4 @@ int main(int argc, char *argv[])
 		fclose(file);
 	}
 }
+

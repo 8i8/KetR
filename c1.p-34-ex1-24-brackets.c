@@ -4,6 +4,8 @@
  * quotes, both single and double, escape sequences, and comments. (This
  * program is hard if you do it in full generality.)
  *
+ * TODO make the code work for ([)] situations, bracket depth or similar
+ * required.
  */
 #include <stdio.h>
 
