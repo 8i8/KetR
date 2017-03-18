@@ -5,29 +5,18 @@
 
 int main(void)
 {
-	int blk;
-	int tab;
-	int nl;
-	int prev;
-	int c;
+	int blk, tab, nl, c;
 
-	blk = 0;
-	tab = 0;
-	nl = 0;
-
-	puts("Please enter your text followed by :q to process."); 
+	blk = tab = nl = 0;
 
 	while ((c = getchar()) != EOF)
 	{
-		if (c == 'q' && prev == ':')
-			break;
 		if (c == ' ')
 			++blk;
 		if (c == '\t')
 			++tab;
 		if (c == '\n')
 			++nl;
-		prev = c;
 	}
 
 	printf("spaces = %d\n", blk);

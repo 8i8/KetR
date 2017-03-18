@@ -32,7 +32,7 @@ int main(void)
 	 * second array table each time, obtain the length of the array
 	 * required to display the histogram.
 	 */
-	while ((c = getchar()) != '\n')
+	while ((c = getchar()) != EOF)
 	{
 		for (i = 0; i < RANGE; i++)
 			if (letters[i][0] == c) {
@@ -45,10 +45,10 @@ int main(void)
 
 	/*
 	 * Fill the output array with the glyphs required to draw the
-	 * histogram, notice that the loop also writes a blank space, if the
+	 * histogram, notice that the loop also writes a blank space when the
 	 * pipe is not required, this is to insure that any parasites are
-	 * removed from the array, should it be the case that the screen is
-	 * being refreshed.
+	 * removed from the array when the screen is being refreshed, the array
+	 * already filled with characters.
 	 */
 	char output[RANGE][max];
 	/* */

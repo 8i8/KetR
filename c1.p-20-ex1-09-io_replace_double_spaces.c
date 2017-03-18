@@ -6,16 +6,12 @@
 
 int main(void)
 {
-	int i, a, b;
+	int a, b;
 
 	b = 0;
 
-	while ((a = getchar()) != 'q')
+	while ((a = getchar()) != EOF)
 	{
-		// End program with :q
-		if ( c == 'q') && (b == ':')
-			break;
-
 		// The workings ...
 		if ((a == ' ') && (b == ' '))
 			;

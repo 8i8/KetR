@@ -12,11 +12,13 @@
  */
 #include <stdio.h>
 
-int main(int argc, char * argv[])
+int main(void)
 {
 	int c;
 
 	printf("Press any key and then <ENTER> to run getchar()");
 	c = (getchar() != EOF);
 	printf("c = %d\n", c);
+
+	return 0;
 }

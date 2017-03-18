@@ -3,82 +3,75 @@
  * will correctly print the length of arbitrary long input lines, and as much
  * as possible of the text.
  */
+
+/*
+ * The function getline() will not compile under the moddern GCC compilers
+ * defalut configuration due to its inculsion as a function in the <stdio.h>
+ * header file, this can be resolved in three ways, either; by using the -ansi
+ * GCC compiler flag; As explaind in the GNU libc documentation.
+ *
+ * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+ *
+ * Else, the following definition change can be made, so as to allow the use of
+ * getline() in the example without having to call it something else, it is
+ * required that the definition be made before including stdio.h.
+ *
+ * https://github.com/ptdecker/cbasics/blob/master/src/chapter01/longestline.c
+ */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
 
-int findLongestLine(FILE *file);
-int myGetline(char line[], int maxline, FILE *file);
-void copy(char to[], char from[]);
+#define MAXLEN	1000	/* Maximum length of chatracter input */
 
-/* print the longest input */
-int main(int argc, char *argv[])
+static int getline(char line[], int maxline);
+static void copy(char to[], char from[]);
+
+int main(void)
 {
-	int i;
 	int len;		/* Current line length */
 	int max;		/* Maximum length seen so far */
-	int length;
 
-	for (i = 1; i < argc; i++)
-	{
-		FILE *file = fopen(argv[i], "r");
+	char line[MAXLEN];
+	char longest[MAXLEN];
 
-		if (file == NULL)
-			return 1; /* Cannot open file */
-
-		length = findLongestLine(file);
-		printf("length : %d\n", length - 1);
-
-		char line[length];
-		char longest[length];
-		rewind(file);
-
-		max = 0;
-		while ((len = myGetline(line, length, file)) > 0)
-			if (len > max) {
-				max = len;
-				copy(longest, line);
-			}
-		if (max > 0)		/* There was a line */
-			printf("%s\n", longest);
-
-		fclose(file);
-		return 0;
-	}
-}
-
-int findLongestLine(FILE *file)
-{
-	int c, len, maxlen;
-	len = maxlen = 0;
-
-	while ((c = fgetc(file)) != EOF)
-	{
-		if (c == '\n') {
-			if (len > maxlen)
-				maxlen = len;
-			len = 0;
+	max = 0;
+	while ((len = getline(line, MAXLEN)) > 0)
+		if (len > max) {
+			max = len;
+			copy(longest, line);
 		}
-		len++;
+	if (max > 0) {		/* There was a line */
+		printf("The longest line is %d characters long, and here it is:\n", max);
+		printf("%s\n", longest);
 	}
-	return maxlen;
+
+	return 0;
 }
 
-/* Getline: Read a line in to s, return its length */
-int myGetline(char s[], int lim, FILE *file)
+/*
+ * Read a line and return its length.
+ */
+static int getline(char line[], int lim)
 {
-	int c, i;
+	int c, len;
 
-	for (i = 0; i < lim-1 && (c = fgetc(file))!= EOF && c!='\n'; i++)
-		s[i] = c;
-	if (c == '\n') {
-		s[i] = c;
-		i++;
-	}
-	s[i] = '\0';
-	return i;
+	len = 0;
+	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
+		line[len++] = c;
+	if (c == '\n')
+		line[len++] = c;
+	line[len] = '\0';
+
+	return len;
 }
 
-/* copy: copr `from` inot `to`; assume `to` is big enough */
-void copy(char to[], char from[])
+/*
+ * Copy 'from' into 'to', assuming that 'to' is large enough.
+ */
+static void copy(char to[], char from[])
 {
 	int i;
 

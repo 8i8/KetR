@@ -40,5 +40,7 @@ int main(int argc, char *argv[])
 		printf("newlines = %d\n", nl);
 		fclose(file);
 	}
+
+	return 0;
 }
 

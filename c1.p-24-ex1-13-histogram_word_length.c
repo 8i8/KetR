@@ -22,7 +22,7 @@ int main (void)
 	 * the longest word.
 	 */
 	i = 0;
-	while ((c = getchar()) != '\n' && i < MAXLEN-1)
+	while ((c = getchar()) != EOF && i < MAXLEN-1)
 	{
 		string[i++] = c;
 		if (c == ' ' || c == '\n' || c == '\t') {
