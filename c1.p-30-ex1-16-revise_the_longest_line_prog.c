@@ -10,6 +10,7 @@
  * header file, this can be resolved in three ways, either; by using the -ansi
  * GCC compiler flag; As explaind in the GNU libc documentation.
  *
+ * https://www.gnu.org/software/libc/manual/html_node/Using-the-Library.html#Using-the-Library
  * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
  *
  * Else, the following definition change can be made, so as to allow the use of
@@ -26,13 +27,13 @@
 
 #define MAXLEN	1000	/* Maximum length of chatracter input */
 
-static int getline(char line[], int maxline);
+static size_t getline(char line[], size_t maxline);
 static void copy(char to[], char from[]);
 
 int main(void)
 {
-	int len;		/* Current line length */
-	int max;		/* Maximum length seen so far */
+	size_t len;		/* Current line length */
+	size_t max;		/* Maximum length seen so far */
 
 	char line[MAXLEN];
 	char longest[MAXLEN];
@@ -44,7 +45,7 @@ int main(void)
 			copy(longest, line);
 		}
 	if (max > 0) {		/* There was a line */
-		printf("The longest line is %d characters long, and here it is:\n", max);
+		printf("The longest line is %lu characters long, and here it is:\n", max);
 		printf("%s\n", longest);
 	}
 
@@ -54,9 +55,10 @@ int main(void)
 /*
  * Read a line and return its length.
  */
-static int getline(char line[], int lim)
+static size_t getline(char line[], size_t lim)
 {
-	int c, len;
+	int c;
+	size_t len;
 
 	len = 0;
 	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')

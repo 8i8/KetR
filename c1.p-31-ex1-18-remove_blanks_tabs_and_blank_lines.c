@@ -2,181 +2,80 @@
  * Exercise 1-18. Write a program to remove trailing blanks and tabs from each
  * line of input, and to delete entirely blank lines.
  */
+
+/*
+ * The function getline() will not compile under the moddern GCC compilers
+ * defalut configuration due to its inculsion as a function in the <stdio.h>
+ * header file, this can be resolved in three ways, either; by using the -ansi
+ * GCC compiler flag; As explaind in the GNU libc documentation.
+ *
+ * https://www.gnu.org/software/libc/manual/html_node/Using-the-Library.html#Using-the-Library
+ * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+ *
+ * Else, the following definition change can be made, so as to allow the use of
+ * getline() in the example without having to call it something else, it is
+ * required that the definition be made before including stdio.h.
+ *
+ * https://github.com/ptdecker/cbasics/blob/master/src/chapter01/longestline.c
+ */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
+#include <ctype.h>
 
-int fileLength(FILE *file);
-void fillArray(FILE *file, char array[]);
-void editArray(char array[], char arrayNew[], int len);
-void tabsSpacesEmptyLines(char arrayTemp[], char arrayNew[], int len, int offset);
-void emptyLinesAtStart(char arrayTemp[], char arrayNew[], int len, int offset);
-void copyArray(char arrayOld[], char arrayNew[], int len, int offset);
-void writeEndOfString(char array[], int len, int endOfString);
-void printFileArray(char array[], int len);
-void initArray(char array[], int len);
+#define MAXLEN	1000
 
-int main(int argc, char *argv[])
+static size_t clearEnd(char line[], size_t len);
+static size_t getline(char line[], size_t len);
+
+int main(void)
 {
-	int i, j, len;
+	size_t len;
+	char line[MAXLEN];
 
-	for (i = 1; i < argc; i++) {
-
-		FILE *file = fopen(argv[i], "r");
-
-		if (file == NULL)
-			return 1; /*Could not open file*/
-
-		len = fileLength(file);
-		rewind(file);
-		char fileArray[len];
-		char fileCleared[len];
-		fillArray(file, fileArray);
-		editArray(fileArray,fileCleared, len);
-		printFileArray(fileCleared, len);
-		fclose(file);
-	}
-}
-
-/*
- * Return the lenth of a text file in characters
- */
-int fileLength(FILE *file)
-{
-	int c, count;
-	count = 0;
-
-	while ((c = fgetc(file)) != EOF)
-		count++;
-
-	return count;
-}
-
-/*
- * Fill an array from a text file
- */
-void fillArray(FILE *file, char fileArray[])
-{
-	int i, c;
-	i = 0;
-
-	while ((c = fgetc(file)) != EOF)
+	while (!feof(stdin))
 	{
-		fileArray[i] = c;
-		i++;
-	}
-}
-
-/*
- * Create working array and call edit functions.
- */
-void editArray(char arrayOld[], char arrayNew[], int len)
-{
-	int offset;
-	char arrayTemp[len];
-	offset = 0;
-	copyArray(arrayTemp, arrayOld, len, offset);
-
-	tabsSpacesEmptyLines(arrayTemp, arrayNew, len, offset);
-	emptyLinesAtStart(arrayTemp, arrayNew, len, offset);
-}
-
-/*
- * Remove all trailing spaces and tabs from each line
- */
-void tabsSpacesEmptyLines(char arrayTemp[], char arrayNew[], int len, int offset)
-{
-	int i;
-	int diff;
-	int endOfString;
-	diff = -1;
-	endOfString = 0;
-
-	while (diff != 0)
-	{
-		diff = 0;
-
-		for (i = 0; i < len; i++)
-		{
-			if ((arrayTemp[i] == '\n') && (arrayTemp[i-1] == ' ')) {
-				diff++;
-				endOfString++;
-			} else if ((arrayTemp[i] == '\n') && (arrayTemp[i-1] == '\t')) {
-				diff++;
-				endOfString++;
-			} else if ((arrayTemp[i] == '\n') && (arrayTemp[i-1] == '\n')) {
-				diff++;
-				endOfString++;
-			}
-			arrayNew[i-diff] = arrayTemp[i];
+		len = getline(line, MAXLEN);
+		if (len) {
+			len = clearEnd(line, len);
+			printf("%s", line);
 		}
-		copyArray(arrayTemp, arrayNew, len, offset);
 	}
-	writeEndOfString(arrayNew, len, endOfString);
 }
 
 /*
- * Delete empty lines from the start of the file if present.
+ * Remove trailing spaces and tabs.
  */
-void emptyLinesAtStart(char arrayTemp[], char arrayNew[], int len, int offset)
+static size_t clearEnd(char line[], size_t len)
 {
-	int i;
-	int diff;
-	int endOfString;
-	diff = -1;
-	endOfString = 0;
+	while (--len > 0 && (!isgraph(line[len])) )
+		;
+	if(line[++len] == '\n')
+		++len;
+	line[len] = '\0';
 
-	while (diff != 0)
-	{
-		diff = 0;
-		offset = 1;
-		i = 0;
-
-		if (arrayNew[i] == '\n') {
-			arrayTemp = arrayNew;
-			copyArray(arrayNew, arrayTemp, len, offset);
-		} else 
-			diff = 0;
-	}
-	writeEndOfString(arrayNew, len, endOfString);
+	return len;
 }
 
 /*
- * Copy one array into another, the offset variable can be used to create an
- * offset between the arrays, usefull here for removing empty lines at the
- * start of the file.
+ * Read a line in to an array from a text file, return the arrays used length.
  */
-void copyArray(char arrayNew[], char arrayOld[], int len, int offset)
+static size_t getline(char line[], size_t lim)
 {
-	int i;
+	int c;
+	size_t len, i;
 
-	for (i = 0; i < len-offset; i++)
-	{
-		arrayNew[i] = arrayOld[i+offset];
+	i = len = 0;
+	while (--lim > 0 && (c = getchar()) != EOF && c != '\n') {
+		line[i++] = c;
+		len++;
 	}
-	writeEndOfString(arrayNew, len, offset);
+	if (c == '\n')
+		line[i++] = c;
+	line[i] = '\0';
+
+	return len;
 }
 
-/*
- * Write end of string character '\0' into all remaining spaces at the end of
- * array.
- */
-void writeEndOfString(char array[], int len, int endOfString)
-{
-	int i;
-
-	for (i = 0; i < endOfString; i++)
-		array[len - i] = '\0';
-}
-
-/*
- * Echo array to terminal.
- */
-void printFileArray(char array[], int len)
-{
-	int i;
-	i = 0;
-
-	for (i = 0; i < len; i++)
-	{
-		printf("%c", array[i]);
-	}
-}

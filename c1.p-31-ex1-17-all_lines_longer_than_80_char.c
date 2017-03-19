@@ -2,76 +2,61 @@
  * Exercise 1-17. Write a program to print all input lines that are longer than
  * 80 characters.
  */
+
+/*
+ * The function getline() will not compile under the moddern GCC compilers
+ * defalut configuration due to its inculsion as a function in the <stdio.h>
+ * header file, this can be resolved in three ways, either; by using the -ansi
+ * GCC compiler flag; As explaind in the GNU libc documentation.
+ *
+ * https://www.gnu.org/software/libc/manual/html_node/Using-the-Library.html#Using-the-Library
+ * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
+ *
+ * Else, the following definition change can be made, so as to allow the use of
+ * getline() in the example without having to call it something else, it is
+ * required that the definition be made before including stdio.h.
+ *
+ * https://github.com/ptdecker/cbasics/blob/master/src/chapter01/longestline.c
+ */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
 
-#define MAXLENGTH	80
+#define MAXLEN		1000
+#define TARGETLEN	80
 
-void findLongestLine(FILE *file, int data[]);
-void printLinesOver80(FILE *file, int maxlen);
+static size_t getline(char line[], size_t lim);
 
-int main(int argc, char *argv[])
+int main(void)
 {
-	int i;
-	int data[] = {0,0};
+	size_t len;
+	char line[MAXLEN];
 
-	for (i = 1; i < argc; i++)
-	{
-		FILE *file = fopen(argv[i], "r");
-
-		if (file == NULL)
-			return 1; /*Could not open file*/
-
-		findLongestLine(file, data);
-		printf("There are  : %d lines over 80 characters in length\n"
-				, data[0]);
-		printf("longest line : %d characters\n", data[1]);
-		rewind(file);
-
-		printLinesOver80(file, data[1]);
-		fclose(file);
+	while (!feof(stdin)) {
+		len = getline(line, MAXLEN);
+		if (len > TARGETLEN)
+			printf("%lu:%s", len, line);
 	}
+	return 0;
 }
 
-void findLongestLine(FILE *file, int data[])
+static size_t getline(char line[], size_t lim)
 {
-	int c, len, maxlen, count;
-	len = maxlen = count = 0;
+	int c;
+	size_t i;
+	size_t len;
 
-	while ((c = fgetc(file)) != EOF)
-	{
-		if (c == '\n') {
-			if (len > MAXLENGTH)
-				count++;
-			if (len > maxlen)
-				maxlen = len;
-			len = 0;
-		}
+	len = i = 0;
+	while (--lim > 0 && (c = getchar()) != EOF && c != '\n') {
+		line[i++] = c;
 		len++;
 	}
-	data[0] = count;
-	data[1] = maxlen;
+	if(c == '\n')
+		line[i++] = c;
+	line[i] = '\0';
+
+	return len;
 }
 
-void printLinesOver80(FILE *file, int maxlen)
-{
-	int c, len;
-	char lines[maxlen];
-	len = 0;
-
-	while ((c = fgetc(file)) != EOF)
-	{
-		if (c != '\n') {
-
-			lines[len] = c;
-			len++;
-		}
-		if (c == '\n' && len > MAXLENGTH) {
-
-			lines[len+1] = '\0';
-			printf("%s\n\n", lines);
-			len = 0;
-		}
-		if (c == '\n')
-			len = 0;
-	}
-}

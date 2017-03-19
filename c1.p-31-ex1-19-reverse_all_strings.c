@@ -18,6 +18,9 @@ int main(void)
 	return 0;
 }
 
+/*
+ * Read stdin line by line.
+ */
 void readLineByLine(char line[])
 {
 	int c;
@@ -36,6 +39,9 @@ void readLineByLine(char line[])
 	}
 }
 
+/*
+ * Print array backwards.
+ */
 void reverse(char line[], int length)
 {
 	int i;
