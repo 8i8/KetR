@@ -5,7 +5,7 @@
  */
 #include <stdio.h>
 
-#define MAXSIZE	10000
+#define MAXSIZE	1000
 
 void stripComments(char input[], char output[], int len);
 int myGetline(char string[], int lim);

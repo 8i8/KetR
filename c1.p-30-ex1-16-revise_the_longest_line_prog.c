@@ -44,6 +44,7 @@ int main(void)
 			max = len;
 			copy(longest, line);
 		}
+
 	if (max > 0) {		/* There was a line */
 		printf("The longest line is %lu characters long, and here it is:\n", max);
 		printf("%s\n", longest);

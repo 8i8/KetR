@@ -110,12 +110,9 @@ int binarySearchTwo(int x, int v[], int n)
 	}
 	if (x == v[mid])
 		return mid;
-	else
-	{
-		/* no match */
-		printf("n/a");
-		return -1;
-	}
+	/* no match */
+	printf("n/a");
+	return -1;
 }
 
 /*
@@ -194,44 +191,34 @@ void sortArray(int array[], int len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-void timeIt(char* text, search_fn fn, int x, int v[], int n)
+unsigned long long timeIt(search_fn fn, int x, int v[], int n, int time_method)
 {
-	unsigned long long diff;
+	size_t i;
 	struct timespec start, end;
-	int output;
+	unsigned long long time;
+	unsigned long long factor;
 
-	clock_gettime(CLOCK_MONOTONIC, &start);
-	output = (*fn)(x, v, n);
-	clock_gettime(CLOCK_MONOTONIC, &end);
+	factor = 5000000;
+	time = 0;
 
-	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-	if(output)
-		printf("%s \t: %9d\t\t ~     MONOTONIC = %5llu nanoseconds\n", 
-				text, output, diff);
+	for (i = 0; i < factor; i++) {
+		clock_gettime(time_method, &start);
+		(*fn)(x, v, n);
+		clock_gettime(time_method, &end);
+		time += BILLION * (end.tv_sec - start.tv_sec)
+					+ end.tv_nsec - start.tv_nsec;
+	}
 
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-	output = (*fn)(x, v, n);
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	time /= factor;
 
-	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-	if(output)
-		printf("%s \t: %9d\t\t ~ MONOTONIC_RAW = %5llu nanoseconds\n", 
-				text, output, (long long unsigned int) diff);
-
-//	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-//	output = (*fn)(x, v, n);
-//	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-//
-//	diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-//	if(output)
-//		printf("%s \t: %9d\t\t ~    CPUTIME_ID = %5llu nanoseconds\n", 
-//				text, output, (long long unsigned int) diff);
-	puts("");
+	return time;
 }
 
 int main(void)
 {
 	int c;
+	unsigned long long time;
+
 	puts("Press a key to start ...");
 
 	while((c = getchar()) != 'q')
@@ -252,13 +239,24 @@ int main(void)
 		searchOne = binarySearchOne;
 		searchTwo = binarySearchTwo;
 
-		timeIt("No search", noSearch, x, v, n);
+		/*
+		 * CLOCK_MONOTONIC
+		 * CLOCK_MONOTONIC_RAW
+		 * CLOCK_PROCESS_CPUTIME_ID
+		 */
+		time = timeIt(noSearch, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for no search :~ %5llu\n", time);
 		/* */
-		timeIt("Search Orig", searchOriginal, x, v, n);
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5llu\n", time);
 		/* */
-		timeIt("Search One", searchOne, x, v, n);
+		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Orig :~ %5llu\n", time);
 		/* */
-		timeIt("Search Two", searchTwo, x, v, n);
+		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Seco :~ %5llu\n", time);
+		/* */
+
 	}
 	return 0;
 }
