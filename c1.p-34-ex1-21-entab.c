@@ -77,9 +77,9 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 	for (i = 0; i < len; i++)
 	{
 		/*
-		 * If the current value and the previous value are both spaces,
-		 * and the counting has just started place a marker on the
-		 * first of the two array spaces and then start to count.
+		 * If both the current and the previous values are spaces,
+		 * and the status is true for inCount, place a marker on the
+		 * first of the two array spacesi and continue.
 		 */
 		if (inCount == 1 && line[i] == ' ')
 		{
@@ -90,21 +90,21 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 
 		/*
 		 * If the current value and the previous are both spaces,
-		 * and the marker is set, continue.
+		 * and the marker is already set, continue.
 		 */
 		else if (inCount && line[i] == ' ')
 			continue;
 
 		/*
-		 * Calculate the quantity of tabs and spaces required. To do
-		 * this, get tabstop count upto the present position, subtract
-		 * from that the tab count upto the marker, then add the
-		 * remaining spaces.
+		 * Calculate the quantity of tabs and spaces required.
 		 */
 		else if (inCount > 1)
 		{
 			/*
-			 * Get the figures.
+			 * Get the figures. To achieve this, get tabstop count
+			 * upto the present position, subtract from that the
+			 * tab count upto the marker and then add the remaining
+			 * spaces.
 			 */
 			tabs 	=  countTabs(tabsize, i);
 			tabs 	-= countTabs(tabsize, marker);
