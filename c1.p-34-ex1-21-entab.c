@@ -96,13 +96,15 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			continue;
 
 		/*
-		 * Calculate the quantity of tabs and spaces required to
-		 * replace the spaces found.
+		 * Calculate the quantity of tabs and spaces required. To do
+		 * this, get tabstop count upto the present position, subtract
+		 * from that the tab count upto the marker, then add the
+		 * remaining spaces.
 		 */
 		else if (inCount > 1)
 		{
 			/*
-			 * Get tab count till marker.
+			 * Get the figures.
 			 */
 			tabs 	=  countTabs(tabsize, i);
 			tabs 	-= countTabs(tabsize, marker);
