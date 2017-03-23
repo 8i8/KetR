@@ -40,7 +40,7 @@ int main(void)
 /*
  * Return the previous tabstop.
  */
-static uint8_t countTabs(uint8_t tabsize, uint8_t column)
+static uint8_t countTabs(uint8_t column, uint8_t tabsize)
 {
 	return column / tabsize;
 }
@@ -48,7 +48,7 @@ static uint8_t countTabs(uint8_t tabsize, uint8_t column)
 /*
  * Return the spaces used since the previous tabstop.
  */
-static uint8_t countSpaces(uint8_t tabsize, uint8_t column)
+static uint8_t countSpaces(uint8_t column, uint8_t tabsize)
 {
 	return column % tabsize;
 }
@@ -60,8 +60,7 @@ static uint8_t setMarker(char line[], uint8_t i)
 {
 	if(line[i-1] == ' ' && line[i] == ' ')
 		return i-1;
-	else
-		return 0;
+	return 0;
 }
 
 /*
@@ -106,9 +105,9 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
-			tabs 	=  countTabs(tabsize, i);
-			tabs 	-= countTabs(tabsize, marker);
-			spaces	=  countSpaces(tabsize, i);
+			tabs 	=  countTabs(i, tabsize);
+			tabs 	-= countTabs(marker, tabsize);
+			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
 			while (tabs--)
