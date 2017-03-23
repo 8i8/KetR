@@ -26,6 +26,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -191,12 +192,12 @@ void sortArray(int array[], int len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-unsigned long long timeIt(search_fn fn, int x, int v[], int n, int time_method)
+uint64_t timeIt(search_fn fn, int x, int v[], int n, int time_method)
 {
-	size_t i;
 	struct timespec start, end;
-	unsigned long long time;
-	unsigned long long factor;
+	size_t i;
+	uint64_t time;
+	uint64_t factor;
 
 	factor = 5000000;
 	time = 0;
@@ -217,7 +218,7 @@ unsigned long long timeIt(search_fn fn, int x, int v[], int n, int time_method)
 int main(void)
 {
 	int c;
-	unsigned long long time;
+	uint64_t time;
 
 	puts("Press a key to start ...");
 
@@ -245,18 +246,17 @@ int main(void)
 		 * CLOCK_PROCESS_CPUTIME_ID
 		 */
 		time = timeIt(noSearch, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for no search :~ %5llu\n", time);
+		printf("Time for no search :~ %5lu\n", time);
 		/* */
 		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5llu\n", time);
+		printf("Time for Thir :~ %5lu\n", time);
 		/* */
 		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Orig :~ %5llu\n", time);
+		printf("Time for Orig :~ %5lu\n", time);
 		/* */
 		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Seco :~ %5llu\n", time);
+		printf("Time for Seco :~ %5lu\n", time);
 		/* */
-
 	}
 	return 0;
 }

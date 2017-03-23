@@ -54,21 +54,20 @@ int main(void)
 }
 
 /*
- * Read a line and return its length.
+ * Read input line by line.
  */
-static size_t getline(char line[], size_t lim)
+static size_t getline(char str[], size_t lim)
 {
+	size_t i;
 	int c;
-	size_t len;
 
-	len = 0;
-	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
-		line[len++] = c;
+	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
+		str[i] = c;
+
 	if (c == '\n')
-		line[len++] = c;
-	line[len] = '\0';
-
-	return len;
+		str[i++] = c;
+	str[i] = '\0';
+	return i;
 }
 
 /*
