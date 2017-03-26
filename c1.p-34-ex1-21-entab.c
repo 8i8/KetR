@@ -9,6 +9,7 @@
 #define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 
@@ -154,7 +155,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 static uint8_t getline(char str[], uint8_t lim)
 {
 	uint8_t i;
-	int c;
+	wchar_t c;
 
 	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		str[i] = c;
