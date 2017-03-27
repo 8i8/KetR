@@ -5,6 +5,9 @@
  * shorter lines after the last non-blank character that occurs before the n-th
  * column of input. Make sure your program does something intelligent with very
  * long lines, and if there are no blanks or tabs before the specified column.
+ *
+ * TODO the code that transfers the left over characters to the next line need
+ * to be adapted to tabs.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -12,7 +15,7 @@
 
 #define DEBUG		2
 #define BUFFER		255
-#define FOLD		80
+#define FOLD		40
 #define TABWIDTH	8
 #define NORMAL		0
 #define HYPHEN		1
@@ -38,14 +41,12 @@ static void printLine(char line[], uint8_t head, uint8_t ending)
  * Add to tw, the virtual end of the line, used to offset the value of head
  * which is itself the reading head for the array.
  */
-static uint8_t offsetTab(char line[], uint8_t head)
+static uint8_t offsetTab(char line[], uint8_t tw, uint8_t head)
 {
-	uint8_t tw;
-
-	tw = head + TABWIDTH;
+	tw += (tw+1) % TABWIDTH;
 
 	if (tw >= FOLD) {
-		printLine(line, head, 0);
+		printLine(line, head, NORMAL);
 		return 0;
 	}
 	return tw;
@@ -110,7 +111,11 @@ int main(void)
 			continue;
 		} else if (line[head] == '\t') {
 			marker = head;
-			tw = offsetTab(line, head);
+			tw = offsetTab(line, tw, head);
+			if(!tw) {
+				head = marker = 0;
+				continue;
+			}
 		} else if (line[head] == ' ') {
 			marker = head;
 		}
