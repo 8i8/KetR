@@ -6,32 +6,9 @@
  * column of input. Make sure your program does something intelligent with very
  * long lines, and if there are no blanks or tabs before the specified column.
  */
-/*
- * The function getline() will not compile under the modern GCC compilers
- * default configuration due to its inclusion as a function in the <stdio.h>
- * header file, this can be resolved in three ways, either; by using the -ansi
- * GCC compiler flag; As explained in the GNU libc documentation.
- *
- * https://www.gnu.org/software/libc/manual/html_node/Using-the-Library.html#Using-the-Library
- * https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
- *
- * Else, the following definition change can be made, so as to allow the use of
- * getline() in the example without having to call it something else, it is
- * required that the definition be made before including stdio.h.
- *
- * https://github.com/ptdecker/cbasics/blob/master/src/chapter01/longestline.c
- *
- * TODO This code is unfinished the tab folding needs to be worked on, I think
- * that this could be an interesting problem to write a unit test for.
- */
-
-#undef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
-
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #define DEBUG		2
 #define BUFFER		255
@@ -59,7 +36,7 @@ static void printLine(char line[], uint8_t head, uint8_t ending)
 
 /*
  * Add to tw, the virtual end of the line, used to offset the value of head
- * which is itself the read head upon the array.
+ * which is itself the reading head for the array.
  */
 static uint8_t offsetTab(char line[], uint8_t head)
 {
@@ -75,9 +52,9 @@ static uint8_t offsetTab(char line[], uint8_t head)
 }
 
 /*
- * When the line is printed and the space place marker is used, it is necessary
- * to copy the remaining characters that have been read into the array, into
- * the arrays beginning, for that next line.
+ * When the line is printed and the space 'place marker' is used, it is
+ * necessary to copy the remaining characters that have been read into the
+ * array, into the arrays beginning, for that next line.
  */
 static uint8_t copyEnding(char line[], uint8_t head, uint8_t marker)
 {
@@ -90,7 +67,7 @@ static uint8_t copyEnding(char line[], uint8_t head, uint8_t marker)
 }
 
 /*
- * It all starts here.
+ * It all starts here, well, sort of.
  */
 int main(void)
 {
