@@ -1,4 +1,6 @@
 /*
+ * The C programming language, second edition.
+ *
  * Exercise 1-22. Write a program to ``fold'' long input lines into two or more
  * shorter lines after the last non-blank character that occurs before the n-th
  * column of input. Make sure your program does something intelligent with very
@@ -29,7 +31,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <unistd.h>
 
+#define DEBUG		2
 #define BUFFER		255
 #define FOLD		80
 #define TABWIDTH	8
@@ -55,13 +59,14 @@ static void printLine(char line[], uint8_t head, uint8_t ending)
 
 /*
  * Add to tw, the virtual end of the line, used to offset the value of head
- * which is itself the point on the actual array.
+ * which is itself the read head upon the array.
  */
 static uint8_t offsetTab(char line[], uint8_t head)
 {
 	uint8_t tw;
 
 	tw = head + TABWIDTH;
+
 	if (tw >= FOLD) {
 		printLine(line, head, 0);
 		return 0;
@@ -78,26 +83,10 @@ static uint8_t copyEnding(char line[], uint8_t head, uint8_t marker)
 {
 	uint8_t i;
 
-	for (i = marker; i < head; i++)
+	for (i = ++marker; i < head; i++)
 		line[i - marker] = line[i];
 
 	return head - marker;
-}
-
-/*
- * Create a 2 char buffer to allow the line wrap to be awear if the next char
- * is a space; This is to stop folds occuring should the line end upon the end
- * of a word.
- */
-static int inputBuffer(char input[])
-{
-	int c;
-
-	c = getchar();
-	input[0] = input[1];
-	input[1] = c;
-
-	return input[0];
 }
 
 /*
@@ -106,25 +95,29 @@ static int inputBuffer(char input[])
 int main(void)
 {
 	char line[BUFFER];
-	char input[2];
+
 	uint8_t marker;
 	uint8_t head;
+	uint8_t isSkipOnce;
 	uint8_t tw;
 
-	head = tw = 0;
+	head = tw = isSkipOnce = 0;
 
-	while (inputBuffer(input) != EOF)
+	while ((line[head] = getchar()) != EOF)
 	{
-		line[head] = input[0];
-
 		if (tw >= FOLD) {
-			if (isspace(input[1])) {
-				printLine(line, ++head, NORMAL);
+			if (isspace(line[head])) {
+				printLine(line, head, NORMAL);
 				head = marker = tw = 0;
 				continue;
-			} else if(marker) {
+			} else if (isspace(line[FOLD+1])) {
+				printLine(line, head, NORMAL);
+				head = marker = tw = 0;
+				continue;
+			} else if (marker) {
 				printLine(line, marker, NORMAL);
-				tw = head = copyEnding(line, ++head, marker);
+				head = copyEnding(line, ++head, marker);
+				tw = head;
 				marker = 0;
 				continue;
 			} else {
@@ -139,10 +132,10 @@ int main(void)
 			head = marker = tw = 0;
 			continue;
 		} else if (line[head] == '\t') {
-			marker = head+1;
+			marker = head;
 			tw = offsetTab(line, head);
 		} else if (line[head] == ' ') {
-			marker = head+1;
+			marker = head;
 		}
 		head++, tw++;
 	}
