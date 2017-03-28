@@ -7,26 +7,31 @@
  * TODO make the code work for ([)] situations, bracket depth or similar
  * required.
  */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
+#include <stdint.h>
 
-#define MAXLINE		10000
+#define MAXLINE		65535
 
-void checkEscapeChar(char input[], int status[], int i);
-void checkComments(char input[], int status[], int len, int i);
-void checkQuotes(char input[], int status[], int len, int i);
-void checkBraces(char input[], int status[], int len, int i);
-void checkBrackets(char input[], int status[], int len, int i);
-int myGetline(char string[], int lim);
+static void checkEscapeChar(char input[], uint8_t status[], size_t);
+static void checkComments(char input[], uint8_t status[], uint16_t len, size_t);
+static void checkQuotes(char input[], uint8_t status[], uint16_t len, size_t);
+static void checkBraces(char input[], uint8_t status[], uint16_t len, size_t);
+static void checkBrackets(char input[], uint8_t status[], uint16_t len, size_t);
+static uint16_t getline(char string[], uint16_t lim);
 
 int main(void)
 {
 	char string[MAXLINE];
-	int status[7];
-	int len;
+	uint8_t status[7];
+	uint16_t len;
+	size_t i;
 
-	while ((len = myGetline(string, MAXLINE)) > 0)
+	while ((len = getline(string, MAXLINE)) > 0)
 	{
-		int i;
 		/*
 			status[0] = brackets;
 			status[1] = semiColonRequired;
@@ -39,7 +44,7 @@ int main(void)
 		for (i = 0; i < len; i++)
 		{
 			/*
-			 * If the escape character is found an we are in
+			 * If the escape character is found and we are in
 			 * quotes, then skip the next character.
 			 */
 			checkComments(string, status, len, i);
@@ -63,17 +68,17 @@ int main(void)
 	}
 }
 
-void checkEscapeChar(char input[], int status[], int i)
+static void checkEscapeChar(char input[], uint8_t status[], size_t i)
 {
 	if (input[i] == '\\')
 		status[6] = 1;
 }
 
-void checkComments(char input[], int status[], int len, int i)
+static void checkComments(char input[], uint8_t status[], uint16_t len, size_t i)
 {
 	int c;
-	int prev;
-	static int comments;
+	uint8_t prev;
+	static uint8_t comments;
 
 	c = input[i];
 	if (input[i-1] > 0)
@@ -93,17 +98,17 @@ void checkComments(char input[], int status[], int len, int i)
 	}
 }
 
-void checkQuotes(char input[], int status[], int len, int i)
+static void checkQuotes(char input[], uint8_t status[], uint16_t len, size_t i)
 {
 	int c;
-	static int singleQuotes;
-	static int doubleQuotes;
+	static uint8_t singleQuotes;
+	static uint8_t doubleQuotes;
 
 	c = input[i];
 
-	if (c == 39 && !singleQuotes && !doubleQuotes)
+	if (c == '\'' && !singleQuotes && !doubleQuotes)
 		singleQuotes = 1;
-	else if (c == 39 && singleQuotes)
+	else if (c == '\'' && singleQuotes)
 		singleQuotes = 0;
 
 	if (c == '"' && !singleQuotes && !doubleQuotes)
@@ -130,10 +135,10 @@ void checkQuotes(char input[], int status[], int len, int i)
 /*
  * Check program for braces balance, opening and closing.
  */
-void checkBraces(char input[], int status[], int len, int i)
+static void checkBraces(char input[], uint8_t status[], uint16_t len, size_t i)
 {
 	int c;
-	static int braces = 0;
+	static uint8_t braces = 0;
 
 	c = input[i];
 
@@ -161,11 +166,11 @@ void checkBraces(char input[], int status[], int len, int i)
 /*
  * Check program for bracket balance, opening and closing.
  */
-void checkBrackets(char input[], int status[], int len, int i)
+static void checkBrackets(char input[], uint8_t status[], uint16_t len, size_t i)
 {
 	int c;
-	static int brackets = 0;
-	static int semiColonRequired = 0;
+	static uint8_t brackets = 0;
+	static uint8_t semiColonRequired = 0;
 
 	c = input[i];
 
@@ -201,18 +206,16 @@ void checkBrackets(char input[], int status[], int len, int i)
 /*
  * Get input line by line.
  */
-int myGetline(char str[], int lim)
+static uint16_t getline(char str[], uint16_t lim)
 {
-	int i;
+	size_t i;
 	int c;
 
-	for (i = 0; i < lim-2 && (c = getchar()) != 'Q' && c != '\n'; i++)
+	for (i = 0; i < lim-1 && (c = getchar()) != EOF; i++)
 		str[i] = c;
 
-	if (c == '\n') {
-		str[i] = c;
-		++i;
-	}
+	if (c == '\n')
+		str[i++] = c;
 	str[i] = '\0';
 	return i;
 }

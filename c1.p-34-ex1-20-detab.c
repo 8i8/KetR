@@ -30,7 +30,6 @@ int main(void) {
 		tabsToSpaces(line, newLine, len, TABSIZE);
 		printf("%s", newLine);
 	}
-
 	return 0;
 }
 
