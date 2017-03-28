@@ -3,20 +3,26 @@
  * Don't forget to handle quoted strings and character constants properly. C
  * comments don't nest.
  */
+
+/* redefine getline */
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
+#include <stdint.h>
 
-#define MAXSIZE	1000
+#define MAXSIZE	65535
 
-void stripComments(char input[], char output[], int len);
-int myGetline(char string[], int lim);
+static void stripComments(char input[], char output[], uint16_t len);
+static uint16_t getline(char string[], uint16_t lim);
 
 int main(void)
 {
 	char input[MAXSIZE];
 	char output[MAXSIZE];
-	int len;
+	uint16_t len;
 
-	while((len = myGetline(input, MAXSIZE)) > 0)
+	while((len = getline(input, MAXSIZE)) > 0)
 	{
 		stripComments(input, output, len);
 		printf("%s", output);
@@ -26,17 +32,17 @@ int main(void)
 /*
  * Remove comments from text input.
  */
-void stripComments(char input[], char output[], int len)
+static void stripComments(char input[], char output[], uint16_t len)
 {
-	int i;
-	int j = 0;
-	int c;
-	static int prev = 0;
-	static int doubleQuotes = 0;
-	static int singleQuotes = 0;
-	static int write = 1;
+	uint16_t i;				/* loop for initial array */
+	uint16_t j;				/* loop for corrected array */
+	uint8_t c;				/* The current char */
+	static uint8_t prev = 0;		/* The previous char */
+	static uint8_t isDoubleQuotes = 0;
+	static uint8_t isSingleQuotes = 0;
+	static uint8_t isWrite = 1;
 
-	for(i = 0; i < len; i++)
+	for(i = j = 0; i < len; i++)
 	{
 		/*
 		 * Store both the current and the previous values of i to keep
@@ -49,60 +55,55 @@ void stripComments(char input[], char output[], int len)
 		/*
 		 * Set marker if double quotes are detected.
 		 */
-		if(c == '"' && !doubleQuotes && !singleQuotes)
-			doubleQuotes = 1;
-		else if(c == '"' && doubleQuotes)
-			doubleQuotes = 0;
+		if(c == '"' && !isDoubleQuotes && !isSingleQuotes)
+			isDoubleQuotes = 1;
+		else if(c == '"' && isDoubleQuotes)
+			isDoubleQuotes = 0;
 		/*
 		 * Set marker if single quotes are detected.
 		 */
-		if(c == 39 && !doubleQuotes && !singleQuotes)
-			singleQuotes = 1;
-		else if(c == 39 && singleQuotes)
-			singleQuotes = 0;
+		if(c == 39 && !isDoubleQuotes && !isSingleQuotes)
+			isSingleQuotes = 1;
+		else if(c == 39 && isSingleQuotes)
+			isSingleQuotes = 0;
 
 		/*
 		 * If not already in either of the above quotes mode, stop
 		 * writing to the output array, remove the comment, set the
 		 * head 'j' back two spaces to conceal the comment characters.
 		 */
-		if((prev == '/') && (c == '*') && (!doubleQuotes) && (!singleQuotes) && write)
+		if((prev == '/') && (c == '*') && (!isDoubleQuotes) && (!isSingleQuotes) && isWrite)
 		{
-			write = 0;
+			isWrite = 0;
 			j = j-2;
 			continue;
 		}
 
 		/*
 		 * If not is either quote mode and currently not writing, in
-		 * write mode, then start writing.
+		 * isWrite mode, then start writing.
 		 */
-		if((prev == '*') && (c == '/') && (!doubleQuotes) && (!singleQuotes) && !write)
+		if((prev == '*') && (c == '/') && (!isDoubleQuotes) && (!isSingleQuotes) && !isWrite)
 		{
-			write = 1;
+			isWrite = 1;
 			continue;
 		}
 
-		if(write)
-		{
-			output[j] = input[i];
-			j++;
-		}
+		if(isWrite)
+			output[j++] = input[i];
 	}
 }
 
-int myGetline(char string[], int lim)
+/*
+ * Input from stdin no more than 65536 bytes.
+ */
+static uint16_t getline(char string[], uint16_t lim)
 {
-	int i;
+	uint16_t i; 
 	int c;
-	int prev;
 
-	for (i = 0; i < lim-1 && ((c = getchar()) != 'Q'); i++)
-	{
+	for (i = 0; i < lim-1 && ((c = getchar()) != EOF); i++)
 		string[i] = c;
-		if(i < 0)
-			prev = string[i-1];
-	}
 
 	if (c == '\n')
 		string[i++] = c;
