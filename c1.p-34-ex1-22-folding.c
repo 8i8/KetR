@@ -43,7 +43,7 @@ static void printLine(char line[], uint8_t head, uint8_t ending)
  */
 static uint8_t offsetTab(char line[], uint8_t tw, uint8_t head)
 {
-	tw += (tw+1) % TABWIDTH;
+	tw = (tw / TABWIDTH+1) * TABWIDTH;
 
 	if (tw >= FOLD) {
 		printLine(line, head, NORMAL);
