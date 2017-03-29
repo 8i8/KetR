@@ -14,42 +14,41 @@
 
 #define MAXLINE		255
 
-static int any(char string[], char string2[], int len, int len2);
-static void sortString(char string[], int len);
-static int getLine(char string[], int lim);
+static uint8_t any(char string[], char string2[]);
+static void sortString(char string[], uint8_t len);
+static uint8_t getline(char string[], const uint8_t lim);
 
 int main(void)
 {
 	char string[MAXLINE];
 	char string2[MAXLINE];
-	int len;
-	int len2;
+	uint8_t len;
 
 	printf("Enter string one: ");
-	len = getLine(string, MAXLINE);
+	getline(string, MAXLINE);
 	printf("%s\n", string);
 	printf("Enter string two: ");
-	len2 = getLine(string2, MAXLINE);
+	len = getline(string2, MAXLINE);
 	printf("%s\n", string2);
 
-	sortString(string2, len2);
-	any(string, string2, len, len2);
+	sortString(string2, len);
+	any(string, string2);
 }
 
 /*
  * Return the first location in string where any character from string2
  * occurs, or -1 if s1 contains no characters from s2.
  */
-static int any(char string[], char string2[], int len, int len2)
+static uint8_t any(char string[], char string2[])
 {
-	int i;
-	int j;
-	int isPresent = 0;
+	size_t i;
+	size_t j;
+	uint8_t isPresent = 0;
 
-	for(i = 0; i < len2; i++)
-		for(j = 0; j < len; j++)
+	for(i = 0; string2[i] != '\0'; i++)
+		for(j = 0; string[j] != '\0'; j++)
 			if(string[j] == string2[i]) {
-				printf("Character %c as at index %d of string 1.\n", string2[i], j);
+				printf("Character %c as at index %lu of string 1.\n", string2[i], j);
 				isPresent = 1;
 				break;
 			}
@@ -65,7 +64,7 @@ static int any(char string[], char string2[], int len, int len2)
 /*
  * Put the string into alphabetical order and remove any double characters.
  */
-static void sortString(char string[], int len)
+static void sortString(char string[], uint8_t len)
 {
 	size_t i;
 	uint8_t swapped;
@@ -74,7 +73,7 @@ static void sortString(char string[], int len)
 
 	do {
 		swapped = 0;
-		for (i = 1; i < len; i++)
+		for (i = 1; string[i] != '\0'; i++)
 		{
 			if(string[i-1] > string[i])
 			{
@@ -101,10 +100,10 @@ static void sortString(char string[], int len)
 /*
  * Retrieve input from the user.
  */
-static int getLine(char string[], int lim)
+static uint8_t getline(char string[], const uint8_t lim)
 {
-	int i;
-	int c;
+	size_t i;
+	int8_t c;
 
 	for(i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		string[i] = c;
