@@ -54,13 +54,9 @@ static void squeeze(char string[], char string2[], uint16_t len, uint16_t len2)
 	size_t j;
 
 	for (i = 0; i < len2 && string2[i] != '~'; i++)
-	{
 		for (j = 0; j < len; j++)
-		{
 			if (string[j] == string2[i])
 				string[j] = '\0';
-		}
-	}
 
 	uint8_t swapped;
 	uint8_t temp;
