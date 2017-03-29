@@ -4,6 +4,10 @@
  * integer value. The allowable digits are 0 through 9, a through f, and A
  * through F.
  */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
 #include <ctype.h>
 
@@ -14,7 +18,7 @@ int myPow(int base, int exp);
 int ipow(int base, int exp);
 int getHexValue(char c);
 int lower(int c);
-int myGetline(char string[], int lim);
+int getline(char string[], int lim);
 
 int main(void)
 {
@@ -24,7 +28,7 @@ int main(void)
 
 	printf("Please enter a hexadecimal value to convert into decimal:\n");
 
-	while ((len = myGetline(string, MAXLEN)) > 0)
+	while ((len = getline(string, MAXLEN)) > 0)
 	{
 		result = htoi(string, len);
 		printf("--> %d\n", result);
@@ -137,12 +141,12 @@ int lower(int c)
 /*
  * Retreive user input.
  */
-int myGetline(char string[], int lim)
+int getline(char string[], int lim)
 {
 	int i;
 	int c;
 
-	for (i = 0; i < lim-1 && (c = getchar()) != 'Q' && c != '\n'; i++)
+	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 	{
 		if(isxdigit(c))
 			string[i] = c;

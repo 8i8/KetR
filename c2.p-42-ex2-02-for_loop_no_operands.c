@@ -5,14 +5,15 @@
  * or ||.
  */
 #include <stdio.h>
+#include <stdint.h>
 
-#define MAXLINE		1000
+#define MAXLINE		255
 
 int main(void)
 {
-	int i;
-	int c;
-	int lim = MAXLINE;
+	size_t i;
+	uint8_t c;
+	uint8_t lim = MAXLINE;
 
 	for (i = 0; i < lim-1; i++)
 	{
@@ -33,3 +34,4 @@ int main(void)
 		}
 	}
 }
+
