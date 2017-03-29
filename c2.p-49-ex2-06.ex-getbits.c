@@ -44,18 +44,19 @@
  *	ANDing the result with something else will return what's in those n bits.
  */
 #include <stdio.h>
+#include <stdint.h>
 
-unsigned int getbits(unsigned int x, int p, int n)
+static uint8_t getbits(uint8_t x, uint8_t p, uint8_t n)
 {
 	return (x >> (p + 1 - n)) & ~(~0 << n);
 }
 
 int main(void)
 {
-	int x = 0xF994;
-	int p = 4;
-	int n = 3;
-	int z = 0;
+	uint16_t x = 0xF994;
+	uint8_t p = 4;
+	uint8_t n = 3;
+	uint8_t z = 0;
 
 	z = getbits(x, p, n);
 
