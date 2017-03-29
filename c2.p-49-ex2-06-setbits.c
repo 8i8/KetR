@@ -35,16 +35,17 @@
  *
  */
 #include <stdio.h>
+#include <stdint.h>
 
-int setbits(int x, int p, int n, int y);
+static uint16_t setbits(uint16_t x, uint8_t p, uint8_t n, uint8_t y);
 
 int main(void)
 {
-	int x = 12345;
-	int p = 7;
-	int n = 4;
-	int y = 12;
-	int z;
+	uint16_t x = 12345;
+	uint8_t p = 7;
+	uint8_t n = 4;
+	uint8_t y = 12;
+	uint16_t z;
 
 	z = setbits(x, p, n, y);
 	printf("getbits(%u %x), %d, %d) = %u (%x)\n", x, x, p, n, z, z);
@@ -55,10 +56,10 @@ int main(void)
 /*
  * Setbits 'n' from position 'x' to position 'y'.
  */
-int setbits(int x, int p, int n, int y)
+static uint16_t setbits(uint16_t x, uint8_t p, uint8_t n, uint8_t y)
 {
-	int x1;
-	int x2;
+	uint16_t x1;
+	uint16_t x2;
 
 	x1 = (x >> (p+1-n) & ~(~0 << n)) << (y+1-n);
 	x2 = x & ~((~(~0 << n)) << (y+1-n));

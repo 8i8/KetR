@@ -4,11 +4,12 @@
  * leaving the others unchanged.
  */
 #include <stdio.h>
+#include <stdint.h>
 
-int invert(int x, int p, int n)
+static uint16_t invert(uint16_t x, uint8_t p, uint8_t n)
 {
-	int mask;
-	int sect;
+	uint16_t mask;
+	uint16_t sect;
 
 	mask = ~(~0 << n) << (p+1-n);
 
@@ -24,10 +25,10 @@ int invert(int x, int p, int n)
 
 int main(void)
 {
-	int x = 12345;
-	int p = 9;
-	int n = 5;
-	int y;
+	uint16_t x = 12345;
+	uint8_t p = 9;
+	uint8_t n = 5;
+	uint16_t y;
 
 	y = invert(x, p, n);
 	printf("getbits(%u %x), %d, %d) = %u (%x)\n", x, x, p, n, y, y);
