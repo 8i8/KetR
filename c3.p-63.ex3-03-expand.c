@@ -57,7 +57,7 @@ static uint8_t checkState(const char read[])
  * Keep store of the last three characters entered, used to define the state
  * for expansion if required.
  */
-static void readInput(char read[], const int8_t c)
+static void readInputBuffer(char read[], const int8_t c)
 {
 	read[0] = read[1];
 	read[1] = read[2];
@@ -77,7 +77,7 @@ int main(void)
 	count = 2;
 	while ((c = getchar()) != EOF)
 	{
-		readInput(read, c);
+		readInputBuffer(read, c);
 
 		/* If expansion has just been made, skip over the hyphen */
 		if(count)
