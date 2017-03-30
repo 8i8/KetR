@@ -23,10 +23,10 @@ static void expandRead(const char read[])
 
 	if (read[0] < read[2])
 		while (read[0]+i < read[2])
-			printf("%c", read[0]+i++);
+			printf("%c", read[0] + i++);
 	else if (read[0] > read[2])
 		while (read[0] - i > read[2])
-			printf("%c", read[0]-i++);
+			printf("%c", read[0] - i++);
 }
 
 /*
@@ -49,7 +49,6 @@ static uint8_t checkState(const char read[])
 		expandRead(read);
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -57,7 +56,7 @@ static uint8_t checkState(const char read[])
  * Keep store of the last three characters entered, used to define the state
  * for expansion if required.
  */
-static void readInputBuffer(char read[], const int8_t c)
+static void writeInputBuffer(char read[], const int8_t c)
 {
 	read[0] = read[1];
 	read[1] = read[2];
@@ -77,7 +76,7 @@ int main(void)
 	count = 2;
 	while ((c = getchar()) != EOF)
 	{
-		readInputBuffer(read, c);
+		writeInputBuffer(read, c);
 
 		/* If expansion has just been made, skip over the hyphen */
 		if(count)
@@ -92,6 +91,7 @@ int main(void)
 				putchar(read[0]);
 		}
 	}
+	putchar('\n');
 
 	return 0;
 }
