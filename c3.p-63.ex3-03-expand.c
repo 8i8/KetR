@@ -11,58 +11,87 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
-#define LIMIT	1000
-
-/*
- * Print string to terminal.
- */
-static void pString(char pre[], char string[])
-{
-	printf("%s\t-->\t%s\n", pre, string);
-}
+#include <ctype.h>
 
 /*
- * Copy the input string into a string of the correct size.
+ * Expand the expression, either asscending of decending.
  */
-static void defineString(char input[], char s[])
+static void expandRead(const char read[])
 {
-	int i;
+	int8_t i;
 	i = 0;
-	while (input[i]) {
-		s[i] = input[i];
-		i++;
-	}
-	s[i++] = '\0';
+
+	if (read[0] < read[2])
+		while (read[0]+i < read[2])
+			printf("%c", read[0]+i++);
+	else if (read[0] > read[2])
+		while (read[0] - i > read[2])
+			printf("%c", read[0]-i++);
 }
 
 /*
- * Get a text input from the user.
+ * Check the char both before and after the hyphen, are they the same type? If
+ * yes then expand the expression.
  */
-static int getline(char input[], int lim)
+static uint8_t checkState(const char read[])
 {
-	size_t i;
-	int c;
+	if (!isalnum(read[0]))
+		;
+	else if (islower(read[0]) && islower(read[2])) {
+		expandRead(read);
+		return 1;
+	}
+	else if (isupper(read[0]) && isupper(read[2])) {
+		expandRead(read);
+		return 1;
+	}
+	else if (isdigit(read[0]) && isdigit(read[2])) {
+		expandRead(read);
+		return 1;
+	}
 
-	for(i = 0; i < lim-2 && ((c = getchar()) != EOF && c != '\n'); i++)
-		input[i] = c;
+	return 0;
+}
 
-	if (c == '\n')
-		input[i++] = '\n';
-
-	input[i++] = '\0';
-	return i;
+/*
+ * Keep store of the last three characters entered, used to define the state
+ * for expansion if required.
+ */
+static void readInput(char read[], const int8_t c)
+{
+	read[0] = read[1];
+	read[1] = read[2];
+	read[2] = c;
 }
 
 int main(void)
 {
-	char input[LIMIT];
-	int len;
+	int8_t  c;
+	uint8_t count;
+	char read[3];
 
-	len = getline(input, LIMIT);
-	char s[len];
-	defineString(input, s);
-	pString("initial string", s);
+	/*
+	 * Create the offset for reading ahead 2 char, enables the expansion of
+	 * 3 char expressions such as a-c
+	 */
+	count = 2;
+	while ((c = getchar()) != EOF)
+	{
+		readInput(read, c);
+
+		/* If expansion has just been made, skip over the hyphen */
+		if(count)
+			count--;
+		else {
+			if(read[1] == '-') {
+				if(checkState(read))
+					count = 1;
+				else
+					putchar(read[0]);
+			} else
+				putchar(read[0]);
+		}
+	}
 
 	return 0;
 }
