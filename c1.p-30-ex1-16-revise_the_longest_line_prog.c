@@ -24,21 +24,23 @@
 #define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
+#include <stdint.h>
 
-#define MAXLEN	1000	/* Maximum length of chatracter input */
+#define MAXLEN	255	/* Maximum length of chatracter input */
 
-static size_t getline(char line[], size_t maxline);
-static void copy(char to[], char from[]);
+static uint8_t getline(char str[], const uint8_t lim);
+static void copy(char to[], const char from[]);
 
 int main(void)
 {
-	size_t len;		/* Current line length */
-	size_t max;		/* Maximum length seen so far */
+	uint8_t len;		/* Current line length */
+	uint8_t max;		/* Maximum length seen so far */
 
 	char line[MAXLEN];
 	char longest[MAXLEN];
 
 	max = 0;
+
 	while ((len = getline(line, MAXLEN)) > 0)
 		if (len > max) {
 			max = len;
@@ -46,7 +48,7 @@ int main(void)
 		}
 
 	if (max > 0) {		/* There was a line */
-		printf("The longest line is %lu characters long, and here it is:\n", max);
+		printf("The longest line is %u characters long, and here it is:\n", max);
 		printf("%s\n", longest);
 	}
 
@@ -56,10 +58,10 @@ int main(void)
 /*
  * Read input line by line.
  */
-static size_t getline(char str[], size_t lim)
+static uint8_t getline(char str[], const uint8_t lim)
 {
 	size_t i;
-	int c;
+	int8_t c;
 
 	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		str[i] = c;
@@ -73,9 +75,9 @@ static size_t getline(char str[], size_t lim)
 /*
  * Copy 'from' into 'to', assuming that 'to' is large enough.
  */
-static void copy(char to[], char from[])
+static void copy(char to[], const char from[])
 {
-	int i;
+	size_t i;
 
 	i = 0;
 	while ((to[i] = from[i]) != '\0')

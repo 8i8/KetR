@@ -5,26 +5,19 @@
  * prepared to handle cases like a-b-c and a-z0-9 and -a-z. Arrange that a
  * leading or trailing - is taken literally.
  */
+
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
+#include <stdint.h>
+
 #define LIMIT	1000
-
-int main(void)
-{
-	char input[LIMIT];
-	int len;
-
-	len = getInput(input, LIMIT);
-	char s[len];
-	defineString(input, s);
-	pString("initial string", s);
-
-	return 0;
-}
 
 /*
  * Print string to terminal.
  */
-void pString(char pre[], char string[])
+static void pString(char pre[], char string[])
 {
 	printf("%s\t-->\t%s\n", pre, string);
 }
@@ -32,7 +25,7 @@ void pString(char pre[], char string[])
 /*
  * Copy the input string into a string of the correct size.
  */
-void defineString(char input[], char s[])
+static void defineString(char input[], char s[])
 {
 	int i;
 	i = 0;
@@ -46,12 +39,12 @@ void defineString(char input[], char s[])
 /*
  * Get a text input from the user.
  */
-int getInput(char input[], int lim)
+static int getline(char input[], int lim)
 {
-	int i;
+	size_t i;
 	int c;
 
-	for(i = 0; i < lim-2 && ((c = getchar()) != '\n'); i++)
+	for(i = 0; i < lim-2 && ((c = getchar()) != EOF && c != '\n'); i++)
 		input[i] = c;
 
 	if (c == '\n')
@@ -59,5 +52,18 @@ int getInput(char input[], int lim)
 
 	input[i++] = '\0';
 	return i;
+}
+
+int main(void)
+{
+	char input[LIMIT];
+	int len;
+
+	len = getline(input, LIMIT);
+	char s[len];
+	defineString(input, s);
+	pString("initial string", s);
+
+	return 0;
 }
 

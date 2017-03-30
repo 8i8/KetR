@@ -35,19 +35,19 @@
 #include <unistd.h> // equivalent to (K&R) #include "syscalls.h"
 
 #define BILLION		1000000000L
-#define A_LENGTH	10000
+#define A_MAX		10000
 #define A_MIN		1
 
-typedef int (*search_fn)(int, int*, int);
+typedef uint16_t (*search_fn)(const uint16_t, const uint16_t*, const uint16_t);
 
 /*
  * This algorithm contains a bug and will go into an infinite loop under
  * certain conditions.
  */
 /* binsearch: find x in v[0] <= v[1] <= ... <= v[n-1] */
-int binsearch(int x, int v[], int n)
+static uint16_t binsearch(const uint16_t x, const uint16_t v[], const uint16_t n)
 {
-	int low, high, mid;
+	uint16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	while (low <= high) {
@@ -69,9 +69,9 @@ int binsearch(int x, int v[], int n)
 /*
  * A different order ...
  */
-int binarySearchOne(int x, int v[], int n)
+static uint16_t binarySearchOne(const uint16_t x, const uint16_t v[], const uint16_t n)
 {
-	int low, high, mid;
+	uint16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	mid = (low+high)/2;
@@ -95,9 +95,9 @@ int binarySearchOne(int x, int v[], int n)
 /*
  * Optimised, only one comparison made per iteration instead of two.
  */
-int binarySearchTwo(int x, int v[], int n)
+static uint16_t binarySearchTwo(const uint16_t x, const uint16_t v[], const uint16_t n)
 {
-	int low, high, mid;
+	uint16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	mid = (low+high)/2;
@@ -119,7 +119,7 @@ int binarySearchTwo(int x, int v[], int n)
 /*
  * Runs an empty search call, for comparison.
  */
-int noSearch(int x, int v[], int n)
+static uint16_t noSearch(const uint16_t x, const uint16_t v[], const uint16_t n)
 {
 	return -1;
 }
@@ -130,7 +130,7 @@ int noSearch(int x, int v[], int n)
  * run on a POSIX machine, I shall look further into this subject in the future
  * as it is clearly a facinating area of the computing landscape.
  */
-int myRand(int min, int max)
+static uint16_t myRand(uint16_t min, uint16_t max)
 {
 	struct timespec seed;
 	clock_gettime(CLOCK_MONOTONIC, &seed);
@@ -154,21 +154,21 @@ int myRand(int min, int max)
 /*
  * Fill array with randomly generated values.
  */
-void fillArray(int array[], int len)
+static void fillArray(uint16_t array[], const uint16_t len)
 {
-	int i;
+	size_t i;
 	for(i = 0; i < len; i++)
-		array[i] = myRand(A_MIN, A_LENGTH);	
+		array[i] = myRand(A_MIN, A_MAX);	
 }
 
 /*
  * Sort the array, ascending.
  */
-void sortArray(int array[], int len)
+static void sortArray(uint16_t array[], const uint16_t len)
 {
-	int i;
-	int temp;
-	int isMod;
+	size_t i;
+	uint16_t temp;
+	uint8_t isMod;
 
 	do
 	{
@@ -192,7 +192,8 @@ void sortArray(int array[], int len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-uint64_t timeIt(search_fn fn, int x, int v[], int n, int time_method)
+static uint64_t timeIt(const search_fn fn,
+		const uint16_t x, uint16_t v[], const uint16_t n, const uint8_t time_method)
 {
 	struct timespec start, end;
 	size_t i;
@@ -217,16 +218,16 @@ uint64_t timeIt(search_fn fn, int x, int v[], int n, int time_method)
 
 int main(void)
 {
-	int c;
+	int8_t c;
 	uint64_t time;
 
 	puts("Press a key to start ...");
 
-	while((c = getchar()) != 'q')
+	while((c = getchar()) != EOF)
 	{
-		int n = myRand(A_MIN, A_LENGTH);
-		int x = myRand(A_MIN, n);
-		int v[n];
+		uint16_t n = myRand(A_MIN, A_MAX);
+		uint16_t x = myRand(A_MIN, n);
+		uint16_t v[n];
 		/* */
 		fillArray(v, n);
 		x = v[x];
@@ -248,15 +249,14 @@ int main(void)
 		time = timeIt(noSearch, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for no search :~ %5lu\n", time);
 		/* */
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
-		/* */
 		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Orig :~ %5lu\n", time);
 		/* */
 		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Seco :~ %5lu\n", time);
 		/* */
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5lu\n", time);
 	}
 	return 0;
 }

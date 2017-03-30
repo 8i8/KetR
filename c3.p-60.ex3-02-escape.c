@@ -5,15 +5,16 @@
  * well, converting escape sequences into the real characters.
  */
 #include <stdio.h>
+#include <stdint.h>
 
 #define MAXLEN	1000
 
-void pString(char pre[], char string[]);
-void escape(char s[], char t[]);
-void retunTo(char t[], char s[]);
-void inputToLine(char input[], char s[]);
-int readSpecialChar(char s[]);
-int getInput(char input[], int lim);
+static void pString(char pre[], char string[]);
+static void escape(char s[], char t[]);
+static void retunTo(char t[], char s[]);
+static void inputToLine(char input[], char s[]);
+static int readSpecialChar(char s[]);
+static int getInput(char input[], int lim);
 
 int main(void)
 {
@@ -43,7 +44,7 @@ int main(void)
 /*
  * Print string to terminal.
  */
-void pString(char pre[], char string[])
+static void pString(const char pre[], const char string[])
 {
 	printf("%s\t-->\t%s\n", pre, string);
 }
@@ -51,10 +52,10 @@ void pString(char pre[], char string[])
 /*
  * Replace escaped characters with their writen characters.
  */
-void escape(char s[], char t[])
+static void escape(char s[], char t[])
 {
-	int i;
-	int j;
+	size_t i;
+	size_t j;
 	i = j = 0;
 
 	while(s[i])
@@ -95,10 +96,10 @@ void escape(char s[], char t[])
  * Change textual representation of ecascaped characters into correctly escaped
  * characters.
  */
-void retunTo(char t[], char s[])
+static void retunTo(char t[], char s[])
 {
-	int i;
-	int j;
+	size_t i;
+	size_t j;
 	i = j = 0;
 
 	while(t[i])
@@ -143,9 +144,9 @@ void retunTo(char t[], char s[])
 /*
  * Copy the input string into a string of the correct size.
  */
-void inputToLine(char input[], char s[])
+static void inputToLine(const char input[], char s[])
 {
-	int i;
+	size_t i;
 	i = 0;
 
 	while (input[i]) {
@@ -159,10 +160,10 @@ void inputToLine(char input[], char s[])
  * Count the special characters in a string, used to prolong the array for the
  * string copy.
  */
-int readSpecialChar(char s[])
+static int readSpecialChar(char s[])
 {
-	int i;
-	int count;
+	size_t i;
+	size_t count;
 	i = count = 0;
 
 	while(s[i])
@@ -182,7 +183,7 @@ int readSpecialChar(char s[])
 /*
  * Get a text input from the user.
  */
-int getInput(char input[], int lim)
+static int getInput(char input[], int lim)
 {
 	int i;
 	int c;

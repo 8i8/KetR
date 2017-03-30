@@ -3,30 +3,31 @@
  * integer x rotated to the right by n positions.
  */
 #include <stdio.h>
+#include <stdint.h>
 
-int rightrot(unsigned int x, int n);
+static uint64_t rightrot(uint64_t x, uint64_t n);
 
 int main(void)
 {
-	unsigned int c, x, n;
+	uint64_t c, x, n;
 
-	puts("Press any key to start.");
+	puts("Enter an integer to rotate right: ");
+	scanf("%lu", &x);
 
-	while ((c = getchar()) != 'Q')
+	while ((c = getchar()) != EOF)
 	{
-		puts("Enter an integer to rotate right: ");
-		scanf("%u", &x);
 		puts("How many places? ");
-		scanf("%u", &n);
+		scanf("%lu", &n);
 
 		x = rightrot(x, n);
-		printf("--> %u\n", x);
+		printf("--> %lu\n", x);
+		n = x;
 	}
 
 	return 0;
 }
 
-int rightrot(unsigned int x, int n)
+static uint64_t rightrot(uint64_t x, uint64_t n)
 {
 	return x << n;
 }
