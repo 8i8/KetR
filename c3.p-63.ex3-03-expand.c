@@ -6,17 +6,15 @@
  * leading or trailing - is taken literally.
  */
 
-#undef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200112L
-
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
 
 /*
- * Expand the expression, either asscending of decending.
+ * Expand the expression, either asscending of decending, return the number of
+ * char that have been added.
  */
-static void expandRead(const char read[])
+static uint8_t expandRead(const char read[])
 {
 	int8_t i;
 	i = 0;
@@ -27,6 +25,7 @@ static void expandRead(const char read[])
 	else if (read[0] > read[2])
 		while (read[0] - i > read[2])
 			printf("%c", read[0] - i++);
+	return i;
 }
 
 /*
@@ -37,24 +36,18 @@ static uint8_t checkState(const char read[])
 {
 	if (!isalnum(read[0]))
 		;
-	else if (islower(read[0]) && islower(read[2])) {
-		expandRead(read);
-		return 1;
-	}
-	else if (isupper(read[0]) && isupper(read[2])) {
-		expandRead(read);
-		return 1;
-	}
-	else if (isdigit(read[0]) && isdigit(read[2])) {
-		expandRead(read);
-		return 1;
-	}
+	else if (islower(read[0]) && islower(read[2]))
+		return expandRead(read);
+	else if (isupper(read[0]) && isupper(read[2]))
+		return expandRead(read);
+	else if (isdigit(read[0]) && isdigit(read[2]))
+		return expandRead(read);
 	return 0;
 }
 
 /*
  * Keep store of the last three characters entered, used to define the state
- * for expansion if required.
+ * for expansion, if it is required.
  */
 static void writeInputBuffer(char read[], const int8_t c)
 {
@@ -87,8 +80,9 @@ int main(void)
 					count = 1;
 				else
 					putchar(read[0]);
-			} else
+			} else {
 				putchar(read[0]);
+			}
 		}
 	}
 	putchar('\n');
