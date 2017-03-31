@@ -43,8 +43,8 @@ int main(void)
 static size_t __expandRead(const char read[], char s2[], size_t j)
 {
 	size_t i;
-	i = 1;		/* The count starts at 1 for a-z [0] is already a */
-	j--;
+	i = 1;		/* The count starts at 1 for a-z [0] is already an a. */
+	j--;		/* Diminish j to account for the hyphen. */
 
 	if (read[0] < read[2])
 		while (read[0] + i <= read[2])
@@ -112,9 +112,9 @@ static void expand(const char s1[], char s2[])
 	{
 		__writeInputBuffer(read, s1[i]);
 
-		/* If expansion has just been made, skip over the hyphen */
+		/* If an expansion has just been made, skip over the hyphen */
 		if(count)
-			count--, i++;
+			count--;
 		else {
 			if(read[1] == '-') {
 /*
@@ -133,6 +133,7 @@ static void expand(const char s1[], char s2[])
 				if((num = __checkState(read, s2, j)) > 0) {
 					count = 1;
 					j = num;
+					i++;
 				} else
 					s2[j++] = s1[i++];
 			} else
