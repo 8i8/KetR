@@ -21,7 +21,7 @@
 static size_t __expandRead(const char read[], char s2[], size_t j);
 static size_t __checkState(const char read[], char s2[], const size_t j);
 static void __writeInputBuffer(char read[], const int8_t c);
-static void expand(const char s1[], char s2[]);
+void expand(const char s1[], char s2[]);
 static size_t getline(char str[], const size_t lim);
 
 int main(void)
@@ -91,7 +91,7 @@ static void __writeInputBuffer(char read[], const int8_t c)
  * 3 char so that any 3 char expressions such as a-z can be expanded into the
  * second string.
  */
-static void expand(const char s1[], char s2[])
+void expand(const char s1[], char s2[])
 {
 	size_t i, j;
 	char read[3];
