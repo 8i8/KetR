@@ -10,10 +10,10 @@
 #include <limits.h>
 #include <stdint.h>
 
-#define MAXLEN	1000
+#define MAXLEN		65536
 
 void itob(uint32_t n, char s[], const uint8_t base);
-static char __cnvBase(const int8_t n, const int8_t base);
+static char __cnvBase(const int8_t n, const uint8_t base);
 static char __itoh(const int8_t n);
 static char __itoo(const int8_t n);
 static void __reverse(char s1[]);
@@ -22,16 +22,17 @@ int main(void)
 {
 	char s[MAXLEN];
 	uint32_t n;
-        n = -1111;
 
-	printf("The value of n as an hex       :  %x\n", n);
-	printf("The value of n as an oct       :  %o\n", n);
-
-	itob(n, s, 16);
-	printf("The value of n as a hex string : \"%s\"\n", s);
-	itob(n, s, 8);
-	printf("The value of n as a oct string : \"%s\"\n", s);
-
+	while (!feof(stdin))
+	{
+		scanf("%u", &n);
+		printf("The value of n as an hex       :  %x\n", n);
+		itob(n, s, 16);
+		printf("The value of n as a hex string : \"%s\"\n", s);
+		printf("The value of n as an oct       :  %o\n", n);
+		itob(n, s, 8);
+		printf("The value of n as a oct string : \"%s\"\n", s);
+	}
 
 	return 0;
 }
@@ -39,7 +40,7 @@ int main(void)
 /*
  * Transform a value of the int type into a string.
  */ 
-void itob(uint32_t n, char s[], const int8_t base)
+void itob(uint32_t n, char s[], const uint8_t base)
 {
 	size_t i;
 	uint32_t sign;
@@ -54,7 +55,10 @@ void itob(uint32_t n, char s[], const int8_t base)
 	}
 	while ((n /= base) != 0);
 
-	/* Add the sign if it is required */
+	/*
+	 * Add the sign if it is required, redundant so long as sthe function
+	 * takes unsigned int.
+	 */
 	if (sign < 0)
 		;
 
@@ -66,7 +70,7 @@ void itob(uint32_t n, char s[], const int8_t base)
 /*
  * Convert to which base?
  */
-static char __cnvBase(const int8_t n, const int8_t base)
+static char __cnvBase(const int8_t n, const uint8_t base)
 {
 	if (base == 16)
 		return __itoh(n);
@@ -80,10 +84,10 @@ static char __cnvBase(const int8_t n, const int8_t base)
  */
 static char __itoh(const int8_t n)
 {
-	if(n > 0 && n < 10)
-		return n + '0';
+	if(n > -1 && n < 10)
+		return (char)n + '0';
 	else if (n > 9 && n < 17)
-		return n + 87;
+		return (char)n + 87;
 	return 0;
 }
 
@@ -100,7 +104,7 @@ static char __itoo(const int8_t n)
  */
 static void __reverse(char s1[])
 {
-	int i, j;
+	size_t i, j;
 	char c;
 
 	for (i = 0, j = strlen(s1) - 1; i < j; i++, j--) {
