@@ -20,7 +20,7 @@ static size_t __expandRead(const char read[], char s2[], size_t j);
 static size_t __checkState(const char read[], char s2[], const size_t j);
 static void __writeInputBuffer(char read[], const int8_t c);
 static void expand(const char s1[], char s2[]);
-static uint8_t getline(char str[], const size_t lim);
+static size_t getline(char str[], const size_t lim);
 
 int main(void)
 {
@@ -43,16 +43,15 @@ int main(void)
 static size_t __expandRead(const char read[], char s2[], size_t j)
 {
 	size_t i;
-	i = 0;
-	j -= 2;		/* Offset the first char and the hyphen */
+	i = 1;		/* The count starts at 1 for a-z [0] is already a */
 
 	if (read[0] < read[2])
-		while (read[0] + i < read[2])
+		while (read[0] + i <= read[2])
 			s2[j++] = read[0] + i++;
 	else if (read[0] > read[2])
-		while (read[0] - i > read[2])
+		while (read[0] - i >= read[2])
 			s2[j++] = read[0] - i++;
-	return i;
+	return j;
 }
 
 /*
@@ -93,33 +92,43 @@ static void expand(const char s1[], char s2[])
 {
 	size_t i, j;
 	char read[3];
-	uint8_t count, num;
-	i = j = 0;
+	uint8_t buffer, count, num;
+	count = i = j = 0;
 
 	/*
-	 * Create the offset for reading ahead 2 char, enables the expansion of
-	 * 3 char expressions such as a-z.
+	 * Create a buffer for reading ahead 2 char, enables the expansion of
+	 * 3 char expressions such as a-z, even on the fly (whilst streaming).
 	 */
-	count = 2;
+	buffer = 3;
+	while(buffer && s1[i] != '\0')
+	{
+		__writeInputBuffer(read, s1[i]);
+		buffer--, i++;
+	}
+
+	i = 0;
 	while(s1[i] != '\0')
 	{
 		__writeInputBuffer(read, s1[i]);
 
 		/* If expansion has just been made, skip over the hyphen */
-		if(count) {
-			count--;
-			s2[j++] = s1[i++];
-		} else {
+		if(count)
+			count--, i++;
+		else {
 			if(read[1] == '-') {
-				if((num = __checkState(read, s2, j)) > 0) {
+/*
+ * I am not certain that this code is optimal: Here j is diminished to account
+ * for the hyphen in the expression, the value of j returned by checkState
+ * includes the last itteration of expandRead; It should be the case that this
+ * char can be used directly from s1 and thus one less itteration is required.
+ */
+				if((num = __checkState(read, s2, --j)) > 0) {
 					count = 1;
-					j += num;
-					i++;
+					j = num;
 				} else
 					s2[j++] = s1[i++];
-			} else {
+			} else
 				s2[j++] = s1[i++];
-			}
 		}
 	}
 	s2[j] = '\0';
@@ -128,7 +137,7 @@ static void expand(const char s1[], char s2[])
 /*
  * Get input line by line.
  */
-static uint8_t getline(char str[], const size_t lim)
+static size_t getline(char str[], const size_t lim)
 {
 	size_t i;
 	int8_t c;
