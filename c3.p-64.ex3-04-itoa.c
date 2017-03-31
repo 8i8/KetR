@@ -13,16 +13,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stdint.h>
 
 #define MAXLEN	1000
 
 /*
  * Reverse the array.
  */
-void reverse(char s1[])
+static void __reverse(char s1[])
 {
-	int i, j;
-	char c;
+	size_t i, j;
+	int8_t c;
 
 	for (i = 0, j = strlen(s1) - 1; i < j; i++, j--) {
 		c = s1[j];
@@ -34,9 +35,10 @@ void reverse(char s1[])
 /*
  * Transform a value of the int type into a string.
  */ 
-void itoa(int n, char s[])
+void itoa(int32_t n, char s[])
 {
-	int i, sign;
+	size_t i;
+	int8_t sign;
 
 	/* record the sign */
 	sign = n;
@@ -61,19 +63,21 @@ void itoa(int n, char s[])
 
 	s[i] = '\0';
 
-	reverse(s);
+	__reverse(s);
 }
 
 int main(void)
 {
 	char s[MAXLEN];
-	int n;
-        n = INT_MIN;
+	int32_t n;
+	int32_t o;
+        n = INT32_MIN;
+        o = INT32_MIN;
+	o = -o;
 
-	printf("The value of n as an int   : %d\n", n);
-
+	printf("The value of INT_MIN as    : %d\n", n);
+	printf("The value of n after -n    : %d\n", o);
 	itoa(n, s);
-
 	printf("The value of n as a string : \"%s\"\n", s);
 
 	return 0;
