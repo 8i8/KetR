@@ -95,8 +95,8 @@ static void expand(const char s1[], char s2[])
 {
 	size_t i, j;
 	char read[3];
-	uint8_t buffer, count, num;
-	count = i = j = 0;
+	uint8_t buffer, num;
+	i = j = 0;
 
 /*
  * Create a buffer for reading ahead 2 char, enables the expansion of 3 char
@@ -114,33 +114,21 @@ static void expand(const char s1[], char s2[])
 	{
 		__writeInputBuffer(read, s1[i]);
 
-		/* If an expansion has just been made, skip over the hyphen */
-		if(count)
-			count--;
-		else {
-			if(read[1] == '-') {
-/*
- * I am not certain that this code is optimal: Here j is diminished to account
- * for the hyphen in the expression, the value of j returned by checkState
- * includes the last itteration of expandRead after the <= or >=; It should be
- * the case that this char can be used directly from s1 and thus one less
- * itteration be required.
- *
- * If __checkState returns a value of j, then the expression has been expanded
- * and the count is set to 1. Such that the loop skip over the hyphen.
- *
- * In effect: Should count be set to 2, and the equal sign removed from both
- * the <= and the >= expressions in expandRead.
- */
-				if((num = __checkState(read, s2, j)) > 0) {
-					count = 1;
-					j = num;
-					i++;
-				} else
-					s2[j++] = s1[i++];
+		if(read[1] == '-') {
+			/*
+			 * I am fairly certain that the code can be optimised
+			 * to save one iteration from __expandRead, by
+			 * using j slightly differently, the last char in the
+			 * expression is currently being overwritten by its
+			 * self.
+			 */
+			if((num = __checkState(read, s2, j)) > 0) {
+				j = num;
+				i++;
 			} else
 				s2[j++] = s1[i++];
-		}
+		} else
+			s2[j++] = s1[i++];
 	}
 	s2[j] = '\0';
 }
