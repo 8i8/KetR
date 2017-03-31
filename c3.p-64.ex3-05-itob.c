@@ -45,22 +45,12 @@ void itob(uint32_t n, char s[], const uint8_t base)
 	size_t i;
 	uint32_t sign;
 
-	/* record the sign */
-	sign = n;
-
 	i = 0;
 	do {
-		/* make n positive and generate digits in reverse order */
+		/* generate in reverse order and convert to desired base */
 		s[i++] = __cnvBase(abs(n % base), base);
 	}
 	while ((n /= base) != 0);
-
-	/*
-	 * Add the sign if it is required, redundant so long as sthe function
-	 * takes unsigned int.
-	 */
-	if (sign < 0)
-		;
 
 	s[i] = '\0';
 
@@ -80,7 +70,7 @@ static char __cnvBase(const int8_t n, const uint8_t base)
 }
 
 /*
- * Convert an int between 0 and 16 into hex equivalent.
+ * Convert an int between 0 and 15 into its char hex equivalent.
  */
 static char __itoh(const int8_t n)
 {
@@ -92,7 +82,7 @@ static char __itoh(const int8_t n)
 }
 
 /*
- * Convert an int between 0 and 7 into octal equivalent.
+ * Convert an int between 0 and 7 into its char octal equivalent.
  */
 static char __itoo(const int8_t n)
 {
