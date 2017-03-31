@@ -44,6 +44,7 @@ static size_t __expandRead(const char read[], char s2[], size_t j)
 {
 	size_t i;
 	i = 1;		/* The count starts at 1 for a-z [0] is already a */
+	j--;
 
 	if (read[0] < read[2])
 		while (read[0] + i <= read[2])
@@ -60,7 +61,7 @@ static size_t __expandRead(const char read[], char s2[], size_t j)
  */
 static size_t __checkState(const char read[], char s2[], const size_t j)
 {
-	if (!isalnum(read[0]))
+	if (!isalnum(read[0]) || !isalnum(read[2]))
 		;
 	else if (islower(read[0]) && islower(read[2]))
 		return __expandRead(read, s2, j);
@@ -95,10 +96,10 @@ static void expand(const char s1[], char s2[])
 	uint8_t buffer, count, num;
 	count = i = j = 0;
 
-	/*
-	 * Create a buffer for reading ahead 2 char, enables the expansion of
-	 * 3 char expressions such as a-z, even on the fly (whilst streaming).
-	 */
+/*
+ * Create a buffer for reading ahead 2 char, enables the expansion of 3 char
+ * expressions such as a-z, even on the fly (whilst streaming).
+ */
 	buffer = 3;
 	while(buffer && s1[i] != '\0')
 	{
@@ -121,8 +122,15 @@ static void expand(const char s1[], char s2[])
  * for the hyphen in the expression, the value of j returned by checkState
  * includes the last itteration of expandRead; It should be the case that this
  * char can be used directly from s1 and thus one less itteration is required.
+ *
+ * If __checkState returns a value of j, then the expression has been expanded
+ * and the count is set to 2. Such that the loop skip over both the hyphen and
+ * the char that follows it.
+ *
+ * In effect: Should count be set to 2, and the equals removed from both the <=
+ * and the >= expressions in expandRead.
  */
-				if((num = __checkState(read, s2, --j)) > 0) {
+				if((num = __checkState(read, s2, j)) > 0) {
 					count = 1;
 					j = num;
 				} else
