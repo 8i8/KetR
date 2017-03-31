@@ -4,6 +4,8 @@
  * abc...xyz in s2. Allow for letters of either case and digits, and be
  * prepared to handle cases like a-b-c and a-z0-9 and -a-z. Arrange that a
  * leading or trailing - is taken literally.
+ *
+ * TODO Check on the optimisation of the function, see comment at line 123.
  */
 
 /* Redefine getline */
@@ -62,7 +64,7 @@ static size_t __expandRead(const char read[], char s2[], size_t j)
 static size_t __checkState(const char read[], char s2[], const size_t j)
 {
 	if (!isalnum(read[0]) || !isalnum(read[2]))
-		;
+		;/* Returns 0 lone hypen will not be removed -a-z */
 	else if (islower(read[0]) && islower(read[2]))
 		return __expandRead(read, s2, j);
 	else if (isupper(read[0]) && isupper(read[2]))
@@ -120,15 +122,15 @@ static void expand(const char s1[], char s2[])
 /*
  * I am not certain that this code is optimal: Here j is diminished to account
  * for the hyphen in the expression, the value of j returned by checkState
- * includes the last itteration of expandRead; It should be the case that this
- * char can be used directly from s1 and thus one less itteration is required.
+ * includes the last itteration of expandRead after the <= or >=; It should be
+ * the case that this char can be used directly from s1 and thus one less
+ * itteration be required.
  *
  * If __checkState returns a value of j, then the expression has been expanded
- * and the count is set to 2. Such that the loop skip over both the hyphen and
- * the char that follows it.
+ * and the count is set to 1. Such that the loop skip over the hyphen.
  *
- * In effect: Should count be set to 2, and the equals removed from both the <=
- * and the >= expressions in expandRead.
+ * In effect: Should count be set to 2, and the equal sign removed from both
+ * the <= and the >= expressions in expandRead.
  */
 				if((num = __checkState(read, s2, j)) > 0) {
 					count = 1;
