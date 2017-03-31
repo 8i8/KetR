@@ -10,7 +10,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-#define MAXLEN		65536
+#define MAXLEN		255
 
 void itob(uint32_t n, char s[], const uint8_t base);
 static char __cnvBase(const int8_t n, const uint8_t base);
