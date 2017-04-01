@@ -15,21 +15,26 @@
 #include <limits.h>
 #include <stdint.h>
 
-#define MAXLEN	1000
+#define MAXLEN	255
 
-/*
- * Reverse the array.
- */
-static void __reverse(char s1[])
+static void __reverse(char s1[]);
+void itoa(int32_t n, char s[]);
+
+int main(void)
 {
-	size_t i, j;
-	int8_t c;
+	char s[MAXLEN];
+	int32_t n;
+	int32_t o;
+        n = INT32_MIN;
+        o = INT32_MIN;
+	o = -o;
 
-	for (i = 0, j = strlen(s1) - 1; i < j; i++, j--) {
-		c = s1[j];
-		s1[j] = s1[i];
-		s1[i] = c;
-	}
+	printf("The value of INT_MIN as    : %d\n", n);
+	printf("The value of n after -n    : %d\n", o);
+	itoa(n, s);
+	printf("The value of n as a string : \"%s\"\n", s);
+
+	return 0;
 }
 
 /*
@@ -66,20 +71,18 @@ void itoa(int32_t n, char s[])
 	__reverse(s);
 }
 
-int main(void)
+/*
+ * Reverse the array.
+ */
+static void __reverse(char s1[])
 {
-	char s[MAXLEN];
-	int32_t n;
-	int32_t o;
-        n = INT32_MIN;
-        o = INT32_MIN;
-	o = -o;
+	size_t i, j;
+	int8_t c;
 
-	printf("The value of INT_MIN as    : %d\n", n);
-	printf("The value of n after -n    : %d\n", o);
-	itoa(n, s);
-	printf("The value of n as a string : \"%s\"\n", s);
-
-	return 0;
+	for (i = 0, j = strlen(s1) - 1; i < j; i++, j--) {
+		c = s1[j];
+		s1[j] = s1[i];
+		s1[i] = c;
+	}
 }
 
