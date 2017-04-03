@@ -1,12 +1,7 @@
 /*
- * Input need be entered onto one line, carrage return will pop the stack.
- *  
- *  10 2 +<cr>
- *  12
- *
- * Exercise 4-3. Given the basic framework, it's straightforward to extend the
- * calculator. Add the modulus (%) operator and provisions for negative
- * numbers.
+ * Exercise 4-4. Add the commands to print the top elements of the stack
+ * without popping, to duplicate it, and to swap the top two elements. Add a
+ * command to clear the stack.
  */
 
 #include <stdio.h>
@@ -21,6 +16,10 @@
 static char getop(char []);
 static void push(double);
 static double pop(void);
+static void printStack(void);
+static void swapStack(void);
+static void duplicate(void);
+static void emptyStack(void);
 
 int main(void)
 {
@@ -58,8 +57,24 @@ int main(void)
 				else
 					printf("error: zero modulo\n");
 				break;
+			case 'c':
+				duplicate();
+				break;
+			case 'd':
+				pop();
+				printStack();
+				break;
+			case 'e':
+				emptyStack();
+				break;
+			case 'p':
+				printStack();
+				break;
+			case 's':
+				swapStack();
+				printStack();
+				break;
 			case '\n':
-				printf("\t%.8g\n", pop());
 				break;
 			default:
 				printf("error: unknown command %s\n", s);
@@ -101,6 +116,51 @@ static double pop(void)
 		printf("error: stack empty\n");
 		return 0.0L;
 	}
+}
+
+/*
+ * Output the contents of the stack to the terminal.
+ */
+static void printStack(void)
+{
+	size_t i;
+
+	for (i = 0; i < sp; i++)
+		printf("%f\n", val[i]);
+}
+
+/*
+ * Swap the two top most eliments in the stack.
+ */
+static void swapStack(void)
+{
+	double temp;
+
+	if (sp > 1) {
+		temp = val[sp-1];
+		val[sp-1] = val[sp-2];
+		val[sp-2] = temp;
+	}
+	else
+		printf("error: to few eliments in the stack.\n");
+
+}
+
+/*
+ * Copy and make a new the top most stack value.
+ */
+static void duplicate(void)
+{
+	if (sp > 0)
+		push(val[sp-1]);
+}
+
+/*
+ * Empty the stack.
+ */
+static void emptyStack(void)
+{
+	sp = 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
