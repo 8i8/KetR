@@ -19,7 +19,7 @@ static void push(double);
 static double pop(void);
 static void printStack(void);
 static void swapStack(void);
-static char token(char c);
+static char tokenBuffer(char c);
 static void printBuffer(void);
 static void duplicate(void);
 static void emptyStack(void);
@@ -194,7 +194,7 @@ static char getop(char s[])
 	s[1] = '\0';
 
 	if (isalpha(c)) {
-		return token(c);
+		return tokenBuffer(c);
 	}
 
 	/* if c is any operator other than '.' or '-' return it */
@@ -258,14 +258,14 @@ static void ungetch(char c)
 /*
  * Buffer to read text input.
  */
-static char token(char c)
+static char tokenBuffer(char c)
 {
-	char b;
+	char buft[3];
 
-	b = c;
-	if (c == 'p' && ((c = getch()) == '\n')) {
+	buft[0] = c;
+	if ((c = getch()) == '\n') {
 		ungetch(c);
-		return b;
+		return buft[0];
 	}
 	return c;
 }
