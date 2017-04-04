@@ -71,18 +71,23 @@ int main(void)
 					printf("error: zero modulo\n");
 				break;
 			case COPY:
+			case 'c':
 				duplicate();
 				break;
 			case DEL:
+			case 'd':
 				pop();
 				break;
 			case CLEAR:
+			case 'e':
 				emptyStack();
 				break;
 			case PRINT:
+			case 'p':
 				printStack();
 				break;
 			case SWAP:
+			case 's':
 				swapStack();
 				break;
 			case SIN:
@@ -347,34 +352,34 @@ static int16_t readToken(void)
 {
 	if (!strcmp(bufText, "sin")) {
 		clearText();
-		return 1001;
+		return SIN;
 	} else if (!strcmp(bufText, "cos")) {
 		clearText();
-		return 1002;
+		return COS;
 	} else if (!strcmp(bufText, "tan")) {
 		clearText();
-		return 1003;
+		return TAN;
 	} else if (!strcmp(bufText, "exp")) {
 		clearText();
-		return 1004;
+		return EXP;
 	} else if (!strcmp(bufText, "log")) {
 		clearText();
-		return 1005;
+		return LOG;
 	} else if (!strcmp(bufText, "pow")) {
 		clearText();
-		return 1006;
+		return POW;
 	} else if (!strcmp(bufText, "copy")) {
 		clearText();
-		return 1007;
+		return COPY;
 	} else if (!strcmp(bufText, "del")) {
 		clearText();
-		return 1008;
+		return DEL;
 	} else if (!strcmp(bufText, "print")) {
 		clearText();
-		return 1010;
+		return PRINT;
 	} else if (!strcmp(bufText, "swap")) {
 		clearText();
-		return 1011;
+		return SWAP;
 	}
 	clearText();
 	return 0;

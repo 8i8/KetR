@@ -13,8 +13,9 @@
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
-#define VAR	1000
+#define VARLIM	36
 
+#define VAR	1000
 #define SIN	1001
 #define COS	1002
 #define TAN	1003
@@ -75,12 +76,15 @@ int main(void)
 					printf("error: zero modulo\n");
 				break;
 			case COPY:
+			case 'c':
 				duplicate();
 				break;
 			case DEL:
+			case 'd':
 				pop();
 				break;
 			case CLEAR:
+			case 'e':
 				emptyStack();
 				break;
 			case PRINT:
@@ -88,6 +92,7 @@ int main(void)
 				printStack();
 				break;
 			case SWAP:
+			case 's':
 				swapStack();
 				break;
 			case SIN:
@@ -294,10 +299,18 @@ static int16_t getop(char s[])
  *  Variable stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+static double var[VARLIM];
+static size_t var_p = 0;
+
 static char isVarAssigned(char c)
 {
-	printf("var --> %c\n", c);
+	//printf("var --> %c\n", c);
 	return 0;
+}
+
+static void writeVar(char c, double value)
+{
+	var[c - 'a'] = value;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -305,14 +318,14 @@ static char isVarAssigned(char c)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 static char buf[BUFSIZE];	/* buffer for ungetch */
-static size_t bufp = 0;		/* next free position in buf */
+static size_t buf_p = 0;		/* next free position in buf */
 
 /*
  * Get a (possibly pushed back) character.
  */
 static char getch(void)
 {
-	return (bufp > 0) ? buf[--bufp] : (char)getchar();
+	return (buf_p > 0) ? buf[--buf_p] : (char)getchar();
 }
 
 /*
@@ -320,10 +333,10 @@ static char getch(void)
  */
 static void ungetch(char c)
 {
-	if (bufp >= BUFSIZE)
+	if (buf_p >= BUFSIZE)
 		printf("ungetch: too many characters\n");
 	else
-		buf[bufp++] = c;
+		buf[buf_p++] = c;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -331,7 +344,7 @@ static void ungetch(char c)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 static char bufText[BUFSIZE];
-static size_t bufpT = 0;
+static size_t bufT_p = 0;
 static int8_t token = 0;	/* Boolean, is a token set */
 
 /*
@@ -351,11 +364,11 @@ static int8_t isToken(void)
  */
 static void pushChar(char c)
 {
-	if (bufpT >= BUFSIZE)
+	if (bufT_p >= BUFSIZE)
 		printf("pushChar: text buffer full\n");
 	else {
-		bufText[bufpT++] = c;
-		bufText[bufpT] = '\0';
+		bufText[bufT_p++] = c;
+		bufText[bufT_p] = '\0';
 	}
 }
 
@@ -364,8 +377,8 @@ static void pushChar(char c)
  */
 static void clearText(void)
 {
-	bufpT = 0;
-	bufText[bufpT] = '\0';
+	bufT_p = 0;
+	bufText[bufT_p] = '\0';
 }
 
 /*
@@ -375,34 +388,34 @@ static int16_t readToken(void)
 {
 	if (!strcmp(bufText, "sin")) {
 		clearText();
-		return 1001;
+		return SIN;
 	} else if (!strcmp(bufText, "cos")) {
 		clearText();
-		return 1002;
+		return COS;
 	} else if (!strcmp(bufText, "tan")) {
 		clearText();
-		return 1003;
+		return TAN;
 	} else if (!strcmp(bufText, "exp")) {
 		clearText();
-		return 1004;
+		return EXP;
 	} else if (!strcmp(bufText, "log")) {
 		clearText();
-		return 1005;
+		return LOG;
 	} else if (!strcmp(bufText, "pow")) {
 		clearText();
-		return 1006;
+		return POW;
 	} else if (!strcmp(bufText, "copy")) {
 		clearText();
-		return 1007;
+		return COPY;
 	} else if (!strcmp(bufText, "del")) {
 		clearText();
-		return 1008;
+		return DEL;
 	} else if (!strcmp(bufText, "print")) {
 		clearText();
-		return 1010;
+		return PRINT;
 	} else if (!strcmp(bufText, "swap")) {
 		clearText();
-		return 1011;
+		return SWAP;
 	}
 	clearText();
 	return -2;
@@ -416,7 +429,7 @@ static char tokenBuffer(char c)
 	char d;
 
 	if ((d = getch()) == ' ' || d == '\t' || d == '\n') {
-		if (bufpT <= 1) {
+		if (bufT_p <= 1) {
 			return c;
 		} else {
 			pushChar(tolower(c));
