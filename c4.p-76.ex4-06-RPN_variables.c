@@ -13,6 +13,7 @@
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
+#define VAR	1000
 
 #define SIN	1001
 #define COS	1002
@@ -44,6 +45,8 @@ int main(void)
 		switch (type) {
 			case NUMBER:
 				push(atof(s));
+				break;
+			case VAR:
 				break;
 			case '+':
 				push(pop() + pop());
@@ -81,6 +84,7 @@ int main(void)
 				emptyStack();
 				break;
 			case PRINT:
+			case 'p':
 				printStack();
 				break;
 			case SWAP:
@@ -109,6 +113,9 @@ int main(void)
 			case '\n':
 				break;
 			case 0:
+				break;
+			case -2:
+				printf("error: unknown token \n");
 				break;
 			default:
 				printf("error: unknown command %s\n", s);
@@ -207,6 +214,7 @@ static void emptyStack(void)
 #define NUMBER	'0'	/* A signal that a number was found. */
 #define BUFSIZE	100
 
+static char isVarAssigned(char c);
 static char getch(void);
 static void ungetch(char);
 static int8_t isToken(void);
@@ -221,6 +229,7 @@ static int16_t getop(char s[])
 	size_t i;
 	char c;
 
+	/* If a token has been set; read it. */
 	if (isToken())
 		return readToken();
 
@@ -231,9 +240,17 @@ static int16_t getop(char s[])
 	/* set a default end of string char at 2nd array index */
 	s[1] = '\0';
 
-	/* send letters to the string buffer to check for tokens */
+	/*
+	 * Send letters to the string buffer, to check for tokens, if true is
+	 * returned, there was no token and the letter is a single character
+	 * that is then sent for streat ment as a possible variable.
+	 */
 	if (isalpha(c)) {
-		return tokenBuffer(c);
+		if (tokenBuffer(c))
+			isVarAssigned(c);
+		else {
+			return 0;
+		}
 	}
 
 	/* if c is any operator other than '.' or '-' return it */
@@ -274,6 +291,16 @@ static int16_t getop(char s[])
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Variable stack
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+static char isVarAssigned(char c)
+{
+	printf("var --> %c\n", c);
+	return 0;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Input buffer
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -305,7 +332,7 @@ static void ungetch(char c)
  */
 static char bufText[BUFSIZE];
 static size_t bufpT = 0;
-static int8_t token = 0;
+static int8_t token = 0;	/* Boolean, is a token set */
 
 /*
  * Boolean switch showing availability of token.
@@ -378,7 +405,7 @@ static int16_t readToken(void)
 		return 1011;
 	}
 	clearText();
-	return 0;
+	return -2;
 }
 
 /*
@@ -401,7 +428,6 @@ static char tokenBuffer(char c)
 		if(d != EOF)
 			tokenBuffer(d);
 	}
-
 	return 0;
 }
 
