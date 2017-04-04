@@ -186,6 +186,7 @@ static char getop(char s[])
 
 	/* keep inputing char until c is neither a space nor a tab */
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
+		;
 
 	/* set a default end of string char at 2nd array index */
 	s[1] = '\0';

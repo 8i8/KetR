@@ -9,24 +9,28 @@
 #include <stdlib.h>	/* For atof */
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
-			/* fmod() for the remainder of two doubles devided */
+			/* fmod() for the remainder of two doubles divided */
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
+#define SIN	1
+#define COS	2
+#define TAN	3
+#define EXP	4
+#define LOG	5
+#define POW	6
 
 static char getop(char []);
 static void push(double);
 static double pop(void);
 static void printStack(void);
 static void swapStack(void);
-static char tokenBuffer(char c);
-static void printBuffer(void);
 static void duplicate(void);
 static void emptyStack(void);
 
 int main(void)
 {
-	uint16_t type;
+	char type;
 	char s[MAXOP];
 	double op2;
 
@@ -76,6 +80,28 @@ int main(void)
 			case 's':
 				swapStack();
 				break;
+			case 'x':
+				break;
+			case SIN:
+				push(sin( pop() ));
+				break;
+			case COS:
+				push(cos( pop() ));
+				break;
+			case TAN:
+				push(tan( pop() ));
+				break;
+			case EXP:
+				push(exp( pop() ));
+				break;
+			case LOG:
+				push(log( pop() ));
+				break;
+			case '^':
+			case POW:
+				op2 = pop();
+				push(pow( pop(), op2 ));
+				break;
 			case '\n':
 				break;
 			default:
@@ -87,7 +113,7 @@ int main(void)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  
+ *  Numerical stack operations
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define MAXVAL	100		/* Maximum depth of val stack */
@@ -132,19 +158,19 @@ static void printStack(void)
 }
 
 /*
- * Swap the two top most eliments in the stack.
+ * Swap the two top most elements in the stack.
  */
 static void swapStack(void)
 {
 	double temp;
 
-	if (sp > 1) {
+	if (sp > 0) {
 		temp = val[sp-1];
 		val[sp-1] = val[sp-2];
 		val[sp-2] = temp;
 	}
 	else
-		printf("error: to few eliments in the stack.\n");
+		printf("error: to few elements on the stack.\n");
 
 }
 
@@ -166,17 +192,20 @@ static void emptyStack(void)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  
+ *  Input
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #include <ctype.h>
+#include <string.h>
 
 #define NUMBER	'0'	/* A signal that a number was found. */
 #define BUFSIZE	100
 
-
 static char getch(void);
 static void ungetch(char);
+static int8_t isToken(void);
+static int readToken(void);
+static char tokenBuffer(char c);
 
 /*
  * getop: get next operator or numeric operand.
@@ -185,6 +214,9 @@ static char getop(char s[])
 {
 	size_t i;
 	char c;
+
+	if (isToken())
+		return readToken();
 
 	/* keep inputing char until c is neither a space nor a tab */
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
@@ -227,12 +259,17 @@ static char getop(char s[])
 			;
 
 	s[i] = '\0';
+
 	if (c != (char)EOF)
 		ungetch(c);
 
 	return NUMBER;
 }
 
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Input buffer
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 static char buf[BUFSIZE];	/* buffer for ungetch */
 static size_t bufp = 0;		/* next free position in buf */
 
@@ -255,26 +292,94 @@ static void ungetch(char c)
 		buf[bufp++] = c;
 }
 
-/*
- * Buffer to read text input.
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Text token buffer
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char tokenBuffer(char c)
-{
-	char buft[3];
+static char bufText[BUFSIZE];
+static size_t bufpT = 0;
+static int8_t token = 0;
 
-	buft[0] = c;
-	if ((c = getch()) == '\n') {
-		ungetch(c);
-		return buft[0];
+static int8_t isToken(void)
+{
+	if (token) {
+		token = 0;
+		return 1;
 	}
-	return c;
+	return 0;
 }
 
 /*
- * Output the contents of the stack to the terminal.
+ * Push text onto stack.
  */
-static void printBuffer(void)
+static void pushChar(char c)
 {
-	printf("buffer --> %lu\n", bufp);
+	if (bufpT >= BUFSIZE)
+		printf("pushChar: text buffer full\n");
+	else {
+		bufText[bufpT++] = c;
+		bufText[bufpT] = '\0';
+	}
+}
+
+/*
+ * Empty text token buffer.
+ */
+static void clearText(void)
+{
+	bufpT = 0;
+	bufText[bufpT] = '\0';
+}
+
+/*
+ * Read the text buffer.
+ */
+static int readToken(void)
+{
+	if (!strcmp(bufText, "sin")) {
+		clearText();
+		return 1;
+	} else if (!strcmp(bufText, "cos")) {
+		clearText();
+		return 2;
+	} else if (!strcmp(bufText, "tan")) {
+		clearText();
+		return 3;
+	} else if (!strcmp(bufText, "exp")) {
+		clearText();
+		return 4;
+	} else if (!strcmp(bufText, "log")) {
+		clearText();
+		return 5;
+	} else if (!strcmp(bufText, "pow")) {
+		clearText();
+		return 6;
+	}
+	clearText();
+	return 0;
+}
+
+/*
+ * Buffer text input.
+ */
+static char tokenBuffer(char c)
+{
+	char d;
+
+	if ((d = getch()) == ' ' || d == '\t' || d == '\n') {
+		if (bufpT <= 1) {
+			return c;
+		} else {
+			pushChar(tolower(c));
+			token = 1;
+			return 'x';
+		}
+	} else {
+		pushChar(tolower(c));
+		if(d != EOF)
+			tokenBuffer(d);
+	}
+
+	return 'x';
 }
 
