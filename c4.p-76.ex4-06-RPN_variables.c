@@ -13,6 +13,7 @@
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
+
 #define SIN	1001
 #define COS	1002
 #define TAN	1003
