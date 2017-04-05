@@ -13,9 +13,9 @@
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
-#define VARLIM	36
+#define VARLIM	26
 
-#define VAR	1000
+#define ALPHA	1000
 #define SIN	1001
 #define COS	1002
 #define TAN	1003
@@ -27,14 +27,20 @@
 #define CLEAR	1009
 #define PRINT	1010
 #define SWAP	1011
+#define EXIT	1012
 
-static int16_t getop(char []);
+/* Numerical stack */
 static void push(double);
 static double pop(void);
 static void printStack(void);
 static void swapStack(void);
 static void duplicate(void);
 static void emptyStack(void);
+/* Input, get operation */
+static int16_t getop(char []);
+/* variable stack */
+static void setVarToEmpty(void);
+static void pushVar(char c);
 
 int main(void)
 {
@@ -42,12 +48,15 @@ int main(void)
 	char s[MAXOP];
 	double op2;
 
+	setVarToEmpty();
+
 	while ((type = getop(s)) != EOF) {
 		switch (type) {
 			case NUMBER:
 				push(atof(s));
 				break;
-			case VAR:
+			case ALPHA:
+				pushVar(s[0]);
 				break;
 			case '+':
 				push(pop() + pop());
@@ -122,46 +131,143 @@ int main(void)
 			case -2:
 				printf("error: unknown token \n");
 				break;
+			case EXIT:
+			case 'q':
+				goto exit;
+				break;
 			default:
 				printf("error: unknown command %s\n", s);
 				break;
 		}
 	}
+exit:
 	return 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Numerical stack operations
+ *  Numerical stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define MAXVAL	100		/* Maximum depth of val stack */
+#define I_DEPTH	2		/* Depth of index table, type, index */
+#define BOOL	2		/* Number of states for boolean values */
+#define	SET	1
+#define UNSET	0
 
-static size_t sp = 0;		/* Next free stack position */
-static double val[MAXVAL];	/* value stack */
+#define REAL	0
+#define VAR	1
+
+#define TYPE	0
+#define INDEX	1
+
+static size_t fp = 0;		/* Next free stack position */
+static double st_val[MAXVAL];	/* value stack */
+static void set_index(int type, int index);
 
 /*
- * push: push f onto value stack
+ * push: push float onto numerical stack.
  */
 static void push(double f)
 {
-	if (sp < MAXVAL) {
-		val[sp++] = f;
+	if (fp < MAXVAL) {
+		st_val[fp] = f;
+		set_index(REAL, fp);
+		fp++;
 	}
 	else
-		printf("error: stack full, can't push %g\n", f);
+		printf("error: Float stack full, can't push %g\n", f);
 }
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Var stack
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+static size_t vp = 0;		/* Next free var stack position */
+static char st_var[MAXVAL];	/* Var stack */
+
+/*
+ * pushVar: push c onto value stack
+ */
+static void pushVar(char v)
+{
+	if (vp < MAXVAL) {
+		st_var[vp] = v;
+		set_index(VAR, vp);
+		vp++;
+	}
+	else
+		printf("error: Variable stack full, can't push %c\n", v);
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Var value
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+static double var_values[VARLIM];	/* The variables a-z */
+static int var_state[VARLIM];
+
+static void setVar(int i, double value)
+{
+	var_values[i - 'a'] = value;
+	var_state[i - 'a'] = SET;
+}
+
+static void setVarToEmpty(void)
+{
+	size_t i = VARLIM;
+
+	while (--i > 0)
+		var_values[i] = '\0';
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Index stack
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+static size_t ip = 0;			/* Next free index position. */
+static int st_ind[MAXVAL][I_DEPTH];	/* The stack index, records type. */
+
+/*
+ * index: keep track of the stack index and the type of value at that index.
+ */
+static void set_index(int t, int i)
+{
+	if (ip < MAXVAL) {
+		st_ind[ip][TYPE] = t;
+		st_ind[ip][INDEX] = i;
+		ip++;
+	}
+	else
+		printf("error: Index stack full, can't push\n");
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Stack operations
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 
 /*
  * pop: pop and return top value from stack.
  */
 static double pop(void)
 {
-	if (sp > 0)
-		return val[--sp];
+	if (ip > 0) {
+		if (st_ind[--ip][TYPE] == REAL) {
+			fp--;
+			return st_val[st_ind[ip][INDEX]];
+		}
+		else if (st_ind[--ip][TYPE] == VAR) {
+			vp--;
+			return var_values[st_ind[ip][INDEX]];
+		}
+		else
+			printf("error: pop failed ");
+	}
 	else {
 		printf("error: stack empty\n");
-		return 0.0L;
 	}
+	return 0;
 }
 
 /*
@@ -171,8 +277,14 @@ static void printStack(void)
 {
 	size_t i;
 
-	for (i = 0; i < sp; i++)
-		printf("%f\n", val[i]);
+	for (i = 0; i < ip; i++) {
+		if(st_ind[i][TYPE] == REAL) {
+			printf("%f\n", st_val[st_ind[i][INDEX]]);
+		} else if (st_ind[i][TYPE] == VAR) {
+			puts("VAR");
+			printf("%c\n", st_var[st_ind[i][INDEX]]);
+		}
+	}
 }
 
 /*
@@ -180,12 +292,16 @@ static void printStack(void)
  */
 static void swapStack(void)
 {
-	double temp;
+	int i = 0;
+	int temp[I_DEPTH];
 
-	if (sp > 0) {
-		temp = val[sp-1];
-		val[sp-1] = val[sp-2];
-		val[sp-2] = temp;
+	if (ip > 0) {
+		while (i < I_DEPTH) {
+			temp[i] = st_ind[ip-1][i];
+			st_ind[ip-1][i] = st_ind[ip-2][i];
+			st_ind[ip-2][i] = temp[i];
+			i++;
+		}
 	}
 	else
 		printf("error: to few elements on the stack.\n");
@@ -197,8 +313,12 @@ static void swapStack(void)
  */
 static void duplicate(void)
 {
-	if (sp > 0)
-		push(val[sp-1]);
+	if (ip > 0) {
+		if(st_ind[ip][TYPE] == REAL)
+			push(st_val[st_ind[ip][INDEX]-1]);
+		else if (st_ind[ip][TYPE] == VAR)
+			pushVar(st_var[st_ind[ip][INDEX]-1]);
+	}
 }
 
 /*
@@ -206,7 +326,7 @@ static void duplicate(void)
  */
 static void emptyStack(void)
 {
-	sp = 0;
+	ip = 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,10 +336,8 @@ static void emptyStack(void)
 #include <ctype.h>
 #include <string.h>
 
-#define NUMBER	'0'	/* A signal that a number was found. */
 #define BUFSIZE	100
 
-static char isVarAssigned(char c);
 static char getch(void);
 static void ungetch(char);
 static int8_t isToken(void);
@@ -242,7 +360,7 @@ static int16_t getop(char s[])
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
 		;
 
-	/* set a default end of string char at 2nd array index */
+	/* set a default end of string char at 2nd array ī*/
 	s[1] = '\0';
 
 	/*
@@ -251,11 +369,12 @@ static int16_t getop(char s[])
 	 * that is then sent for streat ment as a possible variable.
 	 */
 	if (isalpha(c)) {
-		if (tokenBuffer(c))
-			isVarAssigned(c);
-		else {
-			return 0;
-		}
+		return tokenBuffer(c);
+	//	if (tokenBuffer(c))
+	//		return tokenBuffer(c); // TODO Put variable code here.
+	//	else {
+	//		return 0;
+	//	}
 	}
 
 	/* if c is any operator other than '.' or '-' return it */
@@ -296,28 +415,10 @@ static int16_t getop(char s[])
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Variable stack
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-static double var[VARLIM];
-static size_t var_p = 0;
-
-static char isVarAssigned(char c)
-{
-	//printf("var --> %c\n", c);
-	return 0;
-}
-
-static void writeVar(char c, double value)
-{
-	var[c - 'a'] = value;
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Input buffer
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char buf[BUFSIZE];	/* buffer for ungetch */
+static char buf[BUFSIZE];		/* buffer for ungetch */
 static size_t buf_p = 0;		/* next free position in buf */
 
 /*
@@ -345,7 +446,7 @@ static void ungetch(char c)
  */
 static char bufText[BUFSIZE];
 static size_t bufT_p = 0;
-static int8_t token = 0;	/* Boolean, is a token set */
+static int8_t token = 0;		/* Boolean, is a token set */
 
 /*
  * Boolean switch showing availability of token.
@@ -416,6 +517,9 @@ static int16_t readToken(void)
 	} else if (!strcmp(bufText, "swap")) {
 		clearText();
 		return SWAP;
+	} else if (!strcmp(bufText, "exit")) {
+		clearText();
+		return EXIT;
 	}
 	clearText();
 	return -2;
