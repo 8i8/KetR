@@ -13,6 +13,8 @@
 
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
+
+#define NEG	999
 #define SIN	1001
 #define COS	1002
 #define TAN	1003
@@ -38,11 +40,18 @@ int main(void)
 	int16_t type;
 	char s[MAXOP];
 	double op2;
+	int sign;
+
+	sign = 1;
 
 	while ((type = getop(s)) != EOF) {
 		switch (type) {
+			case NEG:
+				sign = -1;
+				break;
 			case NUMBER:
-				push(atof(s));
+				push(atof(s) * sign);
+				sign = 1;
 				break;
 			case '+':
 				push(pop() + pop());
@@ -250,9 +259,10 @@ static int16_t getop(char s[])
 	 */
 	i = 0;
 	if (c == '-') {
-		if (isdigit(c = getch()) || c == '.')
-			s[i++] = c;
-		else {
+		if (isdigit(c = getch()) || c == '.') {
+			ungetch(c);
+			return NEG;
+		} else {
 			if (c != (char)EOF)
 				ungetch(c);
 			return '-';

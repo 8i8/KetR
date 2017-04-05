@@ -15,6 +15,7 @@
 #define NUMBER	'0'	/* A signal that a number was found. */
 #define VARLIM	26
 
+#define NEG	999
 #define ALPHA	1000
 #define SIN	1001
 #define COS	1002
@@ -47,13 +48,19 @@ int main(void)
 	int16_t type;
 	char s[MAXOP];
 	double op2;
+	int sign;
 
 	setVarToEmpty();
+	sign = 1;
 
 	while ((type = getop(s)) != EOF) {
 		switch (type) {
+			case NEG:
+				sign = -1;
+				break;
 			case NUMBER:
-				push(atof(s));
+				push(atof(s) * sign);
+				sign = 1;
 				break;
 			case ALPHA:
 				pushVar(s[0]);
@@ -71,14 +78,14 @@ int main(void)
 			case '/':
 				op2 = pop();
 				/* DBL_EPSILON the smallest increment */
-				if (fabs(op2 - 0) > DBL_EPSILON)
+				if (fabs(op2) > DBL_EPSILON)
 					push(pop() / op2);
 				else
 					printf("error: zero divisor\n");
 				break;
 			case '%':
 				op2 = pop();
-				if (fabs(op2 - 0) > DBL_EPSILON)
+				if (fabs(op2) > DBL_EPSILON)
 					/* math.h for mod of doubles */
 					push(fmod(pop(), op2));
 				else
@@ -357,7 +364,7 @@ static int16_t getop(char s[])
 		return readToken();
 
 	/* keep inputing char until c is neither a space nor a tab */
-	while ((s[0] = c = getch()) == ' ' || c == '\t')
+	while ((s[0] = c = getch()) == ' ' || c == '\t' || c == '\n')
 		;
 
 	/* set a default end of string char at 2nd array ī*/
@@ -387,9 +394,10 @@ static int16_t getop(char s[])
 	 */
 	i = 0;
 	if (c == '-') {
-		if (isdigit(c = getch()) || c == '.')
-			s[i++] = c;
-		else {
+		if (isdigit(c = getch()) || c == '.') {
+			ungetch(c);
+			return NEG;
+		} else {
 			if (c != (char)EOF)
 				ungetch(c);
 			return '-';

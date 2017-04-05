@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>	/* For atof */
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
@@ -13,7 +14,9 @@
 #define MAXOP	100
 #define NUMBER	'0'	/* A signal that a number was found. */
 
-static char getop(char []);
+#define NEG	999
+
+static int16_t getop(char []);
 static void push(double);
 static double pop(void);
 static void printStack(void);
@@ -23,14 +26,21 @@ static void emptyStack(void);
 
 int main(void)
 {
-	char type;
+	int16_t type;
 	char s[MAXOP];
 	double op2;
+	int sign;
+
+	sign = 1;
 
 	while ((type = getop(s)) != EOF) {
 		switch (type) {
+			case NEG:
+				sign = -1;
+				break;
 			case NUMBER:
-				push(atof(s));
+				push(atof(s) * sign);
+				sign = 1;
 				break;
 			case '+':
 				push(pop() + pop());
@@ -179,7 +189,7 @@ static void ungetch(char);
 /*
  * getop: get next operator or numeric operand.
  */
-static char getop(char s[])
+static int16_t getop(char s[])
 {
 	size_t i;
 	char c;
@@ -201,9 +211,10 @@ static char getop(char s[])
 	 */
 	i = 0;
 	if (c == '-') {
-		if (isdigit(c = getch()) || c == '.')
-			s[i++] = c;
-		else {
+		if (isdigit(c = getch()) || c == '.') {
+			ungetch(c);
+			return NEG;
+		} else {
 			if (c != (char)EOF)
 				ungetch(c);
 			return '-';
