@@ -42,6 +42,7 @@ static int16_t getop(char []);
 /* variable stack */
 static void setVarToEmpty(void);
 static void pushVar(char c);
+static int twoValues(void);
 
 int main(void)
 {
@@ -66,30 +67,47 @@ int main(void)
 				pushVar(s[0]);
 				break;
 			case '+':
-				push(pop() + pop());
+				if (twoValues())
+					push(pop() + pop());
+				else 
+					printf("error: insufficient parameters\n");
 				break;
 			case '*':
-				push(pop() * pop());
+				if (twoValues())
+					push(pop() * pop());
+				else 
+					printf("error: insufficient parameters\n");
 				break;
 			case '-':
-				op2 = pop();
-				push(pop() - op2);
+				if (twoValues()) {
+					op2 = pop();
+					push(pop() - op2);
+				} else 
+					printf("error: insufficient parameters\n");
 				break;
 			case '/':
-				op2 = pop();
-				/* DBL_EPSILON the smallest increment */
-				if (fabs(op2) > DBL_EPSILON)
-					push(pop() / op2);
-				else
-					printf("error: zero divisor\n");
+				if (twoValues()) {
+					op2 = pop();
+					/* DBL_EPSILON the smallest increment */
+					if (fabs(op2) > DBL_EPSILON)
+						push(pop() / op2);
+					else {
+						printf("error: zero divisor\n");
+					}
+				} else 
+					printf("error: insufficient parameters\n");
 				break;
 			case '%':
-				op2 = pop();
-				if (fabs(op2) > DBL_EPSILON)
-					/* math.h for mod of doubles */
-					push(fmod(pop(), op2));
-				else
-					printf("error: zero modulo\n");
+				if (twoValues()) {
+					op2 = pop();
+					if (fabs(op2) > DBL_EPSILON)
+						/* math.h for mod of doubles */
+						push(fmod(pop(), op2));
+					else {
+						printf("error: zero modulo\n");
+					}
+				} else 
+					printf("error: insufficient parameters\n");
 				break;
 			case COPY:
 			case 'c':
@@ -128,8 +146,11 @@ int main(void)
 				break;
 			case '^':
 			case POW:
-				op2 = pop();
-				push(pow( pop(), op2 ));
+				if (twoValues()) {
+					op2 = pop();
+					push(pow( pop(), op2 ));
+				} else 
+					printf("error: insufficient parameters for pow\n");
 				break;
 			case '\n':
 				break;
@@ -247,6 +268,13 @@ static void set_index(int t, int i)
 	}
 	else
 		printf("error: Index stack full, can't push\n");
+}
+
+static int twoValues(void)
+{
+	if (ip >= 2)
+		return 1;
+	return 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
