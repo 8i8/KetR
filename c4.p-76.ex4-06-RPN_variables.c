@@ -49,6 +49,7 @@ int main(void)
 	int16_t type;
 	char s[MAXOP];
 	double op2;
+	char error[] = { "error: insufficient parameters" };
 	int sign;
 
 	setVarToEmpty();
@@ -70,20 +71,20 @@ int main(void)
 				if (twoValues())
 					push(pop() + pop());
 				else 
-					printf("error: insufficient parameters\n");
+					printf("%s\n", error);
 				break;
 			case '*':
 				if (twoValues())
 					push(pop() * pop());
 				else 
-					printf("error: insufficient parameters\n");
+					printf("%s\n", error);
 				break;
 			case '-':
 				if (twoValues()) {
 					op2 = pop();
 					push(pop() - op2);
 				} else 
-					printf("error: insufficient parameters\n");
+					printf("%s\n", error);
 				break;
 			case '/':
 				if (twoValues()) {
@@ -95,7 +96,7 @@ int main(void)
 						printf("error: zero divisor\n");
 					}
 				} else 
-					printf("error: insufficient parameters\n");
+					printf("%s\n", error);
 				break;
 			case '%':
 				if (twoValues()) {
@@ -107,7 +108,7 @@ int main(void)
 						printf("error: zero modulo\n");
 					}
 				} else 
-					printf("error: insufficient parameters\n");
+					printf("%s\n", error);
 				break;
 			case COPY:
 			case 'c':
@@ -150,7 +151,7 @@ int main(void)
 					op2 = pop();
 					push(pow( pop(), op2 ));
 				} else 
-					printf("error: insufficient parameters for pow\n");
+					printf("%s\n", error);
 				break;
 			case '\n':
 				break;
