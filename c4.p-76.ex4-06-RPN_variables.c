@@ -1,6 +1,7 @@
 /*
- * Exercise 4-5. Add access to library functions like sin, exp, and pow. See
- * <math.h> in Appendix B, Section 4.
+ * Exercise 4-6. Add commands for handling variables. (It's easy to provide
+ * twenty-six variables with single-letter names.) Add a variable for the most
+ * recently printed value.
  */
 
 #include <stdio.h>
@@ -10,13 +11,16 @@
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
 			/* fmod() for the remainder of two doubles divided */
+/* Error messages */
+#define PARAM	1
+#define DIVISOR	2
+#define TOKEN	3
+#define COMMAND	4
 
-#define MAXOP	100
-#define NUMBER	'0'	/* A signal that a number was found. */
-#define VARLIM	26
-
+/* Function tokens */
+#define NUMBER	998	/* A signal that a number was found. */
 #define NEG	999
-#define ALPHA	1000
+#define VAR	1000
 #define SIN	1001
 #define COS	1002
 #define TAN	1003
@@ -27,13 +31,19 @@
 #define DEL	1008
 #define CLEAR	1009
 #define PRINT	1010
-#define SWAP	1011
-#define EXIT	1012
+#define PS	1011
+#define SWAP	1012
+#define EXIT	1013
 
+#define MAXOP	100
+#define VARLIM	26
+
+static void printError(int num);
 /* Numerical stack */
 static void push(double);
 static double pop(void);
 static void printStack(void);
+static void printHead(void);
 static void swapStack(void);
 static void duplicate(void);
 static void emptyStack(void);
@@ -49,7 +59,6 @@ int main(void)
 	int16_t type;
 	char s[MAXOP];
 	double op2;
-	char error[] = { "error: insufficient parameters" };
 	int sign;
 
 	setVarToEmpty();
@@ -64,27 +73,30 @@ int main(void)
 				push(atof(s) * sign);
 				sign = 1;
 				break;
-			case ALPHA:
+			case VAR:
 				pushVar(s[0]);
+				break;
+			case '=':
+				if(isVar)
 				break;
 			case '+':
 				if (twoValues())
 					push(pop() + pop());
 				else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case '*':
 				if (twoValues())
 					push(pop() * pop());
 				else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case '-':
 				if (twoValues()) {
 					op2 = pop();
 					push(pop() - op2);
 				} else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case '/':
 				if (twoValues()) {
@@ -93,10 +105,10 @@ int main(void)
 					if (fabs(op2) > DBL_EPSILON)
 						push(pop() / op2);
 					else {
-						printf("error: zero divisor\n");
+						printError(DIVISOR);
 					}
 				} else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case '%':
 				if (twoValues()) {
@@ -105,10 +117,10 @@ int main(void)
 						/* math.h for mod of doubles */
 						push(fmod(pop(), op2));
 					else {
-						printf("error: zero modulo\n");
+						printError(DIVISOR);
 					}
 				} else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case COPY:
 			case 'c':
@@ -122,8 +134,11 @@ int main(void)
 			case 'e':
 				emptyStack();
 				break;
-			case PRINT:
 			case 'p':
+				printHead();
+				break;
+			case PRINT:
+			case PS:
 				printStack();
 				break;
 			case SWAP:
@@ -151,26 +166,47 @@ int main(void)
 					op2 = pop();
 					push(pow( pop(), op2 ));
 				} else 
-					printf("%s\n", error);
+					printError(PARAM);
 				break;
 			case '\n':
 				break;
 			case 0:
 				break;
 			case -2:
-				printf("error: unknown token \n");
+				printError(TOKEN);
 				break;
 			case EXIT:
 			case 'q':
 				goto exit;
 				break;
 			default:
-				printf("error: unknown command %s\n", s);
+				printError(COMMAND);
 				break;
 		}
 	}
 exit:
 	return 0;
+}
+
+static void printError(int num)
+{
+	switch(num)
+	{
+		case PARAM:
+			puts("error: insufficient parameters");
+			break;
+		case DIVISOR:
+			puts("error: zero divisor");
+			break;
+		case TOKEN:
+			puts("error: unknown token");
+			break;
+		case COMMAND:
+			puts("error: unknown command");
+			break;
+		default:
+			break;
+	}
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,7 +220,6 @@ exit:
 #define UNSET	0
 
 #define REAL	0
-#define VAR	1
 
 #define TYPE	0
 #define INDEX	1
@@ -237,8 +272,8 @@ static int var_state[VARLIM];
 
 static void setVar(int i, double value)
 {
-	var_values[i - 'a'] = value;
-	var_state[i - 'a'] = SET;
+	var_values[i - 'A'] = value;
+	var_state[i - 'A'] = SET;
 }
 
 static void setVarToEmpty(void)
@@ -253,7 +288,6 @@ static void setVarToEmpty(void)
  *  Index stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-
 static size_t ip = 0;			/* Next free index position. */
 static int st_ind[MAXVAL][I_DEPTH];	/* The stack index, records type. */
 
@@ -307,6 +341,19 @@ static double pop(void)
 }
 
 /*
+ * Output the hed of the stack.
+ */
+static void printHead(void)
+{
+	int x = ip-1;
+
+	if(st_ind[x][TYPE] == REAL)
+		printf("%f\n", st_val[st_ind[x][INDEX]]);
+	else if (st_ind[x][TYPE] == VAR)
+		printf("%c\n", st_var[st_ind[x][INDEX]]);
+}
+
+/*
  * Output the contents of the stack to the terminal.
  */
 static void printStack(void)
@@ -314,12 +361,10 @@ static void printStack(void)
 	size_t i;
 
 	for (i = 0; i < ip; i++) {
-		if(st_ind[i][TYPE] == REAL) {
+		if(st_ind[i][TYPE] == REAL)
 			printf("%f\n", st_val[st_ind[i][INDEX]]);
-		} else if (st_ind[i][TYPE] == VAR) {
-			puts("VAR");
+		else if (st_ind[i][TYPE] == VAR)
 			printf("%c\n", st_var[st_ind[i][INDEX]]);
-		}
 	}
 }
 
@@ -345,7 +390,7 @@ static void swapStack(void)
 }
 
 /*
- * Copy and make a new the top most stack value.
+ * Copy and make a new, the top most stack value.
  */
 static void duplicate(void)
 {
@@ -393,7 +438,7 @@ static int16_t getop(char s[])
 		return readToken();
 
 	/* keep inputing char until c is neither a space nor a tab */
-	while ((s[0] = c = getch()) == ' ' || c == '\t' || c == '\n')
+	while ((s[0] = c = getch()) == ' ' || c == '\t')
 		;
 
 	/* set a default end of string char at 2nd array ī*/
@@ -405,12 +450,18 @@ static int16_t getop(char s[])
 	 * that is then sent for streat ment as a possible variable.
 	 */
 	if (isalpha(c)) {
-		return tokenBuffer(c);
-	//	if (tokenBuffer(c))
-	//		return tokenBuffer(c); // TODO Put variable code here.
-	//	else {
-	//		return 0;
-	//	}
+		c = tokenBuffer(c);
+		if (c) {
+			if (isupper(c)) {
+				s[0] = c;
+				s[1] = '\0';
+				return VAR;
+			}
+			else
+				return c;
+		}
+		else
+			return 0;
 	}
 
 	/* if c is any operator other than '.' or '-' return it */
@@ -433,7 +484,7 @@ static int16_t getop(char s[])
 		}
 	}
 
-	/* If it is a digit, start counting */
+	/* If it is a digit, construct the full number using s[] as a store */
 	if (isdigit(c))
 		while (isdigit(s[++i] = c = getch()))
 			;
@@ -500,10 +551,10 @@ static int8_t isToken(void)
 /*
  * Push text onto stack.
  */
-static void pushChar(char c)
+static void pushTokenChar(char c)
 {
 	if (bufT_p >= BUFSIZE)
-		printf("pushChar: text buffer full\n");
+		printf("pushTokenChar: text buffer full\n");
 	else {
 		bufText[bufT_p++] = c;
 		bufText[bufT_p] = '\0';
@@ -551,6 +602,9 @@ static int16_t readToken(void)
 	} else if (!strcmp(bufText, "print")) {
 		clearText();
 		return PRINT;
+	} else if (!strcmp(bufText, "ps")) {
+		clearText();
+		return PS;
 	} else if (!strcmp(bufText, "swap")) {
 		clearText();
 		return SWAP;
@@ -570,15 +624,15 @@ static char tokenBuffer(char c)
 	char d;
 
 	if ((d = getch()) == ' ' || d == '\t' || d == '\n') {
-		if (bufT_p <= 1) {
+		if (bufT_p < 1) {
 			return c;
 		} else {
-			pushChar(tolower(c));
+			pushTokenChar(tolower(c));
 			token = 1;
 			return 0;
 		}
 	} else {
-		pushChar(tolower(c));
+		pushTokenChar(tolower(c));
 		if(d != EOF)
 			tokenBuffer(d);
 	}
