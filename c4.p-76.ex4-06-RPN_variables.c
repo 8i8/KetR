@@ -42,6 +42,7 @@ static void printError(int num);
 /* Numerical stack */
 static void push(double);
 static double pop(void);
+static char popVar(void);
 static void printStack(void);
 static void printHead(void);
 static void swapStack(void);
@@ -51,14 +52,18 @@ static void emptyStack(void);
 static int16_t getop(char []);
 /* variable stack */
 static void setVarToEmpty(void);
+static void setVar(int i, double value);
+static void printVar(void);
 static void pushVar(char c);
 static int twoValues(void);
+static int isVar(void);
 
 int main(void)
 {
 	int16_t type;
 	char s[MAXOP];
 	double op2;
+	char ch2;
 	int sign;
 
 	setVarToEmpty();
@@ -77,7 +82,18 @@ int main(void)
 				pushVar(s[0]);
 				break;
 			case '=':
-				if(isVar)
+				if(isVar() == 1)
+				{
+					ch2 = popVar();
+					setVar(ch2, pop());
+				}
+				else if (isVar() == 2)
+				{
+					op2 = pop();
+					setVar(popVar(), op2);
+				}
+				else
+					printError(VAR);
 				break;
 			case '+':
 				if (twoValues())
@@ -145,6 +161,9 @@ int main(void)
 			case 's':
 				swapStack();
 				break;
+			case 'v':
+				printVar();
+				break;
 			case SIN:
 				push(sin( pop() ));
 				break;
@@ -188,6 +207,9 @@ exit:
 	return 0;
 }
 
+/*
+ * Store of error messages.
+ */
 static void printError(int num)
 {
 	switch(num)
@@ -203,6 +225,9 @@ static void printError(int num)
 			break;
 		case COMMAND:
 			puts("error: unknown command");
+			break;
+		case VAR:
+			puts("error: no variable");
 			break;
 		default:
 			break;
@@ -229,7 +254,7 @@ static double st_val[MAXVAL];	/* value stack */
 static void set_index(int type, int index);
 
 /*
- * push: push float onto numerical stack.
+ * Push float onto numerical stack.
  */
 static void push(double f)
 {
@@ -270,18 +295,38 @@ static void pushVar(char v)
 static double var_values[VARLIM];	/* The variables a-z */
 static int var_state[VARLIM];
 
+/*
+ * Set the value and status of a variable, the status here is used when listing
+ * all of the active variables, the nature of the index requires this, the char
+ * is defined numericaly by `c - 'A'`.
+ */
 static void setVar(int i, double value)
 {
 	var_values[i - 'A'] = value;
 	var_state[i - 'A'] = SET;
 }
 
+/*
+ * Clear the playing field.
+ */
 static void setVarToEmpty(void)
 {
 	size_t i = VARLIM;
 
 	while (--i > 0)
 		var_values[i] = '\0';
+}
+
+/*
+ * Display all currently set variables and their values.
+ */
+static void printVar(void)
+{
+	size_t i;
+
+	for (i = 0; i < VARLIM; i++)
+		if (var_state[i] == SET)
+			printf("%c:%f\n", ((char)i + 'A'), var_values[i]);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -305,10 +350,25 @@ static void set_index(int t, int i)
 		printf("error: Index stack full, can't push\n");
 }
 
+/*
+ * Are there two values that are required for the function?
+ */
 static int twoValues(void)
 {
 	if (ip >= 2)
 		return 1;
+	return 0;
+}
+
+/*
+ * Is there a variable in one of the next two places?
+ */
+static int isVar(void)
+{
+	if (st_ind[ip-1][TYPE] == VAR)
+		return 1;
+	else if (st_ind[ip-2][TYPE] == VAR)
+		return 2;
 	return 0;
 }
 
@@ -318,7 +378,7 @@ static int twoValues(void)
  */
 
 /*
- * pop: pop and return top value from stack.
+ * Pop and return top value from stack.
  */
 static double pop(void)
 {
@@ -326,10 +386,6 @@ static double pop(void)
 		if (st_ind[--ip][TYPE] == REAL) {
 			fp--;
 			return st_val[st_ind[ip][INDEX]];
-		}
-		else if (st_ind[--ip][TYPE] == VAR) {
-			vp--;
-			return var_values[st_ind[ip][INDEX]];
 		}
 		else
 			printf("error: pop failed ");
@@ -341,16 +397,33 @@ static double pop(void)
 }
 
 /*
+ * Pop and return top value from stack.
+ */
+static char popVar(void)
+{
+	if (ip > 0) {
+		if (st_ind[--ip][TYPE] == VAR) {
+			vp--;
+			return st_var[st_ind[ip][INDEX]];
+		} else
+			printf("error: pop failed ");
+	} else {
+		printf("error: stack empty\n");
+	}
+	return 0;
+}
+
+/*
  * Output the hed of the stack.
  */
 static void printHead(void)
 {
-	int x = ip-1;
-
-	if(st_ind[x][TYPE] == REAL)
-		printf("%f\n", st_val[st_ind[x][INDEX]]);
-	else if (st_ind[x][TYPE] == VAR)
-		printf("%c\n", st_var[st_ind[x][INDEX]]);
+	if (ip > 0) {
+		if(st_ind[ip-1][TYPE] == REAL)
+			printf("%f\n", st_val[st_ind[ip-1][INDEX]]);
+		else if (st_ind[ip-1][TYPE] == VAR)
+			printf("%c\n", st_var[st_ind[ip-1][INDEX]]);
+	}
 }
 
 /*
