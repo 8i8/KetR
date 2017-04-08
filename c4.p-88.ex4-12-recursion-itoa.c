@@ -4,6 +4,7 @@
  * routine.
  */
 #include <stdio.h>
+#include <stdlib.h>
 
 /*
  * Int to string function using recursion.
@@ -14,18 +15,17 @@ void itoa(int n, char s[])
 
 	if (n < 0 && i == 0) {
 		s[i++] = '-';
-		n = -n;
 	}
 	if (n / 10)
 		itoa(n / 10, s);
-	s[i++] = n % 10 + '0';
+	s[i++] = abs(n % 10) + '0';
 	s[i] = '\0';
 }
 
 int main(void)
 {
 	char s[10];
-	int n = -120;
+	int n = 120;
 
 	itoa(n, s);
 
