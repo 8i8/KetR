@@ -2,6 +2,13 @@
  * Exercise 4-6. Add commands for handling variables. (It's easy to provide
  * twenty-six variables with single-letter names.) Add a variable for the most
  * recently printed value.
+ *
+ * TODO For the interests of moving on a little I have decided to take a pause
+ * on this quetion, it remains questions 4-6 till 4-10 to be compleeted. INthis
+ * particular question I have just started to impliment the use of variables
+ * and in so doing realised that I have used a function to generate string
+ * tokens when I could have used s[] from the input; For tis reason the code
+ * requires a little attention.
  */
 
 #include <stdio.h>
@@ -38,7 +45,7 @@
 #define MAXOP	100
 #define VARLIM	26
 
-static void printError(int num);
+static void printError(int num, int type);
 /* Numerical stack */
 static void push(double);
 static double pop(void);
@@ -49,18 +56,18 @@ static void swapStack(void);
 static void duplicate(void);
 static void emptyStack(void);
 /* Input, get operation */
-static int16_t getop(char []);
+static int getop(char []);
 /* variable stack */
 static void setVarToEmpty(void);
 static void setVar(int i, double value);
 static void printVar(void);
 static void pushVar(char c);
 static int twoValues(void);
-static int isVar(void);
+static int isThereVar(void);
 
 int main(void)
 {
-	int16_t type;
+	int type;
 	char s[MAXOP];
 	double op2;
 	char ch2;
@@ -82,37 +89,37 @@ int main(void)
 				pushVar(s[0]);
 				break;
 			case '=':
-				if(isVar() == 1)
+				if(isThereVar() == 1)
 				{
 					ch2 = popVar();
 					setVar(ch2, pop());
 				}
-				else if (isVar() == 2)
+				else if (isThereVar() == 2)
 				{
 					op2 = pop();
 					setVar(popVar(), op2);
 				}
 				else
-					printError(VAR);
+					printError(VAR, type);
 				break;
 			case '+':
 				if (twoValues())
 					push(pop() + pop());
 				else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case '*':
 				if (twoValues())
 					push(pop() * pop());
 				else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case '-':
 				if (twoValues()) {
 					op2 = pop();
 					push(pop() - op2);
 				} else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case '/':
 				if (twoValues()) {
@@ -121,10 +128,10 @@ int main(void)
 					if (fabs(op2) > DBL_EPSILON)
 						push(pop() / op2);
 					else {
-						printError(DIVISOR);
+						printError(DIVISOR, type);
 					}
 				} else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case '%':
 				if (twoValues()) {
@@ -133,10 +140,10 @@ int main(void)
 						/* math.h for mod of doubles */
 						push(fmod(pop(), op2));
 					else {
-						printError(DIVISOR);
+						printError(DIVISOR, type);
 					}
 				} else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case COPY:
 			case 'c':
@@ -185,21 +192,21 @@ int main(void)
 					op2 = pop();
 					push(pow( pop(), op2 ));
 				} else 
-					printError(PARAM);
+					printError(PARAM, type);
 				break;
 			case '\n':
 				break;
 			case 0:
 				break;
 			case -2:
-				printError(TOKEN);
+				printError(TOKEN, type);
 				break;
 			case EXIT:
 			case 'q':
 				goto exit;
 				break;
 			default:
-				printError(COMMAND);
+				printError(COMMAND, type);
 				break;
 		}
 	}
@@ -210,24 +217,24 @@ exit:
 /*
  * Store of error messages.
  */
-static void printError(int num)
+static void printError(int num, int type)
 {
 	switch(num)
 	{
 		case PARAM:
-			puts("error: insufficient parameters");
+			printf("error: %d insufficient parameters\n", type);
 			break;
 		case DIVISOR:
-			puts("error: zero divisor");
+			printf("error: %d zero divisor\n", type);
 			break;
 		case TOKEN:
-			puts("error: unknown token");
+			printf("error: %d unknown token\n", type);
 			break;
 		case COMMAND:
-			puts("error: unknown command");
+			printf("error: %d unknown command\n", type);
 			break;
 		case VAR:
-			puts("error: no variable");
+			printf("error: %d no variable\n", type);
 			break;
 		default:
 			break;
@@ -244,7 +251,8 @@ static void printError(int num)
 #define	SET	1
 #define UNSET	0
 
-#define REAL	0
+/* VAR defined at top of page */
+#define REAL	1
 
 #define TYPE	0
 #define INDEX	1
@@ -252,6 +260,12 @@ static void printError(int num)
 static size_t fp = 0;		/* Next free stack position */
 static double st_val[MAXVAL];	/* value stack */
 static void set_index(int type, int index);
+static size_t vp = 0;			/* Next free var stack position */
+static char st_var[MAXVAL];		/* Var stack */
+static int currentVar;
+static int isCurrentVar = 0;
+static int getType(int ip);
+
 
 /*
  * Push float onto numerical stack.
@@ -259,8 +273,13 @@ static void set_index(int type, int index);
 static void push(double f)
 {
 	if (fp < MAXVAL) {
-		st_val[fp] = f;
-		set_index(REAL, fp);
+		if (isCurrentVar) {
+			setVar(currentVar, f);
+			pushVar(currentVar);
+		} else {
+			st_val[fp] = f;
+			set_index(REAL, fp);
+		}
 		fp++;
 	}
 	else
@@ -271,8 +290,6 @@ static void push(double f)
  *  Var stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static size_t vp = 0;		/* Next free var stack position */
-static char st_var[MAXVAL];	/* Var stack */
 
 /*
  * pushVar: push c onto value stack
@@ -313,8 +330,10 @@ static void setVarToEmpty(void)
 {
 	size_t i = VARLIM;
 
-	while (--i > 0)
+	while (--i > 0) {
 		var_values[i] = '\0';
+		var_state[i] = UNSET;
+	}
 }
 
 /*
@@ -351,7 +370,7 @@ static void set_index(int t, int i)
 }
 
 /*
- * Are there two values that are required for the function?
+ * Are there two values, required for the function?
  */
 static int twoValues(void)
 {
@@ -363,7 +382,7 @@ static int twoValues(void)
 /*
  * Is there a variable in one of the next two places?
  */
-static int isVar(void)
+static int isThereVar(void)
 {
 	if (st_ind[ip-1][TYPE] == VAR)
 		return 1;
@@ -378,19 +397,38 @@ static int isVar(void)
  */
 
 /*
+ * Return the type of the most recent stack item.
+ */
+static int getType(int ip)
+{
+	if (st_ind[ip][TYPE] == REAL)
+		return REAL;
+	else if (st_ind[ip][TYPE] == VAR)
+		return VAR;
+	return 0;
+}
+
+/*
  * Pop and return top value from stack.
  */
 static double pop(void)
 {
+	int c;
+
 	if (ip > 0) {
-		if (st_ind[--ip][TYPE] == REAL) {
+		if (getType(--ip) == REAL) {
 			fp--;
 			return st_val[st_ind[ip][INDEX]];
 		}
-		else
+		else if (getType(--ip) == VAR) {
+			vp--;
+			c = st_var[st_ind[ip][INDEX]];
+			isCurrentVar = 1;
+			currentVar = c;
+			return var_values[c];
+		} else
 			printf("error: pop failed ");
-	}
-	else {
+	} else {
 		printf("error: stack empty\n");
 	}
 	return 0;
@@ -402,7 +440,7 @@ static double pop(void)
 static char popVar(void)
 {
 	if (ip > 0) {
-		if (st_ind[--ip][TYPE] == VAR) {
+		if (getType(--ip) == VAR) {
 			vp--;
 			return st_var[st_ind[ip][INDEX]];
 		} else
@@ -414,7 +452,7 @@ static char popVar(void)
 }
 
 /*
- * Output the hed of the stack.
+ * Output the head of the stack.
  */
 static void printHead(void)
 {
@@ -427,7 +465,7 @@ static void printHead(void)
 }
 
 /*
- * Output the contents of the stack to the terminal.
+ * Output the entire contents of the stack to the terminal.
  */
 static void printStack(void)
 {
@@ -495,13 +533,13 @@ static void emptyStack(void)
 static char getch(void);
 static void ungetch(char);
 static int8_t isToken(void);
-static int16_t readToken(void);
+static int readToken(void);
 static char tokenBuffer(char c);
 
 /*
  * getop: get next operator or numeric operand.
  */
-static int16_t getop(char s[])
+static int getop(char s[])
 {
 	size_t i;
 	char c;
@@ -646,7 +684,7 @@ static void clearText(void)
 /*
  * Read the text buffer.
  */
-static int16_t readToken(void)
+static int readToken(void)
 {
 	if (!strcmp(bufText, "sin")) {
 		clearText();
