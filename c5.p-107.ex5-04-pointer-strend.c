@@ -15,7 +15,7 @@ int strend(char *s, char *t)
 
 	if(i > j) {
 		while (j > 0) {
-			if (*s-- == *t--) {
+			if (*--s == *--t) {
 				j--;
 			} else 
 				return 0;
@@ -28,10 +28,12 @@ int strend(char *s, char *t)
 int main(void)
 {
 	char s[12] = { 'H','e','l','l','o',' ','W','o','r','l','d','\0' };
-	char t[6] = { 'W','o','r','l','d','\0' };
+	char t[6] = { 'w','o','r','l','d','\0' };
 
 	if (strend(s, t))
 		puts("Yes");
+	else
+		puts("No");
 	return 0;
 }
 
