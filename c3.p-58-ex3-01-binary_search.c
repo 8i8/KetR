@@ -38,16 +38,20 @@
 #define A_MAX		10000
 #define A_MIN		1
 
-typedef uint16_t (*search_fn)(const uint16_t, const uint16_t*, const uint16_t);
+typedef uint_fast16_t (*search_fn)(	const uint_fast16_t,
+					const uint_fast16_t*,
+					const uint_fast16_t);
 
 /*
  * This algorithm contains a bug and will go into an infinite loop under
  * certain conditions.
  */
 /* binsearch: find x in v[0] <= v[1] <= ... <= v[n-1] */
-static uint16_t binsearch(const uint16_t x, const uint16_t v[], const uint16_t n)
+static uint_fast16_t binsearch(		const uint_fast16_t x,
+					const uint_fast16_t v[],
+					const uint_fast16_t n)
 {
-	uint16_t low, high, mid;
+	uint_fast16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	while (low <= high) {
@@ -69,24 +73,24 @@ static uint16_t binsearch(const uint16_t x, const uint16_t v[], const uint16_t n
 /*
  * A different order ...
  */
-static uint16_t binarySearchOne(const uint16_t x, const uint16_t v[], const uint16_t n)
+static uint_fast16_t binarySearchOne(	const uint_fast16_t x,
+					const uint_fast16_t v[],
+					const uint_fast16_t n)
 {
-	uint16_t low, high, mid;
+	uint_fast16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	mid = (low+high)/2;
-
-	while (low <= high) {
+	while (low < high && x != v[mid]) {
 
 		if (x > v[mid])
 			low = mid + 1;
-		else if (x == v[mid])
-			return mid;
 		else
 			high = mid - 1;
-
-		mid = (low+high)/2;
+		mid = (low + high)/2;
 	}
+	if (x == v[mid])
+		return mid;
 	/* no match */
 	printf("n/a");
 	return -1;
@@ -95,9 +99,11 @@ static uint16_t binarySearchOne(const uint16_t x, const uint16_t v[], const uint
 /*
  * Optimised, only one comparison made per iteration instead of two.
  */
-static uint16_t binarySearchTwo(const uint16_t x, const uint16_t v[], const uint16_t n)
+static uint_fast16_t binarySearchTwo(	const uint_fast16_t x,
+					const uint_fast16_t v[],
+					const uint_fast16_t n)
 {
-	uint16_t low, high, mid;
+	register uint_fast16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	mid = (low+high)/2;
@@ -119,7 +125,9 @@ static uint16_t binarySearchTwo(const uint16_t x, const uint16_t v[], const uint
 /*
  * Runs an empty search call, for comparison.
  */
-static uint16_t noSearch(const uint16_t x, const uint16_t v[], const uint16_t n)
+static uint_fast16_t noSearch(		const uint_fast16_t x,
+					const uint_fast16_t v[],
+					const uint_fast16_t n)
 {
 	return -1;
 }
@@ -130,7 +138,7 @@ static uint16_t noSearch(const uint16_t x, const uint16_t v[], const uint16_t n)
  * run on a POSIX machine, I shall look further into this subject in the future
  * as it is clearly a facinating area of the computing landscape.
  */
-static uint16_t myRand(uint16_t min, uint16_t max)
+static uint_fast16_t myRand(uint_fast16_t min, uint_fast16_t max)
 {
 	struct timespec seed;
 	clock_gettime(CLOCK_MONOTONIC, &seed);
@@ -154,7 +162,7 @@ static uint16_t myRand(uint16_t min, uint16_t max)
 /*
  * Fill array with randomly generated values.
  */
-static void fillArray(uint16_t array[], const uint16_t len)
+static void fillArray(uint_fast16_t array[], const uint_fast16_t len)
 {
 	size_t i;
 	for(i = 0; i < len; i++)
@@ -164,10 +172,10 @@ static void fillArray(uint16_t array[], const uint16_t len)
 /*
  * Sort the array, ascending.
  */
-static void sortArray(uint16_t array[], const uint16_t len)
+static void sortArray(uint_fast16_t array[], const uint_fast16_t len)
 {
 	size_t i;
-	uint16_t temp;
+	uint_fast16_t temp;
 	uint8_t isMod;
 
 	do
@@ -192,8 +200,11 @@ static void sortArray(uint16_t array[], const uint16_t len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-static uint64_t timeIt(const search_fn fn,
-		const uint16_t x, uint16_t v[], const uint16_t n, const uint8_t time_method)
+static uint64_t timeIt(	const search_fn fn,
+			const uint_fast16_t x,
+			uint_fast16_t v[],
+			const uint_fast16_t n,
+			const uint8_t time_method)
 {
 	struct timespec start, end;
 	size_t i;
@@ -225,9 +236,9 @@ int main(void)
 
 	while((c = getchar()) != EOF)
 	{
-		uint16_t n = myRand(A_MIN, A_MAX);
-		uint16_t x = myRand(A_MIN, n);
-		uint16_t v[n];
+		uint_fast16_t n = myRand(A_MIN, A_MAX);
+		uint_fast16_t x = myRand(A_MIN, n);
+		uint_fast16_t v[n];
 		/* */
 		fillArray(v, n);
 		x = v[x];
@@ -249,14 +260,41 @@ int main(void)
 		time = timeIt(noSearch, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for no search :~ %5lu\n", time);
 		/* */
+		puts("");
+
 		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Orig :~ %5lu\n", time);
+		/* */
+		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Orig :~ %5lu\n", time);
+		/* */
+		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Orig :~ %5lu\n", time);
+		/* */
+		puts("");
+
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5lu\n", time);
+		/* */
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5lu\n", time);
+		/* */
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5lu\n", time);
+		/* */
+		puts("");
+
+		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Seco :~ %5lu\n", time);
 		/* */
 		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Seco :~ %5lu\n", time);
 		/* */
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
+		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Seco :~ %5lu\n", time);
+		/* */
+		puts("");
+
 	}
 	return 0;
 }
