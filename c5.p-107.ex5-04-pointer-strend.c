@@ -5,12 +5,11 @@
 #include <stdio.h>
 
 /*
- * strend using pointer arithmetic, with moving iterated pointers.
+ * strend using pointer arithmetic with moving iterated pointers.
  */
 static int strend(char *s, char *t)
 {
 	size_t i, j = 0;
-	char a, b;
 
 	while (*s)
 		i++, *s++;
@@ -30,7 +29,7 @@ static int strend(char *s, char *t)
 }
 
 /*
- * strend using pointer arithmetic, stationary pointers.
+ * strend using pointer arithmetic with stationary pointers.
  */
 static int _strend(char *s, char *t)
 {
@@ -56,8 +55,8 @@ static int _strend(char *s, char *t)
 
 int main(void)
 {
-	char s[12] = { 'H','e','l','l','o',' ','W','o','r','l','d','\0' };
-	char t[6] = { 'W','o','r','l','d','\0' };
+	char s[12] = { "Hello World" };
+	char t[6] = { "world" };
 
 	if (strend(s, t))
 		puts("Yes");
