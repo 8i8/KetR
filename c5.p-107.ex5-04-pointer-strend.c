@@ -5,13 +5,12 @@
 #include <stdio.h>
 
 /*
- * Although this version of strend works, it is not at all preferable as there
- * is an increased risk that the programmer leave the pointers in the middle
- * of the string by forgetting to return them to the start of the string.
+ * strend using pointer arithmetic, with moving iterated pointers.
  */
-int strend(char *s, char *t)
+static int strend(char *s, char *t)
 {
 	size_t i, j = 0;
+	char a, b;
 
 	while (*s)
 		i++, *s++;
@@ -21,41 +20,8 @@ int strend(char *s, char *t)
 	if(i > j) {
 		while (j > 0) {
 			if (*--s == *--t) {
-				j--, i--;
-			} else  {
-				*s = *s-i, *t = *t-j;
-				return 0;
-			}
-		}
-		*s = *s-i;
-		return 1;
-	}
-	return 0;
-}
-
-/*
- * Here the problem of returning the pointer is solved by making copy's of those
- * pointers and using them during the operation in the place of the original
- * pointers received as arguments.
- */
-int _strend(char *s, char *t)
-{
-	size_t i, j = 0;
-
-	char *s1, *t1;
-
-	s1 = s, t1 = t;
-
-	while (*s1)
-		i++, *s1++;
-	while (*t1)
-		j++, *t1++;
-
-	if(i > j) {
-		while (j > 0) {
-			if (*--s1 == *--t1) {
-				j--;
-			} else 
+				--j, --i;
+			} else
 				return 0;
 		}
 		return 1;
@@ -64,10 +30,9 @@ int _strend(char *s, char *t)
 }
 
 /*
- * Here the problem is resolved by performing arithmetic on the integer i and j
- * rather than moving the pointers.
+ * strend using pointer arithmetic, stationary pointers.
  */
-int __strend(char *s, char *t)
+static int _strend(char *s, char *t)
 {
 	size_t i, j = 0;
 
@@ -92,12 +57,13 @@ int __strend(char *s, char *t)
 int main(void)
 {
 	char s[12] = { 'H','e','l','l','o',' ','W','o','r','l','d','\0' };
-	char t[6] = { 'w','o','r','l','d','\0' };
+	char t[6] = { 'W','o','r','l','d','\0' };
 
-	if (_strend(s, t))
+	if (strend(s, t))
 		puts("Yes");
 	else
 		puts("No");
+
 	return 0;
 }
 
