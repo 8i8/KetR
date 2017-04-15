@@ -24,15 +24,8 @@
  */
 #include <stdio.h>
 #include <time.h>
-#include <sys/time.h>
-#include <stdlib.h>
 #include <stdint.h>
-
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h> // equivalent to (K&R) #include "syscalls.h"
 
 #define BILLION		1000000000L
 #define A_MAX		10000
@@ -265,33 +258,15 @@ int main(void)
 		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Orig :~ %5lu\n", time);
 		/* */
-		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Orig :~ %5lu\n", time);
-		/* */
-		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Orig :~ %5lu\n", time);
-		/* */
-		puts("");
-
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
-		/* */
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
-		/* */
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
-		/* */
 		puts("");
 
 		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
 		printf("Time for Seco :~ %5lu\n", time);
 		/* */
-		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Seco :~ %5lu\n", time);
-		/* */
-		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Seco :~ %5lu\n", time);
+		puts("");
+
+		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
+		printf("Time for Thir :~ %5lu\n", time);
 		/* */
 		puts("");
 
