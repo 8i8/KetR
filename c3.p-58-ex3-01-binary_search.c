@@ -40,7 +40,7 @@ static uint_fast16_t binsearch(		const uint_fast16_t x,
 					const uint_fast16_t v[],
 					const uint_fast16_t n)
 {
-	uint_fast16_t low, high, mid;
+	register uint_fast16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	while (low <= high) {
@@ -66,7 +66,7 @@ static uint_fast16_t binarySearchOne(	const uint_fast16_t x,
 					const uint_fast16_t v[],
 					const uint_fast16_t n)
 {
-	uint_fast16_t low, high, mid;
+	register uint_fast16_t low, high, mid;
 	low = 0;
 	high = n - 1;
 	mid = (low+high)/2;
@@ -189,37 +189,46 @@ static void sortArray(uint_fast16_t array[], const uint_fast16_t len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-static uint64_t timeIt(	const search_fn fn,
+static uint64_t* timeIt(const search_fn fn,
 			const uint_fast16_t x,
 			uint_fast16_t v[],
 			const uint_fast16_t n,
-			const uint8_t time_method)
+			const uint8_t time_method,
+			uint64_t *time)
 {
 	struct timespec start, end;
 	size_t i;
-	uint64_t time;
-	uint64_t factor;
+	uint64_t factor, remainder;
 
-	factor = 5000000;
-	time = 0;
+	factor = 10000000;
+	*time = 0;
 
+	clock_gettime(time_method, &start);
 	for (i = 0; i < factor; i++) {
-		clock_gettime(time_method, &start);
 		(*fn)(x, v, n);
-		clock_gettime(time_method, &end);
-		time += BILLION * (end.tv_sec - start.tv_sec)
-					+ end.tv_nsec - start.tv_nsec;
 	}
+	clock_gettime(time_method, &end);
+	*time += BILLION * (end.tv_sec - start.tv_sec)
+				+ end.tv_nsec - start.tv_nsec;
 
-	time /= factor;
+	*(time+1) = *time / factor;
+	*(time+2) = *time % factor;
+	*(time+2) += *(time+1);
 
 	return time;
 }
 
+/*
+ * CLOCK_MONOTONIC
+ * CLOCK_MONOTONIC_RAW
+ * CLOCK_PROCESS_CPUTIME_ID
+ */
+#define CLOCK_METHOD CLOCK_MONOTONIC_RAW
+
 int main(void)
 {
 	int8_t c;
-	uint64_t time;
+	uint64_t time[3];
 
 	puts("Press a key to start ...");
 
@@ -241,28 +250,27 @@ int main(void)
 		searchOne = binarySearchOne;
 		searchTwo = binarySearchTwo;
 
-		/*
-		 * CLOCK_MONOTONIC
-		 * CLOCK_MONOTONIC_RAW
-		 * CLOCK_PROCESS_CPUTIME_ID
-		 */
-		time = timeIt(noSearch, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for no search :~ %5lu\n", time);
+		timeIt(noSearch, x, v, n, CLOCK_METHOD, time);
+		printf("Time for no search :~ %5lu\n", time[0]);
+		printf("Time for no search :~ %5lu.%5lu\n", time[1], time[2]);
 		/* */
 		puts("");
 
-		time = timeIt(searchOriginal, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Orig :~ %5lu\n", time);
+		timeIt(searchOriginal, x, v, n, CLOCK_METHOD, time);
+		printf("Time for Orig :~ %5lu\n", time[0]);
+		printf("Time for Orig :~ %5lu.%5lu\n", time[1], time[2]);
 		/* */
 		puts("");
 
-		time = timeIt(searchOne, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Seco :~ %5lu\n", time);
+		timeIt(searchOne, x, v, n, CLOCK_METHOD, time);
+		printf("Time for Seco :~ %5lu\n", time[0]);
+		printf("Time for Seco :~ %5lu.%5lu\n", time[1], time[2]);
 		/* */
 		puts("");
 
-		time = timeIt(searchTwo, x, v, n, CLOCK_PROCESS_CPUTIME_ID);
-		printf("Time for Thir :~ %5lu\n", time);
+		timeIt(searchTwo, x, v, n, CLOCK_METHOD, time);
+		printf("Time for Thir :~ %5lu\n", time[0]);
+		printf("Time for Thir :~ %5lu.%5lu\n", time[1], time[2]);
 		/* */
 		puts("");
 

@@ -20,6 +20,13 @@
 #define ALLOCSIZE	100000			/* size of available space */
 #define BILLION		1000000000L
 
+/*
+ * CLOCK_MONOTONIC
+ * CLOCK_MONOTONIC_RAW
+ * CLOCK_PROCESS_CPUTIME_ID
+ */
+#define CLOCK_METHOD		CLOCK_MONOTONIC
+
 int readlines(char *lineptr[], int maxlines);
 int mainreadlines(char *lineptr[], int maxlines, char alloc[], char *localp);
 int getline(char *, int);
@@ -44,45 +51,49 @@ int main(void)
 
 	struct timespec start, end;
 	size_t i;
-	uint64_t time;
-	uint64_t time2;
-	uint64_t factor;
+	uint64_t time, time2, factor;
 
 	factor = 1000000;
-	time = 0;
+	time = time2 = 0;
+
+	clock_gettime(CLOCK_METHOD, &start);
 
 	for (i = 0; i < factor; i++) {
-
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
 		if ((nlines = readlines(lineptr, MAXLINES)) >= 0)
 		{
 			qsort(lineptr, 0, nlines-1);	
 			writelines(lineptr, nlines);
 		} else {
-			printf("Error: input to big to sort\n");
+		      printf("Error: input to big to sort\n");
 			return 1;
 		}
 
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-		time += BILLION * (end.tv_sec - start.tv_sec)
-					+ end.tv_nsec - start.tv_nsec;
+	}
 
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+	clock_gettime(CLOCK_METHOD, &end);
+	time += BILLION * (end.tv_sec - start.tv_sec)
+				+ end.tv_nsec - start.tv_nsec;
+
+	clock_gettime(CLOCK_METHOD, &start);
+
+	for (i = 0; i < factor; i++) {
 
 		if ((nlines = mainreadlines(lineptr, MAXLINES, mainalloc, localp)) >= 0)
+		if ((nlines = readlines(lineptr, MAXLINES)) >= 0)
 		{
 			qsort(lineptr, 0, nlines-1);	
 			writelines(lineptr, nlines);
 		} else {
-			printf("Error: input to big to sort\n");
+		      printf("Error: input to big to sort\n");
 			return 1;
 		}
 
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-		time2 += BILLION * (end.tv_sec - start.tv_sec)
-					+ end.tv_nsec - start.tv_nsec;
 	}
+
+	clock_gettime(CLOCK_METHOD, &end);
+	time2 += BILLION * (end.tv_sec - start.tv_sec)
+				+ end.tv_nsec - start.tv_nsec;
 
 	time /= factor;
 	time2 /= factor;
@@ -118,14 +129,14 @@ int readlines(char *lineptr[], int maxlines)
 /*
  * readlines that does not use alloc.
  */
-int mainreadlines(char *lineptr[], int maxlines, char alloc[], char *localp)
+int mainreadlines(char *lineptr[], int maxlines, char localalloc[], char *localp)
 {
 	int len, nlines;
 	char *p, line[MAXLEN];
 
 	nlines = 0;
 	while ((len = getline(line, MAXLEN)) > 0)
-		if (nlines >= maxlines || (p = mainalloc(len, alloc, localp)) == NULL)
+		if (nlines >= maxlines || (p = mainalloc(len, localalloc, localp)) == NULL)
 			return -1;
 		else {
 			line[len-1] = '\0'; /* delete newline */
@@ -170,9 +181,9 @@ char *alloc(int n)	/* return pointer to  characters */
 /*
  * Count memory use for the sort operation.
  */
-char *mainalloc(int n, char alloc[], char *localp)	/* return pointer to  characters */
+char *mainalloc(int n, char localalloc[], char *localp)	/* return pointer to  characters */
 {
-	if (alloc + ALLOCSIZE - localp >= n) { /* if 'n' fits */
+	if (localalloc + ALLOCSIZE - localp >= n) { /* if 'n' fits */
 		localp += n;
 		return localp - n;	/* old p */
 	} else		/* not enough room */
