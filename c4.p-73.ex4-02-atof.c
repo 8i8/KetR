@@ -13,19 +13,6 @@
 
 #define MAXLINE	1000
 
-int main(void)
-{
-	double sum, atof(char []);
-	char line[MAXLINE];
-	int getline(char line[], int max);
-
-	sum = 0;
-	while (getline(line, MAXLINE) > 0)
-		printf("\t%g\n", sum += atof(line));
-
-	return 0;
-}
-
 /*
  * Convert from char to float, read decimal points, the + - operators and
  * scientific notation.
@@ -94,21 +81,16 @@ double atof(char s[])
 	return val;
 }
 
-/*
- * Get input line by line.
- */
-int getline(char s[], int lim)
+int main(void)
 {
-	size_t i;
-	char c;
+	double sum, atof(char []);
+	char line[MAXLINE];
+	int getline(char line[], int max);
 
-	i = 0;
-	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
-		s[i++] = c;
-	if (c == '\n')
-		s[i++] = c;
-	s[i] = '\0';
+	sum = 0;
+	while (getline(line, MAXLINE) > 0)
+		printf("\t%g\n", sum += atof(line));
 
-	return i;
+	return 0;
 }
 

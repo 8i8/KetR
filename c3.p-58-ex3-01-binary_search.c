@@ -35,10 +35,6 @@ typedef uint_fast16_t (*search_fn)(	const uint_fast16_t,
 					const uint_fast16_t*,
 					const uint_fast16_t);
 
-/*
- * This algorithm contains a bug and will go into an infinite loop under
- * certain conditions.
- */
 /* binsearch: find x in v[0] <= v[1] <= ... <= v[n-1] */
 static uint_fast16_t binsearch(		const uint_fast16_t x,
 					const uint_fast16_t v[],
