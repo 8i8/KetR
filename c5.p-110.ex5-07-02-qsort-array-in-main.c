@@ -2,8 +2,6 @@
  * Exercise 5-7. Rewrite readlines to store lines in an array supplied by main,
  * rather than calling alloc to maintain storage. How much faster is the
  * program?
- *
- * We se here that the program is no faster when alloc is declaired in main.
  */
 
 /* Redefine getline */
@@ -15,9 +13,9 @@
 #include <time.h>
 #include <stdint.h>
 
-#define MAXLINES	50000			/* Maxlines to be sorted */
+#define MAXLINES	5000			/* Maxlines to be sorted */
 #define MAXLEN		1000			/* max length of any input line */
-#define ALLOCSIZE	100000			/* size of available space */
+#define ALLOCSIZE	10000			/* size of available space */
 #define BILLION		1000000000L
 
 /*
@@ -25,13 +23,13 @@
  * CLOCK_MONOTONIC_RAW
  * CLOCK_PROCESS_CPUTIME_ID
  */
-#define CLOCK_METHOD		CLOCK_MONOTONIC
+#define CLOCK_METHOD		CLOCK_PROCESS_CPUTIME_ID
 
 int readlines(char *lineptr[], int maxlines);
 int mainreadlines(char *lineptr[], int maxlines, char alloc[], char *localp);
 int getline(char *, int);
 char *alloc(int);
-char *mainalloc(int n, char alloc[], char *local);
+char* mainalloc(int n, char alloc[], char *local);
 void writelines(char *lineptr[], int nlines);
 void qsort(char *lineptr[], int left, int right);
 
@@ -46,12 +44,12 @@ int main(void)
 {
 	int nlines;	/* number of input lines to read */
 
-	char mainalloc[ALLOCSIZE];
-	char *localp = mainalloc;
-
 	struct timespec start, end;
 	size_t i;
 	uint64_t time, time2, factor;
+
+	char localalloc[ALLOCSIZE];
+	char *localp = localalloc;
 
 	factor = 1000000;
 	time = time2 = 0;
@@ -65,35 +63,32 @@ int main(void)
 			qsort(lineptr, 0, nlines-1);	
 			writelines(lineptr, nlines);
 		} else {
-		      printf("Error: input to big to sort\n");
+			printf("Error: input to big to sort\n");
 			return 1;
 		}
 
 	}
 
 	clock_gettime(CLOCK_METHOD, &end);
-	time += BILLION * (end.tv_sec - start.tv_sec)
-				+ end.tv_nsec - start.tv_nsec;
+	time += BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
 
 	clock_gettime(CLOCK_METHOD, &start);
 
 	for (i = 0; i < factor; i++) {
 
-		if ((nlines = mainreadlines(lineptr, MAXLINES, mainalloc, localp)) >= 0)
-		if ((nlines = readlines(lineptr, MAXLINES)) >= 0)
+		if ((nlines = mainreadlines(lineptr, MAXLINES, localalloc, localp)) >= 0)
 		{
 			qsort(lineptr, 0, nlines-1);	
 			writelines(lineptr, nlines);
 		} else {
-		      printf("Error: input to big to sort\n");
+			printf("Error: input to big to sort\n");
 			return 1;
 		}
 
 	}
 
 	clock_gettime(CLOCK_METHOD, &end);
-	time2 += BILLION * (end.tv_sec - start.tv_sec)
-				+ end.tv_nsec - start.tv_nsec;
+	time2 += BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
 
 	time /= factor;
 	time2 /= factor;
@@ -129,21 +124,48 @@ int readlines(char *lineptr[], int maxlines)
 /*
  * readlines that does not use alloc.
  */
-int mainreadlines(char *lineptr[], int maxlines, char localalloc[], char *localp)
+int mainreadlines(char *lineptr[], int maxlines, char *localalloc[], char *localp)
 {
 	int len, nlines;
 	char *p, line[MAXLEN];
 
 	nlines = 0;
 	while ((len = getline(line, MAXLEN)) > 0)
-		if (nlines >= maxlines || (p = mainalloc(len, localalloc, localp)) == NULL)
+		if (nlines >= maxlines)
 			return -1;
 		else {
+			while (*line)
+			localalloc[nlines] = line
 			line[len-1] = '\0'; /* delete newline */
 			strcpy(p, line);
 			lineptr[nlines++] = p;
 		}
+
 	return nlines;
+}
+
+/*
+ * Count memory use for the sort operation.
+ */
+char* alloc(int n)	/* return pointer to  characters */
+{
+	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
+		allocp += n;
+		return allocp - n;	/* old p */
+	} else		/* not enough room */
+		return 0;
+}
+
+/*
+ * Count memory use for the sort operation.
+ */
+char* mainalloc(int n, char *localalloc, char *localp)	/* return pointer to  characters */
+{
+	if (localalloc + ALLOCSIZE - localp >= n) { /* if 'n' fits */
+		localp += n;
+		return localp - n;	/* old p */
+	} else		/* not enough room */
+		return 0;
 }
 
 /*
@@ -159,44 +181,29 @@ int getline(char *s, int lim)
 		*s++ = c;
 	if (c == '\n')
 		*s++ = c;
-	else if (c == EOF)
-		fflush(stdin);
 	*s = '\0';
 
 	return s - s_in;
 }
 
 /*
- * Count memory use for the sort operation.
+ * Write output lines.
  */
-char *alloc(int n)	/* return pointer to  characters */
-{
-	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
-		allocp += n;
-		return allocp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
-}
-
-/*
- * Count memory use for the sort operation.
- */
-char *mainalloc(int n, char localalloc[], char *localp)	/* return pointer to  characters */
-{
-	if (localalloc + ALLOCSIZE - localp >= n) { /* if 'n' fits */
-		localp += n;
-		return localp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
-}
+//void writelines(char *lineptr[], int nlines)
+//{
+//	while (nlines-- > 0)
+//		printf("%s\n", *lineptr++);
+//}
 
 /*
  * Write output lines.
  */
 void writelines(char *lineptr[], int nlines)
 {
-	while (nlines-- > 0)
-		printf("%s\n", *lineptr++);
+	int i;
+
+	for (i = 0; i < nlines; i++)
+		printf("%s\n", lineptr[i]);
 }
 
 /*
