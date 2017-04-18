@@ -2,6 +2,8 @@
  * Exercise 5-7. Rewrite readlines to store lines in an array supplied by main,
  * rather than calling alloc to maintain storage. How much faster is the
  * program?
+ *
+ * Code prior to testing the speed.
  */
 
 /* Redefine getline */
@@ -11,19 +13,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAXLINES	50000			/* Maxlines to be sorted */
+#define MAXLINES	5000			/* Maxlines to be sorted */
 #define MAXLEN		1000			/* max length of any input line */
-#define ALLOCSIZE	100000			/* size of available space */
 
-int readlines(char *lineptr[], int maxlines);
-int getline(char s[nlines][], int lim);
+int readlines(char *lineptr[], char *allocp, int maxlines);
+int getline(char *, int);
 char *alloc(int);
 void writelines(char *lineptr[], int nlines);
 void qsort(char *lineptr[], int left, int right);
 
 char *lineptr[MAXLINES];			/* Pointer to text lines */
-char allocbuf[ALLOCSIZE][MAXLINES];			/* storage for alloc */
-char *allocp = allocbuf;			/* next free position */
 
 /*
  * Sort input lines.
@@ -32,17 +31,17 @@ int main(void)
 {
 	int nlines;	/* number of input lines to read */
 
-	while ((nlines = getline(allocbuf[nlines][], MAXLEN)) >= 0)
-		;
+	char allocbuf[MAXLINES][MAXLEN];			/* storage for alloc */
+	char *allocp = (char*)allocbuf;			/* next free position */
 
-	//if ((nlines = readlines(lineptr, allocbuf)) >= 0) {
-	//	qsort(lineptr, 0, nlines-1);
-	//	writelines(lineptr, nlines);
-	//	return 0;
-	//} else {
-	//	printf("Error: input to big to sort\n");
-	//	return 1;
-	//}
+	if ((nlines = readlines(lineptr, allocp, MAXLINES)) >= 0) {
+		qsort(lineptr, 0, nlines-1);
+		writelines(lineptr, nlines);
+		return 0;
+	} else {
+		printf("Error: input to big to sort\n");
+		return 1;
+	}
 }
 
 /*
@@ -50,15 +49,17 @@ int main(void)
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-int readlines(char *lineptr[], int allocbuf[][])
+int readlines(char *lineptr[], char *allocp, int maxlines)
 {
-	char *p;
+	int len, nlines;
+	char *p, line[MAXLEN];
 
 	nlines = 0;
-	while (*allocbuf[0])
-		if (nlines >= maxlines || (p = alloc(len)) == NULL)
+	while ((len = getline(line, MAXLEN)) > 0)
+		if (nlines >= maxlines)
 			return -1;
 		else {
+			p = allocp+nlines*MAXLEN;
 			line[len-1] = '\0'; /* delete newline */
 			strcpy(p, line);
 			lineptr[nlines++] = p;
@@ -69,16 +70,16 @@ int readlines(char *lineptr[], int allocbuf[][])
 /*
  * Input from stdin line by line.
  */
-int getline(char s[nlines][], int lim)
+int getline(char *s, int lim)
 {
 	char *s_in;
 	int c;
-	s_in = s[0];
+	s_in = s;
 
 	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
-		**s++ = c;
+		*s++ = c;
 	if (c == '\n')
-		**s++ = c;
+		*s++ = c;
 	*s = '\0';
 
 	return s - s_in;
@@ -87,14 +88,14 @@ int getline(char s[nlines][], int lim)
 /*
  * Count memory use for the sort operation.
  */
-char *alloc(int n)	/* return pointer to  characters */
-{
-	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
-		allocp += n;
-		return allocp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
-}
+//char *alloc(int n)	/* return pointer to  characters */
+//{
+//	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
+//		allocp += n;
+//		return allocp - n;	/* old p */
+//	} else		/* not enough room */
+//		return 0;
+//}
 
 /*
  * Write output lines.

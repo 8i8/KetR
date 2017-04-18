@@ -25,17 +25,18 @@
  */
 #define CLOCK_METHOD		CLOCK_PROCESS_CPUTIME_ID
 
-int readlines(char *lineptr[], int maxlines);
-int mainreadlines(char *lineptr[], int maxlines, char alloc[], char *localp);
-int getline(char *, int);
-char *alloc(int);
-char* mainalloc(int n, char alloc[], char *local);
-void writelines(char *lineptr[], int nlines);
-void qsort(char *lineptr[], int left, int right);
+static int readlines(char *lineptr[], int maxlines);
+static int readlines2(char *lineptr[], char *allocp, int maxlines);
+static int getline(char *, int);
+static char *alloc(int);
+static void writelines(char *lineptr[], int nlines);
+static void qsort(char *lineptr[], int left, int right);
+static void swap(char *v[], int i, int j);
 
-char *lineptr[MAXLINES];			/* Pointer to text lines */
-char allocbuf[ALLOCSIZE];			/* storage for alloc */
-char *allocp = allocbuf;			/* next free position */
+static char *lineptr[MAXLINES];			/* Pointer to text lines */
+static char *lineptr2[MAXLINES];		/* Pointer to text lines */
+static char allocbuf[ALLOCSIZE];		/* storage for alloc */
+static char *allocp = allocbuf;			/* next free position */
 
 /*
  * Sort input lines.
@@ -44,22 +45,21 @@ int main(void)
 {
 	int nlines;	/* number of input lines to read */
 
+	char allocbuf2[MAXLINES][MAXLEN];		/* storage for alloc */
+	char *allocp2 = (char*)allocbuf2;		/* next free position */
+
 	struct timespec start, end;
 	size_t i;
 	uint64_t time, time2, factor;
-
-	char localalloc[ALLOCSIZE];
-	char *localp = localalloc;
 
 	factor = 1000000;
 	time = time2 = 0;
 
 	clock_gettime(CLOCK_METHOD, &start);
 
-	for (i = 0; i < factor; i++) {
-
-		if ((nlines = readlines(lineptr, MAXLINES)) >= 0)
-		{
+	for (i = 0; i < factor; i++)
+	{
+		if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
 			qsort(lineptr, 0, nlines-1);	
 			writelines(lineptr, nlines);
 		} else {
@@ -74,17 +74,15 @@ int main(void)
 
 	clock_gettime(CLOCK_METHOD, &start);
 
-	for (i = 0; i < factor; i++) {
-
-		if ((nlines = mainreadlines(lineptr, MAXLINES, localalloc, localp)) >= 0)
-		{
-			qsort(lineptr, 0, nlines-1);	
-			writelines(lineptr, nlines);
+	for (i = 0; i < factor; i++)
+	{
+		if ((nlines = readlines2(lineptr2, allocp2, MAXLINES)) >= 0) {
+			qsort(lineptr2, 0, nlines-1);
+			writelines(lineptr2, nlines);
 		} else {
 			printf("Error: input to big to sort\n");
 			return 1;
 		}
-
 	}
 
 	clock_gettime(CLOCK_METHOD, &end);
@@ -104,7 +102,7 @@ int main(void)
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-int readlines(char *lineptr[], int maxlines)
+static int readlines(char *lineptr[], const int maxlines)
 {
 	int len, nlines;
 	char *p, line[MAXLEN];
@@ -122,9 +120,9 @@ int readlines(char *lineptr[], int maxlines)
 }
 
 /*
- * readlines that does not use alloc.
+ * Modifyed readline that takes an array from main.
  */
-int mainreadlines(char *lineptr[], int maxlines, char *localalloc[], char *localp)
+static int readlines2(char *lineptr[], char *allocp, const int maxlines)
 {
 	int len, nlines;
 	char *p, line[MAXLEN];
@@ -134,20 +132,18 @@ int mainreadlines(char *lineptr[], int maxlines, char *localalloc[], char *local
 		if (nlines >= maxlines)
 			return -1;
 		else {
-			while (*line)
-			localalloc[nlines] = line
+			p = allocp+nlines*MAXLEN;
 			line[len-1] = '\0'; /* delete newline */
 			strcpy(p, line);
 			lineptr[nlines++] = p;
 		}
-
 	return nlines;
 }
 
 /*
  * Count memory use for the sort operation.
  */
-char* alloc(int n)	/* return pointer to  characters */
+static char* alloc(const int n)	/* return pointer to  characters */
 {
 	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
 		allocp += n;
@@ -157,21 +153,9 @@ char* alloc(int n)	/* return pointer to  characters */
 }
 
 /*
- * Count memory use for the sort operation.
- */
-char* mainalloc(int n, char *localalloc, char *localp)	/* return pointer to  characters */
-{
-	if (localalloc + ALLOCSIZE - localp >= n) { /* if 'n' fits */
-		localp += n;
-		return localp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
-}
-
-/*
  * Input from stdin line by line.
  */
-int getline(char *s, int lim)
+static int getline(char *s, int lim)
 {
 	char *s_in;
 	int c;
@@ -189,30 +173,18 @@ int getline(char *s, int lim)
 /*
  * Write output lines.
  */
-//void writelines(char *lineptr[], int nlines)
-//{
-//	while (nlines-- > 0)
-//		printf("%s\n", *lineptr++);
-//}
-
-/*
- * Write output lines.
- */
-void writelines(char *lineptr[], int nlines)
+static void writelines(char *lineptr[], int nlines)
 {
-	int i;
-
-	for (i = 0; i < nlines; i++)
-		printf("%s\n", lineptr[i]);
+	while (nlines-- > 0)
+		printf("%s\n", *lineptr++);
 }
 
 /*
  * Sort v[left]...v[right] into increasing order.
  */
-void qsort(char *v[], int left, int right)
+static void qsort(char *v[], int left, int right)
 {
 	int i, last;
-	void swap(char *v[], int i, int j);
 
 	if (left >= right)	/* do nothing if array cantains */
 		return;		/* fewer than two eliments */
@@ -229,7 +201,7 @@ void qsort(char *v[], int left, int right)
 /*
  * Interchange v[i] and v[j]
  */
-void swap(char *v[], int i, int j)
+static void swap(char *v[], int i, int j)
 {
 	char *temp;
 
