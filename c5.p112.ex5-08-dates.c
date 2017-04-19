@@ -20,22 +20,28 @@ static int check_day(const int leap, const int month, const int day)
 }
 
 /*
+ * Returns boolean, is/isnot leap year.
+ */
+static int leap(const int year)
+{
+	return (year%4 == 0 && year%100 != 0) || year%400 == 0;
+}
+
+/*
  * day_of_year:	set day of year from month & day.
  */
-static int day_of_year(const int year, const int month, const int day)
+static int day_of_year(const int year, const int month, int day)
 {
-	int i, leap;
+	int i;
 
 	if (year == 0 || month < 1 || month > 12)
 		return -1;
 
-	leap = year%4 == 0 && year%100 != 0 || year%400 == 0;
-
-	if (check_day(leap, month, day))
+	if (check_day(leap(year), month, day))
 		return -1;
 
 	for (i = 1; i < month; i++)
-		day += daytab[leap][i];
+		day += daytab[leap(year)][i];
 
 	return day;
 }
@@ -43,17 +49,15 @@ static int day_of_year(const int year, const int month, const int day)
 /*
  * month_day:	set month, day from day of year.
  */
-static int month_day(const int year, const int yearday, int *pmonth, int *pday)
+static int month_day(const int year, int yearday, int *pmonth, int *pday)
 {
-	int i, leap;
+	int i;
 
-	leap = year%4 == 0 && year%100 != 0 || year%400 == 0;
-
-	if (yearday < 1 || yearday > 365+leap)
+	if (yearday < 1 || yearday > 365+leap(year))
 		return -1;
 
-	for (i = 0; yearday > daytab[leap][i]; i++)
-		yearday -= daytab[leap][i];
+	for (i = 0; yearday > daytab[leap(year)][i]; i++)
+		yearday -= daytab[leap(year)][i];
 	*pmonth = i;
 	*pday = yearday;
 
