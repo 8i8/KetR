@@ -45,8 +45,8 @@ int main(void)
 {
 	int nlines;	/* number of input lines to read */
 
-	char allocbuf2[MAXLINES][MAXLEN];		/* storage for alloc */
-	char *allocp2 = (char*)allocbuf2;		/* next free position */
+	char allocbuf2[ALLOCSIZE];			/* storage for alloc */
+	char *allocp2 = allocbuf2;		/* next free position */
 
 	struct timespec start, end;
 	size_t i;
