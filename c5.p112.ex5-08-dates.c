@@ -14,7 +14,7 @@ static char daytab[2][13] = {
  */
 static int check_day(const int leap, const int month, const int day)
 {
-	if (day <= daytab[leap][month] && day > 0)
+	if (day <= daytab[leap(year)][month] && day > 0)
 		return 0;
 	return -1;
 }
@@ -37,7 +37,7 @@ static int day_of_year(const int year, const int month, int day)
 	if (year == 0 || month < 1 || month > 12)
 		return -1;
 
-	if (check_day(leap(year), month, day))
+	if (check_day(year, month, day))
 		return -1;
 
 	for (i = 1; i < month; i++)
