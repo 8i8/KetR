@@ -6,9 +6,13 @@
  */
 #include <stdio.h>
 
-static char daytab[2][13] = {
+/*
+ * Array of days in the month with boolean value for leap year status.
+ */
+static char daytab[3][13] = {
 	{ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-	{ 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+	{ 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+	{-1,  0,  3,  3,  6,  1,  4,  6,  2,  5,  0,  3,  5 }
 };
 
 /*
@@ -30,6 +34,20 @@ static int check_day(const int year, const int month, const int day)
 }
 
 /*
+ * Century table, gives Gregorian correction for the given year, rounded to the
+ * century not the precise year.
+ */
+static int century(int cent)
+{
+	static int correction[2][5] = {
+		{ 16, 17, 18, 19, 20 },
+		{  0,  5,  3,  1,  0 }
+	};
+
+	return correction[1][cent-16];
+}
+
+/*
  * Returns a pointer to the name of the month.
  */
 static char *month_name(const int month)
@@ -48,18 +66,50 @@ static char *month_name(const int month)
 /*
  * Returns a pointer to the name of the day.
  */
-static char *day_name(int day, int year)
+static char *the_day(int day)
 {
 	static char *name[] = {
-		"Sunday", "Monday", "Tuesday", "Wednesday",
-		"Thursday", "Friday", "Saturday"
+		"Saturday", "Sunday", "Monday", "Tuesday",
+		"Wednesday", "Thursday", "Friday"
 	};
 
 	return name[day];
 }
 
+static char *day_name(int year, int month, int day)
+{
+	int value;
+
+	/*
+	 * Add the Day and the value for the Month (from the Month-Table). If
+	 * the resulting number is greater than 6, subtract the highest
+	 * multiple of 7 in it. Hold this number till step 3. 
+	 */
+	day = (day + daytab[2][month]) % 7;
+
+	/*
+	 * Subtract from the (last two digits of the) Year the highest multiple
+	 * of 28 in it. Add to the resulting number the number you get when you
+	 * divide it by 4 and round down (i.e., drop the decimal). Now add the
+	 * value for the Century from the Century Table. If the Month is Jan.
+	 * or Feb. and the Year is a leap year, subtract 1. 
+	 */
+	value = year%100;
+	value = value%28 + value/4;
+	value += century(year/100);
+	if (month < 3)
+		value -= leap(year);
+
+	/*
+	 * Add together the results from steps 1 and 2. If the resulting number
+	 * is greater than 6, subtract the highest multiple of 7 in it. Using
+	 * the resulting number, look up the Day-of-week in the Weekday-Table.
+	 */
+	return the_day((value + day) % 7);
+}
+
 /*
- * day_of_year:	set day of year from month & day.
+ * day_of_year:	set day of year from a givem month & day number.
  */
 static int day_of_year(const int year, const int month, int day)
 {
@@ -98,27 +148,33 @@ static int month_day(const int year, int yearday, int *pmonth, int *pday)
 
 int main(void)
 {
-	int day;
+	int day_number;
 	int is_date;
 	int pmonth, pday;
-	char *pmonth_name;
+	char *p_month_name;
+	char *p_day_name;
 
-	day = day_of_year(1974, 9, 10);
+	int year = 1974;
+	int month = 9;
+	int day = 10;
 
-	if (day == -1) {
+	day_number = day_of_year(year, month, day);
+
+	if (day_number == -1) {
 		printf("error: day_of_year incorrect format.\n");
 		return 1;
 	} else
-		printf("Day out of 365 : %d\n", day);
+		printf("Day out of 365 : %d\n", day_number);
 
-	is_date = month_day(1974, 253, &pmonth, &pday);
-	pmonth_name = month_name(pmonth);
+	is_date = month_day(year, day_number, &pmonth, &pday);
+	p_month_name = month_name(pmonth);
+	p_day_name = day_name(year, month, day);
 
 	if (is_date == -1) {
 		printf("error: month_day incorrect format.\n");
 		return 1;
 	} else
-		printf("%s %d\n", pmonth_name, pday);
+		printf("%s %d %s\n", p_day_name, pday, p_month_name);
 
 	return 0;
 }
