@@ -9,6 +9,7 @@
 
 /*
  * Array of days in the month with boolean value for leap year status.
+ * The third array are the correction for each month for the day.
  */
 static char daytab[3][13] = {
 	{ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
@@ -106,7 +107,7 @@ static char *day_name(		register int_fast16_t year,
 	 */
 	value = year%100;
 
-	/* Mystery constant to make it work. */
+	/* Mystery constant to make it work for 0. */
 	if (value == 0)
 		value = 101;
 
