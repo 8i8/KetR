@@ -5,6 +5,7 @@
  * http://www.wikihow.com/Calculate-the-Day-of-the-Week
  */
 #include <stdio.h>
+#include <stdint.h>
 
 /*
  * Array of days in the month with boolean value for leap year status.
@@ -18,7 +19,7 @@ static char daytab[3][13] = {
 /*
  * Returns boolean, is/isnot leap year.
  */
-static int leap(const int year)
+static int leap(const register int_fast16_t year)
 {
 	return (year%4 == 0 && year%100 != 0) || year%400 == 0;
 }
@@ -50,7 +51,7 @@ static int century(int cent)
 /*
  * Returns a pointer to the name of the month.
  */
-static char *month_name(const int month)
+static char *month_name(const register uint_fast8_t month)
 {
 	static char *name[] = {
 		"Illeagal month",
@@ -66,7 +67,7 @@ static char *month_name(const int month)
 /*
  * Returns a pointer to the name of the day.
  */
-static char *the_day(int day)
+static char *the_day(const uint_fast8_t day)
 {
 	static char *name[] = {
 		"Saturday", "Sunday", "Monday", "Tuesday",
@@ -76,9 +77,14 @@ static char *the_day(int day)
 	return name[day];
 }
 
-static char *day_name(int year, int month, int day)
+/*
+ * Returns the name of the day for the given date.
+ */
+static char *day_name(		register int_fast16_t year,
+				register uint_fast8_t month,
+				register uint_fast16_t day)
 {
-	int value;
+	register uint_fast8_t value; /* Used to store the calculated value from year */
 
 	/*
 	 * Add the Day and the value for the Month (from the Month-Table). If
@@ -111,9 +117,11 @@ static char *day_name(int year, int month, int day)
 /*
  * day_of_year:	set day of year from a givem month & day number.
  */
-static int day_of_year(const int year, const int month, int day)
+static int day_of_year(		const register int_fast16_t year,
+				const register uint_fast8_t month,
+				register uint_fast16_t day)
 {
-	int i;
+	register uint_fast8_t i;
 
 	if (year == 0 || month < 1 || month > 12)
 		return -1;
@@ -130,9 +138,11 @@ static int day_of_year(const int year, const int month, int day)
 /*
  * month_day:	set month, day from day of year.
  */
-static int month_day(const int year, int yearday, int *pmonth, int *pday)
+static int month_day(		const register int_fast16_t year,
+				register uint_fast16_t yearday,
+				int *pmonth, int *pday)
 {
-	int i;
+	register uint_fast16_t i;
 
 	if (yearday < 1 || yearday > 365+leap(year))
 		return -1;
@@ -158,6 +168,10 @@ int main(void)
 	int month = 9;
 	int day = 10;
 
+	/*
+	 * Get the numeric value for the day, out of all of the days in the
+	 * year.
+	 */
 	day_number = day_of_year(year, month, day);
 
 	if (day_number == -1) {
@@ -174,7 +188,7 @@ int main(void)
 		printf("error: month_day incorrect format.\n");
 		return 1;
 	} else
-		printf("%s %d %s\n", p_day_name, pday, p_month_name);
+		printf("%s %d %s %d\n", p_day_name, pday, p_month_name, year);
 
 	return 0;
 }
