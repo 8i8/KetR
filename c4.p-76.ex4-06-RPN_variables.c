@@ -4,7 +4,7 @@
  * recently printed value.
  *
  * TODO For the interests of moving on a little I have decided to take a pause
- * on this quetion, it remains questions 4-6 till 4-10 to be compleeted. INthis
+ * on this quetion, it remains questions 4-6 till 4-10 to be compleeted. In this
  * particular question I have just started to impliment the use of variables
  * and in so doing realised that I have used a function to generate string
  * tokens when I could have used s[] from the input; For tis reason the code
@@ -242,7 +242,7 @@ static void printError(int num, int type)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Numerical stack
+ *  Numeric stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define MAXVAL	100		/* Maximum depth of val stack */
@@ -257,11 +257,11 @@ static void printError(int num, int type)
 #define TYPE	0
 #define INDEX	1
 
-static size_t fp = 0;		/* Next free stack position */
-static double st_val[MAXVAL];	/* value stack */
+static size_t fp = 0;				/* Next free stack position */
+static double st_val[MAXVAL];			/* value stack */
 static void set_index(int type, int index);
-static size_t vp = 0;			/* Next free var stack position */
-static char st_var[MAXVAL];		/* Var stack */
+static size_t vp = 0;				/* Next free var stack position */
+static char st_var[MAXVAL];			/* Var stack */
 static int currentVar;
 static int isCurrentVar = 0;
 static int getType(int ip);

@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#define DEBUG	0
+
 /*
  * Array of days in the month with boolean value for leap year status.
  * The third array are the correction for each month for the day.
@@ -38,8 +40,8 @@ static int check_day(		const int_fast16_t year,
 }
 
 /*
- * Century table, gives Gregorian correction for the given year, rounded to the
- * century not the precise year.
+ * Century table, gives Gregorian correction for the given year, input data
+ * required is the century not the year.
  */
 static int century(int cent)
 {
@@ -47,7 +49,6 @@ static int century(int cent)
 		{ 16, 17, 18, 19, 20, 21, 22, 23, 24 },
 		{  0,  5,  3,  1,  0,  5,  3,  1,  0 }
 	};
-	printf("In century %d\n", correction[1][cent-16]);
 	return correction[1][cent-16];
 }
 
@@ -87,16 +88,16 @@ static char *day_name(		register int_fast16_t year,
 				register uint_fast8_t month,
 				register uint_fast16_t day)
 {
-	register uint_fast8_t value; /* Used to store the calculated value from year */
+	register uint_fast8_t value; /* Used to store the running calculation value */
 
 	/*
 	 * Add the Day and the value for the Month (from the Month-Table). If
 	 * the resulting number is greater than 6, subtract the highest
 	 * multiple of 7 in it. Hold this number till step 3. 
 	 */
-	printf("%lu + %d mod 7 = ", day, daytab[2][month]);
+	if(DEBUG) printf("%lu + %d mod 7 = ", day, daytab[2][month]);
 	day = (day + daytab[2][month]) % 7;
-	printf("%lu\n", day);
+	if(DEBUG) printf("%lu\n", day);
 
 	/*
 	 * Subtract from the (last two digits of the) Year the highest multiple
@@ -111,11 +112,11 @@ static char *day_name(		register int_fast16_t year,
 	if (value == 0)
 		value = 101;
 
-	printf("%d%%28 + %d/4 = %d + %d\n", value, value, value%28, value/4);
+	if(DEBUG) printf("%d%%28 + %d/4 = %d + %d\n", value, value, value%28, value/4);
 	value = value%28 + value/4;
-	printf("add cent %d + %d\n",value, century(year/100));
+	if(DEBUG) printf("add cent %d + %d\n",value, century(year/100));
 	value += century(year/100);
-	printf("%d\n", value);
+	if(DEBUG) printf("%d\n", value);
 	if (month < 3)
 		value -= leap(year);
 
@@ -172,7 +173,7 @@ static int month_day(		const register int_fast16_t year,
 	return 0;
 }
 
-static int tests(int year, int month, int day)
+static int input_date(int year, int month, int day)
 {
 	int day_number;
 	int is_date;
@@ -187,7 +188,7 @@ static int tests(int year, int month, int day)
 	day_number = day_of_year(year, month, day);
 
 	if (day_number == -1) {
-		printf("error: day_of_year incorrect format.\n");
+		printf("day_of_year: incorrect format.\n");
 		return 1;
 	}
 
@@ -197,7 +198,7 @@ static int tests(int year, int month, int day)
 	is_date = month_day(year, day_number, &pmonth, &pday);
 
 	if (is_date == -1) {
-		printf("error: month_day incorrect format.\n");
+		printf("month_day: incorrect format.\n");
 		return 1;
 	}
 
@@ -205,37 +206,28 @@ static int tests(int year, int month, int day)
 	p_month_name = month_name(month);
 
 	printf("%d %d %s\t %d %s\n", day_number, pday, p_month_name, year, p_day_name);
-	puts("");
+	if (DEBUG) puts("");
 
 	return 0;
 }
 
-int main(void)
+static void run_tests(void)
 {
-	int state = 0;
+	input_date(1800, 2, 28);
+	input_date(1804, 2, 29);
+	input_date(1996, 2, 29);
+	input_date(2000, 2, 29);
+	input_date(2003, 2, 28);
+	input_date(2004, 2, 29);
+	input_date(2160, 3, 17);
+	input_date(2200, 2, 28);
+	input_date(2400, 2, 29);
+}
 
-	state = tests(1996, 2, 29);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2000, 2, 29);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2003, 2, 28);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2004, 2, 29);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2160, 3, 17);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2200, 2, 28);
-	if (state)
-		printf("status >>> %d\n", state);
-	state = tests(2400, 2, 29);
-	if (state)
-		printf("status >>> %d\n", state);
-
+int main(int argc, char* argv[])
+{
+	run_tests();
+		
 	return 0;
 }
 

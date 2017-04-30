@@ -1,33 +1,34 @@
 /*
- * Input need be entered onto one line, carrage return will pop the stack.
+ * Section 4-3 RPN calculator
+ *
+ * For the caluculator to be used as it is the input need be entered onto one line, carrage return will pop the stack.
  *  
  *  10 2 +<cr>
  *  12
- *
- * Exercise 4-3. Given the basic framework, it's straightforward to extend the
- * calculator. Add the modulus (%) operator and provisions for negative
- * numbers.
  */
 
 #include <stdio.h>
-#include <stdlib.h>	/* For atof */
+#include <stdlib.h>	/* for atof() */
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
 			/* fmod() for the remainder of two doubles devided */
 
-#define MAXOP	100
-#define NUMBER	'0'	/* A signal that a number was found. */
+#define MAXOP	100	/* max size of operand or operator */
+#define NUMBER	'0'	/* a signal that a number was found */
 #define NEG	-2
 
-static char getop(char []);
-static void push(double);
-static double pop(void);
+int getop(char []);
+void push(double);
+double pop(void);
 
+/*
+ * RPN calculator.
+ */
 int main(void)
 {
-	char type;
-	char s[MAXOP];
+	int type;
 	double op2;
+	char s[MAXOP];
 	int sign;
 
 	sign = 1;
@@ -78,70 +79,60 @@ int main(void)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  
+ *  Stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-#define MAXVAL	100	/* Maximum depth of val stack */
+#define MAXVAL	100
 
-static size_t sp = 0;		/* Next free stack position */
-static double val[MAXVAL];	/* value stack */
+int sp = 0;
+double val[MAXVAL];
 
 /*
- * push: push f onto value stack
+ * Push onto stack.
  */
-static void push(double f)
+
+void push(double f)
 {
-	if (sp < MAXVAL) {
+	if (sp < MAXVAL)
 		val[sp++] = f;
-	}
 	else
 		printf("error: stack full, can't push %g\n", f);
 }
 
 /*
- * pop: pop and return top value from stack.
+ * Pop stack.
  */
-static double pop(void)
+double pop(void)
 {
 	if (sp > 0)
 		return val[--sp];
 	else {
 		printf("error: stack empty\n");
-		return 0.0L;
+		return 0.0;
 	}
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  
+ *  Getop.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #include <ctype.h>
 
-#define BUFSIZE	100
-
-
-static char getch(void);
-static void ungetch(char);
+int getch(void);
+void ungetch(int);
 
 /*
- * getop: get next operator or numeric operand.
+ * getop: get the next operator or operand.
  */
-static char getop(char s[])
+int getop(char s[])
 {
-	size_t i;
-	char c;
+	int i, c;
 
-	/* keep inputing char until c is neither a space nor a tab */
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
 		;
-
-	/* set a default end of string char at 2nd array index */
 	s[1] = '\0';
-
-	/* if c is any operator other than '.' or '-' return it */
 	if (!isdigit(c) && c != '.' && c != '-')
-		return c;
-
+		return c;	/* not a number */
 	/*
 	 * If c is the '-' sign, check the next char, if a digit or a point,
 	 * continue else send char to store and return a minus.
@@ -158,39 +149,33 @@ static char getop(char s[])
 		}
 	}
 
-	/* If it is a digit, start counting */
-	if (isdigit(c))
+	if (isdigit(c))		/* collect the intager part */
 		while (isdigit(s[++i] = c = getch()))
 			;
-
-	/* if c is a decimal point, start counting the fractional part */
-	if (c == '.')
+	if (c == '.')		/* collect thta fractional part */
 		while (isdigit(s[++i] = c = getch()))
 			;
-
 	s[i] = '\0';
-
-	if (c != (char)EOF)
+	if (c != EOF)
 		ungetch(c);
-
 	return NUMBER;
 }
 
-static char buf[BUFSIZE];	/* buffer for ungetch */
-static size_t bufp = 0;		/* next free position in buf */
-
-/*
- * Get a (possibly pushed back) character.
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Buffer.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char getch(void)
+#define BUFSIZE	100
+
+char buf[BUFSIZE];	/* Buffer for next ungetch */
+int bufp = 0;		/* next free position in buf */
+
+int getch(void)		/* get a (possibly pushed back) character */
 {
-	return (bufp > 0) ? buf[--bufp] : (char)getchar();
+	return (bufp > 0) ? buf[--bufp] : getchar();
 }
 
-/*
- * Push character back on input.
- */
-static void ungetch(char c)
+void ungetch(int c)	/* push character back on input */
 {
 	if (bufp >= BUFSIZE)
 		printf("ungetch: too many characters\n");

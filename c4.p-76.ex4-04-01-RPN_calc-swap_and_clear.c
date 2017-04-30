@@ -5,30 +5,32 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>	/* For atof */
+#include <stdlib.h>	/* for atof() */
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
 			/* fmod() for the remainder of two doubles devided */
 
-#define MAXOP	100
-#define NUMBER	'0'	/* A signal that a number was found. */
+#define MAXOP	100	/* max size of operand or operator */
+#define NUMBER	'0'	/* a signal that a number was found */
+#define NEG	-2
 
-#define NEG	999
+int getop(char []);
+void push(double);
+double pop(void);
+void printStack(void);
+void printTopTwo(void);
+void swapStack(void);
+void duplicate(void);
+void emptyStack(void);
 
-static int16_t getop(char []);
-static void push(double);
-static double pop(void);
-static void printStack(void);
-static void swapStack(void);
-static void duplicate(void);
-static void emptyStack(void);
-
+/*
+ * RPN calculator.
+ */
 int main(void)
 {
-	int16_t type;
-	char s[MAXOP];
+	int type;
 	double op2;
+	char s[MAXOP];
 	int sign;
 
 	sign = 1;
@@ -95,43 +97,43 @@ int main(void)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Stack Operations
+ *  Stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-#define MAXVAL	100	/* Maximum depth of val stack */
+#define MAXVAL	100
 
-static size_t sp = 0;		/* Next free stack position */
-static double val[MAXVAL];	/* value stack */
+int sp = 0;
+double val[MAXVAL];
 
 /*
- * push: push f onto value stack
+ * Push onto stack.
  */
-static void push(double f)
+
+void push(double f)
 {
-	if (sp < MAXVAL) {
+	if (sp < MAXVAL)
 		val[sp++] = f;
-	}
 	else
 		printf("error: stack full, can't push %g\n", f);
 }
 
 /*
- * pop: pop and return top value from stack.
+ * Pop stack.
  */
-static double pop(void)
+double pop(void)
 {
 	if (sp > 0)
 		return val[--sp];
 	else {
 		printf("error: stack empty\n");
-		return 0.0L;
+		return 0.0;
 	}
 }
 
 /*
  * Output the contents of the stack to the terminal.
  */
-static void printStack(void)
+void printStack(void)
 {
 	size_t i;
 
@@ -140,9 +142,20 @@ static void printStack(void)
 }
 
 /*
+ * Output the last two items in the stack.
+ */
+void printTopTwo(void)
+{
+	size_t i;
+
+	for (i = sp; i > sp-2; i--)
+		printf("%f\n", val[i]);
+}
+
+/*
  * Swap the two top most eliments in the stack.
  */
-static void swapStack(void)
+void swapStack(void)
 {
 	double temp;
 
@@ -159,7 +172,7 @@ static void swapStack(void)
 /*
  * Copy and make a new the top most stack value.
  */
-static void duplicate(void)
+void duplicate(void)
 {
 	if (sp > 0)
 		push(val[sp-1]);
@@ -168,46 +181,35 @@ static void duplicate(void)
 /*
  * Empty the stack.
  */
-static void emptyStack(void)
+void emptyStack(void)
 {
 	sp = 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Getop
+ *  Getop.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #include <ctype.h>
 
-#define NUMBER	'0'	/* A signal that a number was found. */
-#define BUFSIZE	100
-
-
-static char getch(void);
-static void ungetch(char);
+int getch(void);
+void ungetch(int);
 
 /*
- * getop: get next operator or numeric operand.
+ * getop: get the next operator or operand.
  */
-static int16_t getop(char s[])
+int getop(char s[])
 {
-	size_t i;
-	char c;
+	int i, c;
 
-	/* keep inputing char until c is neither a space nor a tab */
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
 		;
-
-	/* set a default end of string char at 2nd array index */
 	s[1] = '\0';
-
-	/* if c is any operator other than '.' or '-' return it */
 	if (!isdigit(c) && c != '.' && c != '-')
-		return c;
-
+		return c;	/* not a number */
 	/*
 	 * If c is the '-' sign, check the next char, if a digit or a point,
-	 * continue else send char to store and return a minus
+	 * continue else send char to store and return a minus.
 	 */
 	i = 0;
 	if (c == '-') {
@@ -221,42 +223,33 @@ static int16_t getop(char s[])
 		}
 	}
 
-	/* If it is a digit, start counting */
-	if (isdigit(c))
+	if (isdigit(c))		/* collect the integer part */
 		while (isdigit(s[++i] = c = getch()))
 			;
-
-	/* if c is a decimal point, start counting the fractional part */
-	if (c == '.')
+	if (c == '.')		/* collect thta fractional part */
 		while (isdigit(s[++i] = c = getch()))
 			;
-
 	s[i] = '\0';
-	if (c != (char)EOF)
+	if (c != EOF)
 		ungetch(c);
-
 	return NUMBER;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Input buffer
+ *  Buffer.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char buf[BUFSIZE];	/* buffer for ungetch */
-static size_t bufp = 0;		/* next free position in buf */
+#define BUFSIZE	100
 
-/*
- * Get a (possibly pushed back) character.
- */
-static char getch(void)
+char buf[BUFSIZE];	/* Buffer for next ungetch */
+int bufp = 0;		/* next free position in buf */
+
+int getch(void)		/* get a (possibly pushed back) character */
 {
-	return (bufp > 0) ? buf[--bufp] : (char)getchar();
+	return (bufp > 0) ? buf[--bufp] : getchar();
 }
 
-/*
- * Push character back on input.
- */
-static void ungetch(char c)
+void ungetch(int c)	/* push character back on input */
 {
 	if (bufp >= BUFSIZE)
 		printf("ungetch: too many characters\n");
