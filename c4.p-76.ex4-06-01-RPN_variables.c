@@ -1,6 +1,7 @@
 /*
- * Exercise 4-5. Add access to library functions like sin, exp, and pow. See
- * <math.h> in Appendix B, Section 4.
+ * Exercise 4-6. Add commands for handling variables. (It's easy to provide
+ * twenty-six variables with single-letter names.) Add a variable for the most
+ * recently printed value.
  */
 
 #include <stdio.h>
@@ -28,7 +29,6 @@
 #define EMPTY	1015
 
 static int readToken(char []);
-static void clearText(char []);
 static int getop(char []);
 static void push(double);
 static double pop(void);
@@ -150,53 +150,128 @@ exit:
  */
 
 /*
- * Read the text buffer.
+ * Read the input string.
  */
 static int readToken(char s[])
 {
-	if (!strcmp(s, "sin")) {
-		clearText(s);
+	if (!strcmp(s, "sin"))
 		return SIN;
-	} else if (!strcmp(s, "cos")) {
-		clearText(s);
-		return COS;
-	} else if (!strcmp(s, "tan")) {
-		clearText(s);
-		return TAN;
-	} else if (!strcmp(s, "exp")) {
-		clearText(s);
-		return EXP;
-	} else if (!strcmp(s, "log")) {
-		clearText(s);
-		return LOG;
-	} else if (!strcmp(s, "pow")) {
-		clearText(s);
-		return POW;
-	} else if (!strcmp(s, "copy")) {
-		clearText(s);
-		return COPY;
-	} else if (!strcmp(s, "del")) {
-		clearText(s);
-		return DEL;
-	} else if (!strcmp(s, "print")) {
-		clearText(s);
-		return PRINT;
-	} else if (!strcmp(s, "swap")) {
-		clearText(s);
-		return SWAP;
-	} else if (!strcmp(s, "exit")) {
-		clearText(s);
-		return EXIT;
-	}
+	else if (!strcmp(s, "cos"))
+	      return COS;
+	else if (!strcmp(s, "tan"))
+	      return TAN;
+	else if (!strcmp(s, "exp"))
+	      return EXP;
+	else if (!strcmp(s, "log"))
+	      return LOG;
+	else if (!strcmp(s, "pow"))
+	      return POW;
+	else if (!strcmp(s, "copy"))
+	      return COPY;
+	else if (!strcmp(s, "del"))
+	      return DEL;
+	else if (!strcmp(s, "print"))
+	      return PRINT;
+	else if (!strcmp(s, "swap"))
+	      return SWAP;
+	else if (!strcmp(s, "exit"))
+	      return EXIT;
+	else
+		printf("error: unrecognised token\n");
+
+	s[0] = '\0';
 	return 0;
 }
 
-/*
- * Cear the input string.
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Input getop.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static void clearText(char s[])
+#include <ctype.h>
+
+static int getch(void);
+static void ungetch(int);
+
+/*
+ * getop: get the next operator or operand.
+ */
+static int getop(char s[])
 {
-	s[0] = '\0';
+	int i, c;
+
+	while ((s[0] = c = getch()) == ' ' || c == '\t' || c == '\n')
+		;
+
+	s[1] = '\0';
+
+	if (!isalnum(c) && c != '.' && c != '-')
+		return c;	/* not a number */
+
+	/*
+	 * If the input is a letter chect to see if the following char is also
+	 * a letter; If not return the single letter, if yes then check for a
+	 * token.
+	 */
+	i = 0;
+	if (isalpha(c)) {
+		s[i++] = c;
+		while (( s[i++] = c = getch() ))
+			if (i == 2 && (c == ' ' || c == '\t' || c == '\n'))
+				return s[0];
+			else if (!isalpha(c))
+				break;
+		ungetch(c);
+		s[--i] = '\0';
+		return readToken(s);	/* Read the token and send to main */
+	}
+
+	/*
+	 * If c is the '-' sign, check the next char, if a digit or a point,
+	 * continue else send char to store and return a minus.
+	 */
+	if (c == '-') {
+		if (isdigit(c = getch()) || c == '.') {
+			ungetch(c);
+			return NEG;
+		} else {
+			if (c != (char)EOF)
+				ungetch(c);
+			return '-';
+		}
+	}
+
+	if (isdigit(c))		/* collect the integer part */
+		while (isdigit(s[++i] = c = getch()))
+			;
+	if (c == '.')		/* collect thta fractional part */
+		while (isdigit(s[++i] = c = getch()))
+			;
+	s[i] = '\0';
+	if (c != EOF)
+		ungetch(c);
+	return NUMBER;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Buffer.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+#define BUFSIZE	100
+
+static char buf[BUFSIZE];	/* Buffer for next ungetch */
+static int bufp = 0;		/* next free position in buf */
+
+static int getch(void)		/* get a (possibly pushed back) character */
+{
+	return (bufp > 0) ? buf[--bufp] : getchar();
+}
+
+static void ungetch(int c)	/* push character back on input */
+{
+	if (bufp >= BUFSIZE)
+		printf("ungetch: too many characters\n");
+	else
+		buf[bufp++] = c;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,6 +281,8 @@ static void clearText(char s[])
 #define MAXVAL	100
 
 static int sp = 0;
+static int index[2*MAXVAL];
+static int var[MAXVAL][2];
 static double val[MAXVAL];
 
 /*
@@ -232,6 +309,10 @@ static double pop(void)
 	}
 }
 
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Stack operations
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 /*
  * Output the contents of the stack to the terminal.
  */
@@ -286,92 +367,5 @@ static void duplicate(void)
 static void emptyStack(void)
 {
 	sp = 0;
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Getop.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-#include <ctype.h>
-
-static int getch(void);
-static void ungetch(int);
-
-/*
- * getop: get the next operator or operand.
- */
-static int getop(char s[])
-{
-	int i, c;
-
-	while ((s[0] = c = getch()) == ' ' || c == '\t' || c == '\n')
-		;
-
-	s[1] = '\0';
-
-	if (!isalnum(c) && c != '.' && c != '-')
-		return c;	/* not a number */
-
-	i = 0;
-	if (isalpha(c)) {
-		s[i++] = c;
-		while (( s[i++] = c = getch() )) {
-			if (i == 2 && (c == ' ' || c == '\t' || c == '\n'))
-				return s[0];
-			else if (!isalpha(c))
-				break;
-		}
-		ungetch(c);
-		s[--i] = '\0';
-		return readToken(s);	/* Read the token and send to main */
-	}
-
-	/*
-	 * If c is the '-' sign, check the next char, if a digit or a point,
-	 * continue else send char to store and return a minus.
-	 */
-	if (c == '-') {
-		if (isdigit(c = getch()) || c == '.') {
-			ungetch(c);
-			return NEG;
-		} else {
-			if (c != (char)EOF)
-				ungetch(c);
-			return '-';
-		}
-	}
-
-	if (isdigit(c))		/* collect the integer part */
-		while (isdigit(s[++i] = c = getch()))
-			;
-	if (c == '.')		/* collect thta fractional part */
-		while (isdigit(s[++i] = c = getch()))
-			;
-	s[i] = '\0';
-	if (c != EOF)
-		ungetch(c);
-	return NUMBER;
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Buffer.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-#define BUFSIZE	100
-
-static char buf[BUFSIZE];	/* Buffer for next ungetch */
-static int bufp = 0;		/* next free position in buf */
-
-static int getch(void)		/* get a (possibly pushed back) character */
-{
-	return (bufp > 0) ? buf[--bufp] : getchar();
-}
-
-static void ungetch(int c)	/* push character back on input */
-{
-	if (bufp >= BUFSIZE)
-		printf("ungetch: too many characters\n");
-	else
-		buf[bufp++] = c;
 }
 

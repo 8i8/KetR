@@ -4,11 +4,11 @@
  * recently printed value.
  *
  * TODO For the interests of moving on a little I have decided to take a pause
- * on this quetion, it remains questions 4-6 till 4-10 to be compleeted. In this
- * particular question I have just started to impliment the use of variables
- * and in so doing realised that I have used a function to generate string
- * tokens when I could have used s[] from the input; For tis reason the code
- * requires a little attention.
+ * on this question, it remains questions 4-6 till 4-10 to be compleeted. In
+ * this particular question I have just started to impliment the use of
+ * variables and in so doing realised that I have used a function to generate
+ * string tokens when I could have used s[] from the input; For tis reason the
+ * code requires a little attention.
  */
 
 #include <stdio.h>
