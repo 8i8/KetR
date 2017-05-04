@@ -73,7 +73,6 @@ int main(void)
 				sign = 1;
 				break;
 			case VARIAB:
-				//printf("variab %lf\n", getVarValue(s[0]));
 				push(s[0], getVarValue(s[0]));
 				break;
 			case '=':
@@ -396,15 +395,13 @@ static double pop(void)
 	if (in_i > 0) {
 		in_i--;
 		if (ind[in_i][TYP] == NUM) {
-			//printf("Pop NUM : %lf\n", val[vl_i-1]);
 			return val[--vl_i];
 		} else if (ind[in_i][TYP] == VAR) {
-			//printf("Pop VAR: %lf\n", varVal[ var[ind[in_i][ID]]-'A' ]);
 			--vr_i;
 			return varVal[var[ind[in_i][ID]]-'A'];
 		}
 	} else
-		printf("error: stack empty\n");
+		printf("error: insufficient values stack\n");
 
 	return 0.0;
 }
@@ -528,15 +525,13 @@ static void emptyStack(void)
  */
 
 /*
- * Return variable postion in top two stack positions.
+ * Return variable position in top two stack positions.
  */
 static int getVarChar(void)
 {
 	if (ind[in_i-1][TYP] == VAR) {
-		//printf("Returned 1 var : %c\n", var[ind[in_i-1][ID]]);
 		return var[ind[in_i-1][ID]];
 	} else if (ind[in_i-2][TYP] == VAR) {
-		//printf("Returned 2 var : %c\n", var[ind[in_i-2][ID]]);
 		return var[ind[in_i-2][ID]];
 	}
 	return 0;
@@ -547,7 +542,6 @@ static int getVarChar(void)
  */
 static double getVarValue(int v)
 {
-	//printf("varValue -> %lf\n", varVal[v - 'A']);
 	return varVal[v - 'A'];
 }
 
