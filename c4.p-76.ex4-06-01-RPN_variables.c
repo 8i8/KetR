@@ -9,34 +9,40 @@
 #include <stdlib.h>	/* for atof() */
 #include <float.h>	/* For DBL_EPSILON, the precision limit of double */
 #include <math.h>	/* fabs() the absolute floating point value of input */
-			/* fmod() for the remainder of two doubles devided */
+			/* fmod() for the remainder of two doubles divided */
 
 #define MAXOP	100	/* max size of operand or operator */
+#define PREV	0
 #define NUMBER	1001	/* a signal that a number was found */
-#define NEG	1002
-#define SIN	1003
-#define COS	1004
-#define TAN	1005
-#define EXP	1006
-#define LOG	1007
-#define POW	1008
-#define COPY	1009
-#define DEL	1010
-#define PRINT	1011
-#define SWAP	1012
-#define EXIT	1013
-#define CLEAR	1014
-#define EMPTY	1015
+#define VARIAB	1002
+#define NEG	1003
+#define SIN	1004
+#define COS	1005
+#define TAN	1006
+#define EXP	1007
+#define LOG	1008
+#define POW	1009
+#define COPY	1010
+#define DEL	1011
+#define PRINT	1012
+#define PRINT_2	1013
+#define SWAP	1014
+#define EXIT	1015
+#define CLEAR	1016
+#define EMPTY	1017
 
 static int readToken(char []);
 static int getop(char []);
-static void push(double);
+static void push(int, double);
 static double pop(void);
 static void printStack(void);
 static void printTopTwo(void);
 static void swapStack(void);
 static void duplicate(void);
 static void emptyStack(void);
+static int isVar(void);
+static double getVar(int v);
+static void printVarStack(void);
 
 /*
  * RPN calculator.
@@ -47,33 +53,45 @@ int main(void)
 	char s[MAXOP];
 	double op2;
 	int sign;
+	int var;
 
 	sign = 1;
+	var = 0;
 
-	while ((type = getop(s)) != EOF) {
+	while ((type = getop(s)) != EOF)
+	{
 		switch (type) {
 			case NEG:
 				sign = -1;
 				break;
 			case NUMBER:
-				push(atof(s) * sign);
+				push(PREV, atof(s) * sign);
 				sign = 1;
 				break;
+			case VARIAB:
+				push(s[0], getVar((int)s[0]) );
+				break;
+			case '=':
+				if (isVar())
+					push(var, pop() + pop());
+				else
+					printf("error: no variable in range");
+				break;
 			case '+':
-				push(pop() + pop());
+				push(var, pop() + pop());
 				break;
 			case '*':
-				push(pop() * pop());
+				push(var, pop() * pop());
 				break;
 			case '-':
 				op2 = pop();
-				push(pop() - op2);
+				push(var, pop() - op2);
 				break;
 			case '/':
 				op2 = pop();
 				/* DBL_EPSILON the smallest increment */
 				if (fabs(op2 - 0) > DBL_EPSILON)
-					push(pop() / op2);
+					push(var, pop() / op2);
 				else
 					printf("error: zero divisor\n");
 				break;
@@ -81,12 +99,11 @@ int main(void)
 				op2 = pop();
 				if (fabs(op2 - 0) > DBL_EPSILON)
 					/* math.h for mod of doubles */
-					push(fmod(pop(), op2));
+					push(var, fmod(pop(), op2));
 				else
 					printf("error: zero modulo\n");
 				break;
 			case COPY:
-			case 'c':
 				duplicate();
 				break;
 			case DEL:
@@ -98,9 +115,10 @@ int main(void)
 				emptyStack();
 				break;
 			case PRINT:
+			case 'p':
 				printStack();
 				break;
-			case 'p':
+			case PRINT_2:
 				printTopTwo();
 				break;
 			case SWAP:
@@ -108,24 +126,24 @@ int main(void)
 				swapStack();
 				break;
 			case SIN:
-				push(sin( pop() ));
+				push(var, sin( pop() ));
 				break;
 			case COS:
-				push(cos( pop() ));
+				push(var, cos( pop() ));
 				break;
 			case TAN:
-				push(tan( pop() ));
+				push(var, tan( pop() ));
 				break;
 			case EXP:
-				push(exp( pop() ));
+				push(var, exp( pop() ));
 				break;
 			case LOG:
-				push(log( pop() ));
+				push(var, log( pop() ));
 				break;
 			case '^':
 			case POW:
 				op2 = pop();
-				push(pow( pop(), op2 ));
+				push(var, pow( pop(), op2 ));
 				break;
 			case '\n':
 				break;
@@ -135,10 +153,14 @@ int main(void)
 			case 'q':
 				goto exit;
 				break;
+			case 'x':
+				printVarStack();
+				break;
 			default:
 				printf("error: unknown command %s\n", s);
 				break;
 		}
+		var = 0;
 	}
 exit:
 	return 0;
@@ -154,33 +176,38 @@ exit:
  */
 static int readToken(char s[])
 {
+	int val;
+
 	if (!strcmp(s, "sin"))
-		return SIN;
+		val = SIN;
 	else if (!strcmp(s, "cos"))
-	      return COS;
+	      val = COS;
 	else if (!strcmp(s, "tan"))
-	      return TAN;
+	      val = TAN;
 	else if (!strcmp(s, "exp"))
-	      return EXP;
+	      val = EXP;
 	else if (!strcmp(s, "log"))
-	      return LOG;
+	      val = LOG;
 	else if (!strcmp(s, "pow"))
-	      return POW;
+	      val = POW;
 	else if (!strcmp(s, "copy"))
-	      return COPY;
+	      val = COPY;
 	else if (!strcmp(s, "del"))
-	      return DEL;
-	else if (!strcmp(s, "print"))
-	      return PRINT;
+	      val = DEL;
+	else if (!strcmp(s, "print") || !strcmp(s, "pr"))
+	      val = PRINT;
+	else if (!strcmp(s, "top") || !strcmp(s, "pt"))
+	      val = PRINT_2;
 	else if (!strcmp(s, "swap"))
-	      return SWAP;
+	      val = SWAP;
 	else if (!strcmp(s, "exit"))
-	      return EXIT;
+	      val = EXIT;
 	else
 		printf("error: unrecognised token\n");
 
 	s[0] = '\0';
-	return 0;
+
+	return val;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,12 +235,12 @@ static int getop(char s[])
 		return c;	/* not a number */
 
 	/*
-	 * If the input is a letter chect to see if the following char is also
-	 * a letter; If not return the single letter, if yes then check for a
-	 * token.
+	 * If the input is a letter check to see if the char that follows is
+	 * also a letter; If not return the single letter, if yes then check
+	 * for a token.
 	 */
 	i = 0;
-	if (isalpha(c)) {
+	if (islower(c)) {
 		s[i++] = c;
 		while (( s[i++] = c = getch() ))
 			if (i == 2 && (c == ' ' || c == '\t' || c == '\n'))
@@ -223,6 +250,11 @@ static int getop(char s[])
 		ungetch(c);
 		s[--i] = '\0';
 		return readToken(s);	/* Read the token and send to main */
+	}
+
+	if (isupper(c)) {
+		s[i++] = c;
+		return VARIAB;
 	}
 
 	/*
@@ -243,7 +275,7 @@ static int getop(char s[])
 	if (isdigit(c))		/* collect the integer part */
 		while (isdigit(s[++i] = c = getch()))
 			;
-	if (c == '.')		/* collect thta fractional part */
+	if (c == '.')		/* collect the fractional part */
 		while (isdigit(s[++i] = c = getch()))
 			;
 	s[i] = '\0';
@@ -278,22 +310,64 @@ static void ungetch(int c)	/* push character back on input */
  *  Stack
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-#define MAXVAL	100
+#define MAXVAL		100
+#define ALPHABET	27
 
-static int sp = 0;
-static int index[2*MAXVAL];
-static int var[MAXVAL][2];
+enum type	{ NUM, VAR, TYPE };
+enum inde	{ ID, TYP };
+
+/*
+ * in_p: stack index
+ * va_p: value index
+ * vr_p: variable index
+ */
+static int in_i; 
+static int vl_i;
+static int vr_i;
+
+/* ind ~ id ~ type */
+static int ind[MAXVAL][TYPE];
+static int var[MAXVAL];
+static double varVal[ALPHABET] = {0.0};
 static double val[MAXVAL];
 
 /*
- * Push onto stack.
+ * Push double onto stack.
  */
-static void push(double f)
+static void pushDub(double f)
 {
-	if (sp < MAXVAL)
-		val[sp++] = f;
+	if (vl_i < MAXVAL)
+		val[vl_i++] = f;
 	else
 		printf("error: stack full, can't push %g\n", f);
+}
+
+/*
+ * Push a double value into both the supplied var and the stack.
+ */
+static void pushVar(int v, double f)
+{
+	if (vr_i < MAXVAL) {
+		varVal[v - 'A'] = f;
+		var[vr_i++] = v;
+	} else
+		printf("error: stack full, can't push %c:%g\n", v, f);
+}
+
+/*
+ * Generic push, either var or double.
+ */
+static void push(int v, double f)
+{
+	if (v == PREV) {
+		ind[in_i][TYP] = NUM;
+		ind[in_i++][ID] = vl_i;
+		pushDub(f);
+	} else {
+		ind[in_i][TYP] = VAR;
+		ind[in_i++][ID] = vr_i;
+		pushVar(v, f);
+	}
 }
 
 /*
@@ -301,12 +375,16 @@ static void push(double f)
  */
 static double pop(void)
 {
-	if (sp > 0)
-		return val[--sp];
-	else {
+	if (in_i > 0) {
+		in_i--;
+		if (ind[in_i][TYP] == NUM)
+			return val[--vl_i];
+		else if (ind[in_i][TYP] == VAR)
+			return varVal[var[--vr_i]];
+	} else
 		printf("error: stack empty\n");
-		return 0.0;
-	}
+
+	return 0.0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -314,14 +392,18 @@ static double pop(void)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 /*
- * Output the contents of the stack to the terminal.
+ * Print the contents of the stack to the terminal.
  */
 static void printStack(void)
 {
 	size_t i;
 
-	for (i = 0; i < sp; i++)
-		printf("%f\n", val[i]);
+	for (i = 0; i < in_i; i++)
+		if (ind[i][TYP] == NUM)
+			printf(" -> %.15lf\n", val[ ind[i][ID] ]);
+		else if (ind[i][TYP] == VAR)
+			printf("%c-> %.15lf\n", var[ind[i][ID]],
+					varVal[ var[ind[i][ID]-'A'] ]);
 }
 
 /*
@@ -331,24 +413,27 @@ static void printTopTwo(void)
 {
 	size_t i;
 
-	for (i = sp; i > sp-2; i--)
-		printf("%f\n", val[i]);
+	for (i = vl_i; i > vl_i-2; i--)
+		printf("-> %.15lf\n", val[i]);
 }
 
 /*
- * Swap the two top most eliments in the stack.
+ * Swap the two top most elements in the stack.
  */
 static void swapStack(void)
 {
-	double temp;
+	int tempTp, tempId;
 
-	if (sp > 1) {
-		temp = val[sp-1];
-		val[sp-1] = val[sp-2];
-		val[sp-2] = temp;
+	if (in_i > 1) {
+		tempTp = ind[in_i-1][TYP];
+		tempId = ind[in_i-1][ID];
+		ind[in_i-1][TYP] = ind[in_i-2][TYP];
+		ind[in_i-1][ID] = ind[in_i-2][ID];
+		ind[in_i-2][TYP] = tempTp;
+		ind[in_i-2][ID] = tempId;
 	}
 	else
-		printf("error: to few eliments in the stack.\n");
+		printf("error: to few elements in the stack.\n");
 
 }
 
@@ -357,8 +442,8 @@ static void swapStack(void)
  */
 static void duplicate(void)
 {
-	if (sp > 0)
-		push(val[sp-1]);
+	if (vl_i > 0)
+		push(PREV, val[vl_i-1]);
 }
 
 /*
@@ -366,6 +451,44 @@ static void duplicate(void)
  */
 static void emptyStack(void)
 {
-	sp = 0;
+	vl_i = 0;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Variables
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/*
+ * Return variable postion in top two stack positions.
+ */
+static int isVar(void)
+{
+	if (ind[in_i-1][TYP] == VAR)
+		return var[ind[in_i-1][ID]];
+	else if (ind[in_i-2][TYP] == VAR)
+		return var[ind[in_i-2][ID]];
+	return 0;
+}
+
+/*
+ * getVar
+ */
+static double getVar(int v)
+{
+	return varVal[var[v]];
+}
+
+/*
+ * Print the variable stack.
+ */
+static void printVarStack(void)
+{
+	int i = 0;
+
+	while(i < 26) {
+		printf("%c -> %lf\n", i + 'A', varVal[i]);
+		i++;
+	}
 }
 
