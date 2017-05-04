@@ -37,12 +37,16 @@ static void push(int, double);
 static double pop(void);
 static void printStack(void);
 static void printTopTwo(void);
+static void printOutput(size_t i);
 static void swapStack(void);
 static void duplicate(void);
-static void emptyStack(void);
-static int isVar(void);
-static double getVar(int v);
 static void printVarStack(void);
+static void printValueStack(void);
+static void printIndex(void);
+static void emptyStack(void);
+static int getVarChar(void);
+static double getVarValue(int v);
+static int getVarPos(void);
 
 /*
  * RPN calculator.
@@ -69,12 +73,20 @@ int main(void)
 				sign = 1;
 				break;
 			case VARIAB:
-				push(s[0], getVar((int)s[0]) );
+				//printf("variab %lf\n", getVarValue(s[0]));
+				push(s[0], getVarValue(s[0]));
 				break;
 			case '=':
-				if (isVar())
-					push(var, pop() + pop());
-				else
+				if (getVarPos() == 1) {
+					var = getVarChar();
+					pop();
+					push(var, pop());
+				} else if (getVarPos() == 2) {
+					var = getVarChar();
+					swapStack();
+					pop();
+					push(var, pop());
+				} else
 					printf("error: no variable in range");
 				break;
 			case '+':
@@ -114,12 +126,12 @@ int main(void)
 			case 'e':
 				emptyStack();
 				break;
-			case PRINT:
-			case 'p':
-				printStack();
-				break;
 			case PRINT_2:
+			case 'p':
 				printTopTwo();
+				break;
+			case PRINT:
+				printStack();
 				break;
 			case SWAP:
 			case 's':
@@ -156,6 +168,12 @@ int main(void)
 			case 'x':
 				printVarStack();
 				break;
+			case 'y':
+				printValueStack();
+				break;
+			case 'z':
+				printIndex();
+				break;
 			default:
 				printf("error: unknown command %s\n", s);
 				break;
@@ -181,27 +199,27 @@ static int readToken(char s[])
 	if (!strcmp(s, "sin"))
 		val = SIN;
 	else if (!strcmp(s, "cos"))
-	      val = COS;
+		val = COS;
 	else if (!strcmp(s, "tan"))
-	      val = TAN;
+		val = TAN;
 	else if (!strcmp(s, "exp"))
-	      val = EXP;
+		val = EXP;
 	else if (!strcmp(s, "log"))
-	      val = LOG;
+		val = LOG;
 	else if (!strcmp(s, "pow"))
-	      val = POW;
+		val = POW;
 	else if (!strcmp(s, "copy"))
-	      val = COPY;
+		val = COPY;
 	else if (!strcmp(s, "del"))
-	      val = DEL;
+		val = DEL;
 	else if (!strcmp(s, "print") || !strcmp(s, "pr"))
-	      val = PRINT;
+		val = PRINT;
 	else if (!strcmp(s, "top") || !strcmp(s, "pt"))
-	      val = PRINT_2;
+		val = PRINT_2;
 	else if (!strcmp(s, "swap"))
-	      val = SWAP;
+		val = SWAP;
 	else if (!strcmp(s, "exit"))
-	      val = EXIT;
+		val = EXIT;
 	else
 		printf("error: unrecognised token\n");
 
@@ -311,7 +329,7 @@ static void ungetch(int c)	/* push character back on input */
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define MAXVAL		100
-#define ALPHABET	27
+#define ALPHABET	26
 
 enum type	{ NUM, VAR, TYPE };
 enum inde	{ ID, TYP };
@@ -377,10 +395,14 @@ static double pop(void)
 {
 	if (in_i > 0) {
 		in_i--;
-		if (ind[in_i][TYP] == NUM)
+		if (ind[in_i][TYP] == NUM) {
+			//printf("Pop NUM : %lf\n", val[vl_i-1]);
 			return val[--vl_i];
-		else if (ind[in_i][TYP] == VAR)
-			return varVal[var[--vr_i]];
+		} else if (ind[in_i][TYP] == VAR) {
+			//printf("Pop VAR: %lf\n", varVal[ var[ind[in_i][ID]]-'A' ]);
+			--vr_i;
+			return varVal[var[ind[in_i][ID]]-'A'];
+		}
 	} else
 		printf("error: stack empty\n");
 
@@ -391,19 +413,13 @@ static double pop(void)
  *  Stack operations
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
 /*
- * Print the contents of the stack to the terminal.
+ * Print the contents of the stack.
  */
 static void printStack(void)
 {
-	size_t i;
-
-	for (i = 0; i < in_i; i++)
-		if (ind[i][TYP] == NUM)
-			printf(" -> %.15lf\n", val[ ind[i][ID] ]);
-		else if (ind[i][TYP] == VAR)
-			printf("%c-> %.15lf\n", var[ind[i][ID]],
-					varVal[ var[ind[i][ID]-'A'] ]);
+	printOutput(0);
 }
 
 /*
@@ -411,10 +427,23 @@ static void printStack(void)
  */
 static void printTopTwo(void)
 {
-	size_t i;
+	if (in_i > 1)
+		printOutput(in_i-2);
+	else if (in_i == 1)
+		printOutput(in_i-1);
+}
 
-	for (i = vl_i; i > vl_i-2; i--)
-		printf("-> %.15lf\n", val[i]);
+/*
+ * Print loop for stack output to terminal.
+ */
+static void printOutput(size_t i)
+{
+	for ( ; i < in_i; i++)
+		if (ind[i][TYP] == NUM)
+			printf(" -> %.15lf\n", val[ ind[i][ID] ]);
+		else if (ind[i][TYP] == VAR)
+			printf("%c-> %.15lf\n", var[ind[i][ID]],
+					varVal[ var[ind[i][ID]] -'A']);
 }
 
 /*
@@ -447,11 +476,50 @@ static void duplicate(void)
 }
 
 /*
+ * Print the variable stack.
+ */
+static void printVarStack(void)
+{
+	int i = 0;
+
+	while(i < ALPHABET) {
+		printf("%c -> %lf\n", i + 'A', varVal[i]);
+		i++;
+	}
+}
+
+/*
+ * Print the value stack.
+ */
+static void printValueStack(void)
+{
+	int i = 0;
+
+	while (i < vl_i) {
+		printf("%d -> %lf\n", i, val[i]);
+		i++;
+	}
+}
+
+/*
+ * Print the index.
+ */
+static void printIndex(void)
+{
+	int i = 0;
+
+	while (i < in_i) {
+		printf("%d -> TYP: %d ID: %d\n", i, ind[i][TYP], ind[i][ID]);
+		i++;
+	}
+}
+
+/*
  * Empty the stack.
  */
 static void emptyStack(void)
 {
-	vl_i = 0;
+	in_i = vl_i = 0;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -462,33 +530,36 @@ static void emptyStack(void)
 /*
  * Return variable postion in top two stack positions.
  */
-static int isVar(void)
+static int getVarChar(void)
 {
-	if (ind[in_i-1][TYP] == VAR)
+	if (ind[in_i-1][TYP] == VAR) {
+		//printf("Returned 1 var : %c\n", var[ind[in_i-1][ID]]);
 		return var[ind[in_i-1][ID]];
-	else if (ind[in_i-2][TYP] == VAR)
+	} else if (ind[in_i-2][TYP] == VAR) {
+		//printf("Returned 2 var : %c\n", var[ind[in_i-2][ID]]);
 		return var[ind[in_i-2][ID]];
+	}
 	return 0;
 }
 
 /*
- * getVar
+ * getVarValue
  */
-static double getVar(int v)
+static double getVarValue(int v)
 {
-	return varVal[var[v]];
+	//printf("varValue -> %lf\n", varVal[v - 'A']);
+	return varVal[v - 'A'];
 }
 
 /*
- * Print the variable stack.
+ * Get var position.
  */
-static void printVarStack(void)
+static int getVarPos(void)
 {
-	int i = 0;
-
-	while(i < 26) {
-		printf("%c -> %lf\n", i + 'A', varVal[i]);
-		i++;
-	}
+	if (ind[in_i-1][TYP] == VAR)
+		return 1;
+	if (ind[in_i-2][TYP] == VAR)
+		return 2;
+	return 0;
 }
 
