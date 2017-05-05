@@ -47,7 +47,6 @@ static void emptyStack(void);
 static int getVarChar(void);
 static double getVarValue(int v);
 static int getVarPos(void);
-static void ungets(char s[]);
 
 /*
  * RPN calculator.
@@ -222,8 +221,6 @@ static int readToken(char s[])
 		val = EXIT;
 	else
 		printf("error: unrecognised token\n");
-
-	ungets(s);
 
 	s[0] = '\0';
 
