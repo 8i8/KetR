@@ -329,6 +329,7 @@ static void ungetch(int c)	/* push character back on input */
  */
 #define MAXVAL		100
 #define ALPHABET	26
+#define FLOAT_LEN	16
 
 enum type	{ NUM, VAR, TYPE };
 enum inde	{ ID, TYP };
@@ -420,6 +421,17 @@ static void printStack(void)
 }
 
 /*
+ * Set last printed value to Z var.
+ */
+static void setLastPrintedVar()
+{
+	if(ind[in_i-1][TYP] == NUM)
+		varVal[25] = val[ind[in_i-1][ID]];
+	else if(ind[in_i-1][TYP] == VAR)
+		varVal[25] = varVal[var[ind[in_i-1][ID]]-'A'];
+}
+
+/*
  * Output the last two items in the stack.
  */
 static void printTopTwo(void)
@@ -428,6 +440,8 @@ static void printTopTwo(void)
 		printOutput(in_i-2);
 	else if (in_i == 1)
 		printOutput(in_i-1);
+
+	setLastPrintedVar();
 }
 
 /*
@@ -435,12 +449,17 @@ static void printTopTwo(void)
  */
 static void printOutput(size_t i)
 {
+	char s[FLOAT_LEN];
+
 	for ( ; i < in_i; i++)
-		if (ind[i][TYP] == NUM)
-			printf(" -> %.15lf\n", val[ ind[i][ID] ]);
-		else if (ind[i][TYP] == VAR)
-			printf("%c-> %.15lf\n", var[ind[i][ID]],
-					varVal[ var[ind[i][ID]] -'A']);
+		if (ind[i][TYP] == NUM) {
+			sprintf(s, "%.15g", val[ ind[i][ID] ]);
+			printf(" -> %s\n", s);
+		} else if (ind[i][TYP] == VAR) {
+			sprintf(s, "%.15g", varVal[ var[ind[i][ID]] -'A']);
+			printf("%c-> %s\n", var[ind[i][ID]], s);
+		}
+	setLastPrintedVar();
 }
 
 /*
@@ -478,9 +497,11 @@ static void duplicate(void)
 static void printVarStack(void)
 {
 	int i = 0;
+	char s[FLOAT_LEN];
 
 	while(i < ALPHABET) {
-		printf("%c -> %lf\n", i + 'A', varVal[i]);
+		sprintf(s, "%.15g", varVal[i]);
+		printf("%c -> %s\n", i + 'A', s);
 		i++;
 	}
 }
@@ -491,9 +512,11 @@ static void printVarStack(void)
 static void printValueStack(void)
 {
 	int i = 0;
+	char s[FLOAT_LEN];
 
 	while (i < vl_i) {
-		printf("%d -> %lf\n", i, val[i]);
+		sprintf(s, "%.15g", val[i]);
+		printf("%d -> %s\n", i, s);
 		i++;
 	}
 }
