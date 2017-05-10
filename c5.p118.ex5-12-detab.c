@@ -18,10 +18,9 @@
 #define MAXLINE	255
 #define TABSIZE	8
 
-static void marginSpacer(int len);
 static uint8_t countSpaces(uint8_t tabsize, uint8_t column);
 static void tabsToSpaces(char str[], char newStr[], uint8_t len, uint8_t spaces);
-static uint8_t getline(char str[], uint8_t lim);
+static uint8_t getline(char str[], uint8_t lim, uint8_t margin);
 
 int main(int argc, char* argv[]) {
 
@@ -41,21 +40,11 @@ int main(int argc, char* argv[]) {
 
 	while (!feof(stdin))
 	{
-		len = getline(line, MAXLINE);
+		len = getline(line, MAXLINE, margin);
 		tabsToSpaces(line, newLine, len, tabsize);
-		marginSpacer(margin);
 		printf("%s", newLine);
 	}
 	return 0;
-}
-
-/*
- * Generate a string of spaces as amargin.
- */
-static void marginSpacer(int len)
-{
-	while (len-- > 0)
-		putchar(' ');
 }
 
 /*
@@ -106,19 +95,25 @@ static void tabsToSpaces(char line[], char newLine[], uint8_t len, uint8_t tabsi
 }
 
 /*
- * Get input line by line.
+ * Read input line by line and add a margin if required.
  */
-static uint8_t getline(char str[], uint8_t lim)
+static uint8_t getline(char str[], uint8_t lim, uint8_t margin)
 {
-	uint8_t i;
-	int c;
+	uint8_t i = 0;
+	wchar_t c;
 
-	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
+	for ( ; i < margin && i < lim-1; i++)
+		str[i] = ' ';
+
+	for ( ; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		str[i] = c;
+
+	if (i == margin)
+		i -= margin;
+
 	if (c == '\n')
 		str[i++] = c;
 	str[i++] = '\0';
-
 	return i;
 }
 
