@@ -34,10 +34,9 @@
 #define CLEAR	1016
 #define EMPTY	1017
 
-static int calc(int type, char s[]);
+static int calc(char s[]);
 static int readToken(char []);
-static int getop(char []);
-static size_t getline(char s[], size_t lim);
+static int getop(char[], char[]);
 static void push(int, double);
 static double pop(void);
 static void printStack(void);
@@ -45,6 +44,7 @@ static void printTopTwo(void);
 static void printOutput(size_t i);
 static void swapStack(void);
 static void duplicate(void);
+static void print(void);
 static void printVarStack(void);
 static void printValueStack(void);
 static void printIndex(void);
@@ -58,9 +58,6 @@ static int getVarPos(void);
  */
 int main(int argc, char *argv[])
 {
-	char s[MAXOP];
-	int type;
-	int exit;
 
 	if(argc > 1) {
 		/*
@@ -68,26 +65,11 @@ int main(int argc, char *argv[])
 		 */
 		while (--argc > 0)
 		{
-			type = getop(*++argv);
-			printf("test -> %s\n", *argv);
-			calc(type, *argv);
-		}
-
-	} else {
-
-		/*
-		 * Process user input.
-		 */
-		while (!feof(stdin))
-		{
-			getline(s, MAXOP);
-			type = getop(s);
-			exit = calc(type, s);
-
-			if (exit)
-				break;
+			calc(*++argv);
 		}
 	}
+
+	print();
 
 	return 0;
 }
@@ -95,8 +77,10 @@ int main(int argc, char *argv[])
 /*
  * RPN calculator.
  */
-static int calc(int type, char s[])
+static int calc(char in[])
 {
+	char s[MAXOP];
+	int type;
 	double op2;
 	int sign;
 	int var;
@@ -104,7 +88,10 @@ static int calc(int type, char s[])
 	sign = 1;
 	var = 0;
 
+	type = getop(s, in);
+
 	switch (type) {
+
 		case NEG:
 			sign = -1;
 			break;
@@ -272,20 +259,24 @@ static int readToken(char s[])
 #define MAXLINE		255
 #include <ctype.h>
 
-static int getch(void);
-static void ungetch(int);
-
 /*
  * getop: get the next operator or operand.
  */
-static int getop(char s[])
+static int getop(char s[], char in[])
 {
-	int i, c;
+	int i = 0;		/* Index also remembered */
+	int j = 0;
+	char c;
 
-	while ((s[0] = c = getch()) == ' ' || c == '\t' || c == '\n')
+	s[0] = '\0';			/* Reset getop string */
+	if (in[i] == '\n')		/* Reset when end of line is reached */
+		i = j = 0;
+
+	while (((c = in[i++]) == ' ' || c == '\t'))	/* Remove spaces */
 		;
 
 	s[1] = '\0';
+	s[j++] = c;
 
 	if (!isalnum(c) && c != '.' && c != '-')
 		return c;	/* not a number */
@@ -295,21 +286,27 @@ static int getop(char s[])
 	 * also a letter; If not return the single letter, if yes then check
 	 * for a token.
 	 */
-	i = 0;
 	if (islower(c)) {
-		s[i++] = c;
-		while (( s[i++] = c = getch() ))
-			if (i == 2 && (c == ' ' || c == '\t' || c == '\n'))
+
+		if ((s[j++] = c = in[i++]) == '\0') {
+			i--;
+			s[1] = '\0';
+			return s[0];
+		}
+
+		while (( s[j++] = c = in[i++] ))
+			if (j == 2 && (c == ' ' || c == '\t' || c == '\n' || c == '\0')) {
+				i--;
+				s[1] = '\0';
 				return s[0];
-			else if (!isalpha(c))
+			} else if (!isalpha(c))
 				break;
-		ungetch(c);
-		s[--i] = '\0';
+		i--;
+		s[--j] = '\0';
 		return readToken(s);	/* Read the token and send to main */
 	}
 
 	if (isupper(c)) {
-		s[i++] = c;
 		return VARIAB;
 	}
 
@@ -318,130 +315,25 @@ static int getop(char s[])
 	 * continue else send char to store and return a minus.
 	 */
 	if (c == '-') {
-		if (isdigit(c = getch()) || c == '.') {
-			ungetch(c);
+		if (isdigit(c = in[i++]) || c == '.') {
+			i--;
 			return NEG;
 		} else {
-			if (c != (char)EOF)
-				ungetch(c);
+			i--;
 			return '-';
 		}
 	}
 
 	if (isdigit(c))		/* collect the integer part */
-		while (isdigit(s[++i] = c = getch()))
+		while (isdigit(s[j++] = c = in[i++]))
 			;
 	if (c == '.')		/* collect the fractional part */
-		while (isdigit(s[++i] = c = getch()))
+		while (isdigit(s[j++] = c = in[i++]))
 			;
-	s[i] = '\0';
-	if (c != EOF)
-		ungetch(c);
+	s[--j] = '\0';
+	i--;
+
 	return NUMBER;
-
-//	char in[MAXLINE];	/* Array retained between itterations */
-//	int i = 0;		/* Index also remembered */
-//	int j = 0;
-//	char c;
-//
-//	strcpy(in, s);
-//
-//	s[0] = '\0';			/* Reset getop string */
-//	if (in[i] == '\n')		/* Reset when end of line is reached */
-//		i = j = 0;
-//
-//	while (((c = in[i++]) == ' ' || c == '\t'))	/* Remove spaces */
-//		;
-//
-//	s[1] = '\0';
-//	s[j++] = c;
-//
-//	if (!isalnum(c) && c != '.' && c != '-')
-//		return c;	/* not a number */
-//
-//	/*
-//	 * If the input is a letter check to see if the char that follows is
-//	 * also a letter; If not return the single letter, if yes then check
-//	 * for a token.
-//	 */
-//	if (islower(c)) {
-//		while (( s[j++] = c = in[i++] ))
-//			if (j == 2 && (c == ' ' || c == '\t' || c == '\n')) {
-//				i--;
-//				s[1] = '\0';
-//				return s[0];
-//			} else if (!isalpha(c))
-//				break;
-//		i--;
-//		s[--j] = '\0';
-//		return readToken(s);	/* Read the token and send to main */
-//	}
-//
-//	if (isupper(c)) {
-//		return VARIAB;
-//	}
-//
-//	/*
-//	 * If c is the '-' sign, check the next char, if a digit or a point,
-//	 * continue else send char to store and return a minus.
-//	 */
-//	if (c == '-') {
-//		if (isdigit(c = in[i++]) || c == '.') {
-//			i--;
-//			return NEG;
-//		} else {
-//			i--;
-//			return '-';
-//		}
-//	}
-//
-//	if (isdigit(c))		/* collect the integer part */
-//		while (isdigit(s[j++] = c = in[i++]))
-//			;
-//	if (c == '.')		/* collect the fractional part */
-//		while (isdigit(s[j++] = c = in[i++]))
-//			;
-//	s[--j] = '\0';
-//	i--;
-//
-//	return NUMBER;
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Buffer.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-#define BUFSIZE	100
-
-static char buf[BUFSIZE];	/* Buffer for next ungetch */
-static int bufp = 0;		/* next free position in buf */
-
-static int getch(void)		/* get a (possibly pushed back) character */
-{
-	return (bufp > 0) ? buf[--bufp] : getchar();
-}
-
-static void ungetch(int c)	/* push character back on input */
-{
-	if (bufp >= BUFSIZE)
-		printf("ungetch: too many characters\n");
-	else
-		buf[bufp++] = c;
-}
-
-static size_t getline(char s[], size_t lim)
-{
-	char c;
-	int i = 0;
-
-	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
-		s[i++] = c;
-	if (c == '\n')
-		s[i++] = c;
-	s[i] = '\0';
-
-	return i;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -460,9 +352,9 @@ enum inde	{ ID, TYP };
  * va_p: value index
  * vr_p: variable index
  */
-static int in_i; 
-static int vl_i;
-static int vr_i;
+static int in_i = 0; 
+static int vl_i = 0;
+static int vr_i = 0;
 
 /* ind ~ id ~ type */
 static int ind[MAXVAL][TYPE];
@@ -532,6 +424,14 @@ static double pop(void)
  *  Stack operations
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
+/*
+ * Print the contents of the stack.
+ */
+static void print(void)
+{
+	printOutput(in_i-1);
+}
 
 /*
  * Print the contents of the stack.
