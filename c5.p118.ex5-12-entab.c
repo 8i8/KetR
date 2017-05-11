@@ -6,10 +6,9 @@
  * to mean tab stops every n columns, starting at column m. Choose convenient
  * (for the user) default behavior.
  *
- * TODO There is a bug in=n this code, when the -m margin is set to 9, if there
- * are already spaces on the line the first tab after the margin includes un
- * unrequired space. The first line, if it begins with tabs are translated to
- * spaces.
+ * TODO There is a bug in this code, when the -m margin is set to one more than
+ * a number that is modulo the tab size, if there are already spaces on the
+ * line the first tab after the margin includes an unrequired space.
  */
 
 #undef _POSIX_C_SOURCE
@@ -37,7 +36,7 @@ int main(int argc, char* argv[])
 	int tabsize = TABSIZE;
 	int margin = 0;
 
-	while (--argc > 0 && (*++argv)[0] == '-')
+	while (--argc > 1 && (*++argv)[0] == '-')
 	{
 		if ((*argv)[1] == 'm')
 			margin = atof(*++argv), --argc;
@@ -100,7 +99,9 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 		/*
 		 * If both the current and the previous values are spaces,
 		 * and the status is true for inCount, place a marker on the
-		 * first of the two array spacesi and continue.
+		 * first of the two array spaces and continue, inCount is
+		 * augmented to 2 and as such will not be effected in the next
+		 * itteration.
 		 */
 		if (inCount == 1 && line[i] == ' ')
 		{
@@ -117,6 +118,15 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			continue;
 
 		/*
+		 * Deal with tabs following on from several spaces.
+		 */
+		else if (inCount && line[i] == '\t') {
+			tabs++;
+			line[i] = ' ';
+			continue;
+		}
+
+		/*
 		 * Calculate the quantity of tabs and spaces required.
 		 */
 		else if (inCount > 1)
@@ -127,17 +137,17 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
-			tabs 	=  countTabs(i, tabsize);
+			tabs 	+=  countTabs(i, tabsize);
 			tabs 	-= countTabs(marker, tabsize);
 			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
-			while (tabs--)
-				newLine[j++] = '\t';
+			while (tabs > 0)
+				newLine[j++] = '\t', tabs--;
 
 			/* Add the spaces. */
-			while (spaces--)
-				newLine[j++] = ' ';
+			while (spaces > 0)
+				newLine[j++] = ' ', spaces--;
 
 			/* Reset status */
 			inCount = 0;
@@ -176,7 +186,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 static uint8_t getline(char str[], uint8_t lim, uint8_t margin)
 {
 	uint8_t i = 0;
-	wchar_t c;
+	char c;
 
 	for ( ; i < margin && i < lim-1; i++)
 		str[i] = ' ';

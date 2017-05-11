@@ -2,6 +2,8 @@
  * Exercise 5-11. Modify the program entab and detab (written as exercises in
  * Chapter 1) to accept a list of tab stops as arguments. Use the default tab
  * settings if there are no arguments.
+ *
+ * entab ~ adds tabs to replace spaces, a number placed as the agrument.
  */
 
 #undef _POSIX_C_SOURCE
@@ -32,8 +34,10 @@ int main(int argc, char* argv[])
 	{
 		tabsize = atof(*++argv);
 		strcat(tabs, *argv);
+		if (tabsize <= 0)
+			tabsize = 8;
 	} else
-		tabsize = MAXLINE;
+		tabsize = TABSIZE;
 
 	system(tabs);
 
@@ -88,7 +92,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 		/*
 		 * If both the current and the previous values are spaces,
 		 * and the status is true for inCount, place a marker on the
-		 * first of the two array spacesi and continue.
+		 * first of the two array spaces and continue.
 		 */
 		if (inCount == 1 && line[i] == ' ')
 		{
@@ -105,6 +109,15 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			continue;
 
 		/*
+		 * Deal with tabs following on from several spaces.
+		 */
+		else if (inCount && line[i] == '\t') {
+			tabs++;
+			line[i] = ' ';
+			continue;
+		}
+
+		/*
 		 * Calculate the quantity of tabs and spaces required.
 		 */
 		else if (inCount > 1)
@@ -115,17 +128,17 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
-			tabs 	=  countTabs(i, tabsize);
+			tabs 	+=  countTabs(i, tabsize);
 			tabs 	-= countTabs(marker, tabsize);
 			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
-			while (tabs--)
-				newLine[j++] = '\t';
+			while (tabs > 0)
+				newLine[j++] = '\t', tabs--;
 
 			/* Add the spaces. */
-			while (spaces--)
-				newLine[j++] = ' ';
+			while (spaces > 0)
+				newLine[j++] = ' ', spaces--;
 
 			/* Reset status */
 			inCount = 0;
