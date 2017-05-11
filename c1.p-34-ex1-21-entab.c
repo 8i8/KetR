@@ -3,6 +3,11 @@
  * minimum number of tabs and blanks to achieve the same spacing. Use the same
  * tab stops as for detab. When either a tab or a single blank would suffice to
  * reach a tab stop, which should be given preference?
+ *
+ * TODO This code has an issue when spaces are placed in a sequence before a
+ * tab, such that they are present but unnessasary; currently they are either
+ * included in the new version of the text, elses they are left in behind the
+ * tab, dependant upon the presence of the code at and arround line 108.
  */
 
 #undef _POSIX_C_SOURCE
@@ -58,7 +63,7 @@ static uint8_t countSpaces(uint8_t column, uint8_t tabsize)
  */
 static uint8_t setMarker(char line[], uint8_t i)
 {
-	if(line[i-1] == ' ' && line[i] == ' ')
+	if(line[i-1] == ' ' && (line[i] == ' ' || line[i] == '\t') )
 		return i-1;
 	return 0;
 }
@@ -78,10 +83,14 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 		/*
 		 * If both the current and the previous values are spaces,
 		 * and the status is true for inCount, place a marker on the
-		 * first of the two array spacesi and continue.
+		 * first of the two array spaces and continue.
 		 */
-		if (inCount == 1 && line[i] == ' ')
+		if (inCount == 1 && ( line[i] == ' ' || line[i] == '\t') )
 		{
+			if (line[i] == '\t') {
+				tabs++;
+				line[i] = ' ';
+			}
 			marker = setMarker(line, i);
 			inCount++;
 			continue;
@@ -95,6 +104,15 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			continue;
 
 		/*
+		 * Deal with tabs following on from several spaces.
+		 */
+		else if (inCount && line[i] == '\t') {
+			tabs++;
+			line[i] = ' ';
+			continue;
+		}
+
+		/*
 		 * Calculate the quantity of tabs and spaces required.
 		 */
 		else if (inCount > 1)
@@ -105,17 +123,17 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
-			tabs 	=  countTabs(i, tabsize);
+			tabs 	+= countTabs(i, tabsize);
 			tabs 	-= countTabs(marker, tabsize);
 			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
-			while (tabs--)
-				newLine[j++] = '\t';
+			while (tabs > 0)
+				newLine[j++] = '\t', tabs--;
 
 			/* Add the spaces. */
-			while (spaces--)
-				newLine[j++] = ' ';
+			while (spaces > 0)
+				newLine[j++] = ' ', spaces--;
 
 			/* Reset status */
 			inCount = 0;
@@ -129,7 +147,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * If it is the first space, set the status and
 			 * continue with out writing the space character.
 			 */
-			if (line[i] == ' ' && !inCount)
+			if ( (line[i] == ' ' || line[i] == '\t') && !inCount)
 				inCount = 1;
 
 			/*
