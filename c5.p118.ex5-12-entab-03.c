@@ -6,9 +6,9 @@
  * to mean tab stops every n columns, starting at column m. Choose convenient
  * (for the user) default behavior.
  *
- * TODO There is a bug in this code, when the -m margin is set to one more than
- * a number that is modulo the tab size, if there are already spaces on the
- * line the first tab after the margin includes an unrequired space.
+ * TODO There is an issue in this code, it is not possible to offset the
+ * tabstop as requested in the question without writing a shell that can deal
+ * with this functioning.
  */
 
 #undef _POSIX_C_SOURCE
@@ -21,10 +21,12 @@
 
 #define MAXLINE	255
 #define TABSIZE	8
+#define MAX_MARGIN 255
 
 static uint8_t countTabs(uint8_t tabsize, uint8_t column);
 static uint8_t countSpaces(uint8_t tabsize, uint8_t column);
 static void spacesToTabs(char str[], char newLine[], uint8_t len, uint8_t tabsize);
+static char* setMargin(char* margin, uint8_t len, uint8_t tabsize);
 static uint8_t getline(char line[], uint8_t lim, uint8_t margin);
 
 int main(int argc, char* argv[])
@@ -32,7 +34,9 @@ int main(int argc, char* argv[])
 	uint8_t len;
 	char line[MAXLINE];
 	char newLine[MAXLINE];
-	char tabs[8] = { "tabs " };
+	char mString[MAX_MARGIN];
+	char* m_pt;
+	char tabs[8] = { "tabs " };	/* Set system tab size */
 	int tabsize = TABSIZE;
 	int margin = 0;
 
@@ -46,12 +50,16 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	m_pt = mString;
+	m_pt = setMargin(mString, margin, tabsize);
 	system(tabs);
 
 	while (!feof(stdin))
 	{
 		len = getline(line, MAXLINE, margin);
 		spacesToTabs(line, newLine, len, tabsize);
+		if(len > 2)
+			printf("%s", m_pt);
 		printf("%s", newLine);
 	}
 
@@ -79,7 +87,7 @@ static uint8_t countSpaces(uint8_t column, uint8_t tabsize)
  */
 static uint8_t setMarker(char line[], uint8_t i)
 {
-	if(line[i-1] == ' ' && line[i] == ' ')
+	if((line[i-1] == ' ' || line[i-1] == '\t') && (line[i] == ' ' || line[i] == '\t') )
 		return i-1;
 	return 0;
 }
@@ -90,21 +98,44 @@ static uint8_t setMarker(char line[], uint8_t i)
 static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsize)
 {
 	uint8_t i, j, k;
-	uint8_t inCount, marker, tabs, spaces;
+	uint8_t inCount, tabPos, marker, tabs, countStart, remSpaces;
+	int8_t spaces;
 
-	i = j = k = inCount = marker = tabs = spaces = 0;
+	i = j = k = inCount = marker = tabs = spaces = countStart = remSpaces = 0;
 
 	for (i = 0; i < len; i++)
 	{
 		/*
+		 * Keep track of the distance from n, the tab column. Will
+		 * return 0 when 
+		 */
+		tabPos = i % tabsize;
+
+		if (!tabPos)
+			countStart = spaces = 0; /* reset at the tab stop */
+
+		/*
 		 * If both the current and the previous values are spaces,
 		 * and the status is true for inCount, place a marker on the
-		 * first of the two array spaces and continue, inCount is
-		 * augmented to 2 and as such will not be effected in the next
-		 * itteration.
+		 * first of the two array spaces and continue.
 		 */
-		if (inCount == 1 && line[i] == ' ')
+		if (inCount == 1 && (line[i] == ' ' || line[i] == '\t'))
 		{
+
+			if (line[i-1] == '\t') {
+				if (tabPos-1 != 0)
+					j--;
+				tabs++;
+			} else
+				spaces++;
+
+			if (line[i] == '\t') {
+				if (!tabPos)	/* Not placed on a tabstop */
+					j--;
+				tabs++;
+			} else
+				spaces++;
+
 			marker = setMarker(line, i);
 			inCount++;
 			continue;
@@ -115,14 +146,19 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 		 * and the marker is already set, continue.
 		 */
 		else if (inCount && line[i] == ' ')
+		{	/* count the spaces between tab stops */
+			spaces++;
 			continue;
+		}
 
 		/*
 		 * Deal with tabs following on from several spaces.
 		 */
-		else if (inCount && line[i] == '\t') {
+		else if (inCount && line[i] == '\t')
+		{
 			tabs++;
-			line[i] = ' ';
+			/* Remove the spaces pior to tab */
+			remSpaces += spaces;
 			continue;
 		}
 
@@ -137,9 +173,9 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
-			tabs 	+=  countTabs(i, tabsize);
+			spaces	=  countSpaces(i, tabsize) - tabs - remSpaces;
+			tabs 	+= countTabs(i-tabs, tabsize);
 			tabs 	-= countTabs(marker, tabsize);
-			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
 			while (tabs > 0)
@@ -161,8 +197,8 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * If it is the first space, set the status and
 			 * continue with out writing the space character.
 			 */
-			if (line[i] == ' ' && !inCount)
-				inCount = 1;
+			if ( (line[i] == ' ' || line[i] == '\t') && !inCount)
+				inCount = 1, countStart = tabPos;
 
 			/*
 			 * If there was only one space, catch up by writing
@@ -181,15 +217,34 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 }
 
 /*
+ * Wrinte a string with required tabs and spaces.
+ */
+static char* setMargin(char* margin, uint8_t len, uint8_t tabsize)
+{
+	int i = 0;
+	uint8_t tabs;
+	tabs = len / tabsize;
+	len %= tabsize;
+
+	if (len) {
+		if (tabs)
+			while(tabs--)
+				*(margin+i++) = '\t';
+
+		while(len--)
+			*(margin+i++) = ' ';
+	}
+
+	return margin;
+}
+
+/*
  * Read input line by line and add a margin if required.
  */
 static uint8_t getline(char str[], uint8_t lim, uint8_t margin)
 {
 	uint8_t i = 0;
 	char c;
-
-	for ( ; i < margin && i < lim-1; i++)
-		str[i] = ' ';
 
 	for ( ; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		str[i] = c;

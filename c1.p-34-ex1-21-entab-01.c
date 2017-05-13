@@ -4,10 +4,7 @@
  * tab stops as for detab. When either a tab or a single blank would suffice to
  * reach a tab stop, which should be given preference?
  *
- * TODO This code has an issue when spaces are placed in a sequence before a
- * tab, such that they are present but unnessasary; currently they are either
- * included in the new version of the text, elses they are left in behind the
- * tab, dependant upon the presence of the code at and arround line 108.
+ * entab.c
  */
 
 #undef _POSIX_C_SOURCE
@@ -37,7 +34,6 @@ int main(void)
 		spacesToTabs(line, newLine, len, TABSIZE);
 		printf("%s", newLine);
 	}
-	fflush(stdin);
 
 	return 0;
 }
@@ -63,7 +59,7 @@ static uint8_t countSpaces(uint8_t column, uint8_t tabsize)
  */
 static uint8_t setMarker(char line[], uint8_t i)
 {
-	if(line[i-1] == ' ' && (line[i] == ' ' || line[i] == '\t') )
+	if((line[i-1] == ' ' || line[i-1] == '\t') && (line[i] == ' ' || line[i] == '\t') )
 		return i-1;
 	return 0;
 }
@@ -74,23 +70,44 @@ static uint8_t setMarker(char line[], uint8_t i)
 static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsize)
 {
 	uint8_t i, j, k;
-	uint8_t inCount, marker, tabs, spaces;
+	uint8_t inCount, tabPos, marker, tabs, countStart, remSpaces;
+	int8_t spaces;
 
-	i = j = k = inCount = marker = tabs = spaces = 0;
+	i = j = k = inCount = marker = tabs = spaces = countStart = remSpaces = 0;
 
 	for (i = 0; i < len; i++)
 	{
+		/*
+		 * Keep track of the distance from n, the tab column. Will
+		 * return 0 when 
+		 */
+		tabPos = i % tabsize;
+
+		if (!tabPos)
+			countStart = spaces = 0; /* reset at the tab stop */
+
 		/*
 		 * If both the current and the previous values are spaces,
 		 * and the status is true for inCount, place a marker on the
 		 * first of the two array spaces and continue.
 		 */
-		if (inCount == 1 && ( line[i] == ' ' || line[i] == '\t') )
+		if (inCount == 1 && (line[i] == ' ' || line[i] == '\t'))
 		{
-			if (line[i] == '\t') {
+
+			if (line[i-1] == '\t') {
+				if (tabPos-1 != 0)
+					j--;
 				tabs++;
-				line[i] = ' ';
-			}
+			} else
+				spaces++;
+
+			if (line[i] == '\t') {
+				if (!tabPos)	/* Not placed on a tabstop */
+					j--;
+				tabs++;
+			} else
+				spaces++;
+
 			marker = setMarker(line, i);
 			inCount++;
 			continue;
@@ -101,14 +118,19 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 		 * and the marker is already set, continue.
 		 */
 		else if (inCount && line[i] == ' ')
+		{	/* count the spaces between tab stops */
+			spaces++;
 			continue;
+		}
 
 		/*
 		 * Deal with tabs following on from several spaces.
 		 */
-		else if (inCount && line[i] == '\t') {
+		else if (inCount && line[i] == '\t')
+		{
 			tabs++;
-			line[i] = ' ';
+			/* Remove the spaces pior to tab */
+			remSpaces += spaces;
 			continue;
 		}
 
@@ -123,9 +145,9 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * tab count upto the marker and then add the remaining
 			 * spaces.
 			 */
+			spaces	=  countSpaces(i, tabsize) - tabs - remSpaces;
 			tabs 	+= countTabs(i, tabsize);
 			tabs 	-= countTabs(marker, tabsize);
-			spaces	=  countSpaces(i, tabsize);
 
 			/* Add the tabs. */
 			while (tabs > 0)
@@ -148,7 +170,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 			 * continue with out writing the space character.
 			 */
 			if ( (line[i] == ' ' || line[i] == '\t') && !inCount)
-				inCount = 1;
+				inCount = 1, countStart = tabPos;
 
 			/*
 			 * If there was only one space, catch up by writing
@@ -172,7 +194,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 static uint8_t getline(char str[], uint8_t lim)
 {
 	uint8_t i;
-	wchar_t c;
+	char c;
 
 	for (i = 0; i < lim-1 && (c = getchar()) != EOF && c != '\n'; i++)
 		str[i] = c;
