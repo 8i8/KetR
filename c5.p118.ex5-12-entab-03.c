@@ -50,6 +50,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	if (margin < 0 || tabsize < 0) {
+		printf("error: requires positive value\n");
+		return 1;
+	}
+
 	m_pt = mString;
 	m_pt = setMargin(mString, margin, tabsize);
 	system(tabs);
@@ -58,7 +63,7 @@ int main(int argc, char* argv[])
 	{
 		len = getline(line, MAXLINE, margin);
 		spacesToTabs(line, newLine, len, tabsize);
-		if(len > 2)
+		if(len > 1)
 			printf("%s", m_pt);
 		printf("%s", newLine);
 	}
@@ -103,7 +108,7 @@ static void spacesToTabs(char line[], char newLine[], uint8_t len, uint8_t tabsi
 
 	i = j = k = inCount = marker = tabs = spaces = countStart = remSpaces = 0;
 
-	for (i = 0; i < len; i++)
+	for (i = 0; i <= len; i++)
 	{
 		/*
 		 * Keep track of the distance from n, the tab column. Will
@@ -226,14 +231,13 @@ static char* setMargin(char* margin, uint8_t len, uint8_t tabsize)
 	tabs = len / tabsize;
 	len %= tabsize;
 
-	if (len) {
-		if (tabs)
-			while(tabs--)
-				*(margin+i++) = '\t';
+	while(tabs--)
+		*(margin+i++) = '\t';
 
-		while(len--)
-			*(margin+i++) = ' ';
-	}
+	while(len--)
+		*(margin+i++) = ' ';
+
+	*(margin+i) = '\0';
 
 	return margin;
 }
@@ -254,7 +258,7 @@ static uint8_t getline(char str[], uint8_t lim, uint8_t margin)
 
 	if (c == '\n')
 		str[i++] = c;
-	str[i++] = '\0';
+	str[i] = '\0';
 	return i;
 }
 
