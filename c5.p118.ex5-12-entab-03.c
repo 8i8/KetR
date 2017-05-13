@@ -6,9 +6,12 @@
  * to mean tab stops every n columns, starting at column m. Choose convenient
  * (for the user) default behavior.
  *
+ * ./a.out -m 5 -n 2 < testfile
+ *
  * TODO There is an issue in this code, it is not possible to offset the
  * tabstop as requested in the question without writing a shell that can deal
- * with this functioning.
+ * with this functioning, as such I have decided to make the margin work as if
+ * it were a pert of the text file.
  */
 
 #undef _POSIX_C_SOURCE
