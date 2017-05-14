@@ -10,21 +10,21 @@ static char daytab[2][13] = {
 };
 
 /*
- * Returns 1 if day is valid for given month, 0 if there is a problem.
- */
-static int check_day(const int leap, const int month, const int day)
-{
-	if (day <= daytab[leap(year)][month] && day > 0)
-		return 0;
-	return -1;
-}
-
-/*
  * Returns boolean, is/isnot leap year.
  */
 static int leap(const int year)
 {
 	return (year%4 == 0 && year%100 != 0) || year%400 == 0;
+}
+
+/*
+ * Returns 1 if day is valid for given month, 0 if there is a problem.
+ */
+static int check_day(const int year, const int month, const int day)
+{
+	if (day <= daytab[leap(year)][month] && day > 0)
+		return 0;
+	return -1;
 }
 
 /*
