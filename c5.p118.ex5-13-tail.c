@@ -61,7 +61,6 @@ static void testwrite(char* string, int start, int len)
 
 	p = alloc(len);
 	lineptr[start] = p;
-
 	strcpy(lineptr[start], string);
 }
 
