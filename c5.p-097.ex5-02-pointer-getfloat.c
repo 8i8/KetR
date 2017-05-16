@@ -2,7 +2,7 @@
  * Exercise 5-2. Write getfloat, the floating-point analog of getint. What type
  * does getfloat return as its function value?
  *
- * Getr float also returns an int, this is used to pass back the EOF character.
+ * getfloat also returns an int, this is used to pass back the EOF character.
  */
 #include <stdio.h>
 #include <ctype.h>
@@ -34,7 +34,6 @@ static void ungetch(char c)
 
 /*
  * Getfloat uses a pointer to return an int and the return type of the function
- * to return EOF.
  */
 static int getfloat(double *pn)
 {

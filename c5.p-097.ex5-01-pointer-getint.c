@@ -31,8 +31,8 @@ static void ungetch(char c)
 }
 
 /*
- * Getint uses a pointer to return an int and the return type of the function
- * to return EOF.
+ * Getint uses a pointer to return an int, any spaces after the sign of the
+ * input are ignored.
  */
 static int getint(int *pn)
 {
@@ -60,7 +60,7 @@ static int getint(int *pn)
 
 int main(void)
 {
-	int a;
+	int a = 0;
 
 	getint(&a);
 	printf("%d\n", a);

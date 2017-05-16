@@ -15,7 +15,7 @@
 
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define MAXLEN		1000			/* max length of any input line */
-#define ALLOCSIZE	10000			/* size of available space */
+#define ALLOCSIZE	500000			/* size of available space */
 #define BILLION		1000000000L
 
 /*
@@ -133,7 +133,7 @@ static int readlines2(char *lineptr[], char *allocp, const int maxlines)
 			return -1;
 		else {
 			p = allocp+nlines*MAXLEN;
-			line[len-1] = '\0'; /* delete newline */
+			line[len-1] = '\0'; /* delete newline char*/
 			strcpy(p, line);
 			lineptr[nlines++] = p;
 		}
