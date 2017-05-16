@@ -9,72 +9,80 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#define MAXLEN	1000
+#define MAXLEN		1000
+#define MAXLINES	5000
+#define ALLOCSIZE	5000000
 
-static void getTail(char* s[], int len, int tail);
-static int countLines(void);
-static char* getline(char* s, int lim);
+static int readlines(char *lineptr[], int maxlines);
+static int getline(char *, int);
+static char *alloc(int);
+static void writetail(char *lineptr[], int nlines, int tailLen);
 
-int main(int argc, char* argv[])
+static char *lineptr[MAXLINES];			/* Pointer to text lines */
+static char allocbuf[ALLOCSIZE];		/* storage for alloc */
+static char *allocp = allocbuf;			/* next free position */
+
+/*
+ * Sort input lines.
+ */
+int main(int argc, char *argv[])
 {
-	int arSize = 5;
-	int input;
+	int nlines, tailLen;	/* number of input lines to read */
+	tailLen = 10;
 
 	while (--argc > 1 && (*++argv)[0] == '-')
 		if ((*argv)[1] == 'n')
-			arSize = atof(*++argv);
+			tailLen = atof(*++argv);
 
-	char* s[arSize];
-
-	input = countLines();
-	getTail(s, input, arSize);
-
-
-	return 0;
-}
-
-static void getTail(char* s[], int len, int tail)
-{
-	size_t i = 0;
-	char* c = NULL;
-
-	while (i++ < len && (c = getline(c, MAXLEN))) 
-		if (i >= len - tail)
-			**s++ = *c;
+	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
+		writetail(lineptr, nlines, tailLen);
+		return 0;
+	} else {
+		printf("Error: input to big to sort\n");
+		return 1;
+	}
 }
 
 /*
- * Return the length of the input file.
+ * Read input lines, check available space for new line, return line count.
+ * Copy the new line into the allocated space and fill lineptr array with
+ * pointers to the new lines gathered.
  */
-static int countLines(void)
+static int readlines(char *lineptr[], int maxlines)
 {
-	size_t i;
-	char c;
+	int len, nlines;
+	char *p, line[MAXLEN];
 
-	i = 0;
-
-	while ((c = getchar()) != EOF)
-		if (c == '\n')
-			i++;
-	return i;
+	nlines = 0;
+	while ((len = getline(line, MAXLEN)) > 0)
+		if (nlines >= maxlines || (p = alloc(len)) == NULL)
+			return -1;
+		else {
+			line[len-1] = '\0'; /* delete newline char*/
+			strcpy(p, line);
+			lineptr[nlines++] = p;
+		}
+	return nlines;
 }
 
 /*
- * Read stdin, line by line.
+ * Input from stdin line by line.
  */
-static char* getline(char* s, int lim)
+static int getline(char *s, int lim)
 {
-	char c;
+	char *s_in;
+	int c;
+	s_in = s;
 
-	while(--lim > 0 && (c = getchar()) != EOF && c != '\n')
+	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
 		*s++ = c;
-
 	if (c == '\n')
-		*s++ = '\n';
+		*s++ = c;
 	*s = '\0';
 
-	return s;
+	return s - s_in;
 }
 
 /*
@@ -87,5 +95,17 @@ static char *alloc(int n)	/* return pointer to  characters */
 		return allocp - n;	/* old p */
 	} else		/* not enough room */
 		return 0;
+}
+
+/*
+ * Write output lines.
+ */
+static void writetail(char *lineptr[], int nlines, int tailLen)
+{
+	size_t i;
+
+	for (i = 0; i < nlines; i++)
+		if (i >= nlines - tailLen) 
+			printf("%s\n", *(lineptr+i));
 }
 
