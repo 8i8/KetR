@@ -15,7 +15,7 @@
 
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define MAXLEN		1000			/* max length of any input line */
-#define ALLOCSIZE	500000			/* size of available space */
+#define ALLOCSIZE	5000000			/* size of available space */
 #define BILLION		1000000000L
 
 /*
