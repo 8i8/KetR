@@ -15,10 +15,10 @@
 #define MAXLINES	5000
 #define ALLOCSIZE	5000000
 
-static int readlines(char *lineptr[], int maxlines);
+static int readlines(char *lineptr[], const int maxlines);
 static int getline(char *, int);
-static char *alloc(int);
-static void writetail(char *lineptr[], int nlines, int tailLen);
+static char *alloc(const int n);
+static void writetail(char *lineptr[], const int nlines, const int tailLen);
 
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-static int readlines(char *lineptr[], int maxlines)
+static int readlines(char *lineptr[], const int maxlines)
 {
 	int len, nlines;
 	char *p, line[MAXLEN];
@@ -88,7 +88,7 @@ static int getline(char *s, int lim)
 /*
  * Count memory use for the sort operation.
  */
-static char *alloc(int n)	/* return pointer to  characters */
+static char *alloc(const int n)	/* return pointer to  characters */
 {
 	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
 		allocp += n;
@@ -100,7 +100,7 @@ static char *alloc(int n)	/* return pointer to  characters */
 /*
  * Write output lines.
  */
-static void writetail(char *lineptr[], int nlines, int tailLen)
+static void writetail(char *lineptr[], const int nlines, const int tailLen)
 {
 	size_t i;
 
