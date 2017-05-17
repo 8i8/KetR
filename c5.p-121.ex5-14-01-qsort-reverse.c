@@ -36,7 +36,6 @@ int main(int argc, char *argv[])
 	int nlines;		/* number of input lines to read */
 	int numeric = 0;	/* 1 if numeric sort */
 	int reverse = 0;	/* reverse the order of the search */
-	int casecom = 0;	/* Combine upper and lower case */
 	int c;
 
 	while (--argc > 0 && (*++argv)[0] == '-')
@@ -135,16 +134,19 @@ static void _qsort(void *v[], int left, int right,
 
 	if (left >= right)	/* do nothing if array cantains */
 		return;		/* fewer than two eliments */
+
 	swap(v, left, (left + right)/2);
 	last = left;
-	for (i = left+1; i <= right; i++)
-		if (!direction) {
+
+	if (!direction) {
+		for (i = left+1; i <= right; i++)
 			if ((*comp)(v[i], v[left]) < 0)
 				swap(v, ++last, i);
-		} else {
+	} else
+		for (i = left+1; i <= right; i++)
 			if ((*comp)(v[i], v[left]) > 0)
 				swap(v, ++last, i);
-		}
+
 	swap(v, left, last);
 	_qsort(v, left, last-1, comp, direction);
 	_qsort(v, last+1, right, comp, direction);
