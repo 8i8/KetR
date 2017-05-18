@@ -24,9 +24,17 @@ static void writelines(char *lineptr[], size_t nlines);
 static void _qsort(void *lineptr[], int left, int right,
 		int (*comp)(void *, void *), int direction);
 static void swap(void *v[], size_t i, size_t j);
+
+/* Functions for function pointers */
 static int strsrt(char *s1, char *s2);
 static int fldcse(char *s1, char *s2);
 static int numcmp(char *s1, char *s2);
+
+typedef int (*comp)(void *, void *);
+/* Function pointers */
+static comp strings = (int (*)(void*, void*)) strsrt;
+static comp numbers = (int (*)(void*, void*)) numcmp;
+static comp strfold = (int (*)(void*, void*)) fldcse;
 
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
@@ -72,30 +80,26 @@ int main(int argc, char *argv[])
 	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
 		switch (func) {
 			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1,
-						(int (*)(void*, void*))(strsrt),
-						reverse);
+				_qsort((void **) lineptr, 0,
+						nlines-1, strings, reverse);
 				break;
 			case numeric:
-				_qsort((void **) lineptr, 0, nlines-1,
-						(int (*)(void*, void*))(numcmp),
-						reverse);
+				_qsort((void **) lineptr, 0,
+						nlines-1, numbers, reverse);
 				break;
 			case fold:
-				_qsort((void **) lineptr, 0, nlines-1,
-						(int (*)(void*, void*))(fldcse),
-						reverse);
+				_qsort((void **) lineptr, 0,
+						nlines-1, strfold, reverse);
 				break;
 			case nosort:
 				break;
 			default:
 				break;
 		}
-
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
-		printf("Error: input to big to sort\n");
+		printf("Error: input to large\n");
 		return 1;
 	}
 }
@@ -164,8 +168,7 @@ static void writelines(char *lineptr[], size_t nlines)
 /*
  * Sort v[left]...v[right] into increasing order.
  */
-static void _qsort(void *v[], int left, int right,
-		int (*comp)(void *, void *), int reversed)
+static void _qsort(void *v[], int left, int right, comp fn, int reversed)
 {
 	size_t i, last;
 
@@ -175,19 +178,19 @@ static void _qsort(void *v[], int left, int right,
 	swap(v, left, (left + right)/2);
 	last = left;
 
-	if (!reversed) {			/* check the sort order */
+	if (!reversed) {		/* check the sort order */
 		for (i = left+1; i <= right; i++)
-			if ((*comp)(v[i], v[left]) < 0)
+			if ((*fn)(v[i], v[left]) < 0)
 				swap(v, ++last, i);
 	} else {
 		for (i = left+1; i <= right; i++)
-			if ((*comp)(v[i], v[left]) > 0)
+			if ((*fn)(v[i], v[left]) > 0)
 				swap(v, ++last, i);
 	}
 
 	swap(v, left, last);
-	_qsort(v, left, last-1, comp, reversed);
-	_qsort(v, last+1, right, comp, reversed);
+	_qsort(v, left, last-1, fn, reversed);
+	_qsort(v, last+1, right, fn, reversed);
 }
 
 /*
@@ -206,7 +209,8 @@ static void swap(void *v[], size_t i, size_t j)
  *  Buffer for reading numerical values.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-#define BUFSIZE	100
+#define BUFSIZE		100
+#define DECIMAL 	1000000000000000
 
 static char buf[BUFSIZE];	/* Buffer for next ungetch */
 static int bufp = 0;		/* next free position in buf */
@@ -220,51 +224,6 @@ static void getnumber(int c)	/* push character back on input */
 		buf[bufp] = '\0';
 	}
 }
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Sort maps.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-/*
- * Sorting character maps.
- */
-static int sortAlpha(char *c)
-{
-	int chars[] = {
-		'\0','0','1','2','3','4','5','6','7','8','9',
-		'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-		'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
-	};
-	int *c_st = chars;
-	int *c_pt = chars;
-
-	while (*c_pt++ != (int)*c)
-		;
-
-	return c_pt - c_st;
-}
-
-static int sortAlphaCase(char *c)
-{
-	int chars[] = {
-		'\0','0','1','2','3','4','5','6','7','8','9',
-		'a','A','b','B','c','C','d','D','e','E','f','F','g','G','h','H','i','I','j','J','k','K','l','L','m','M',
-		'n','N','o','O','p','P','q','Q','r','R','s','S','t','T','u','U','v','V','w','W','x','X','y','Y','z','Z'
-	};
-	int *c_st = chars;
-	int *c_pt = chars;
-
-	while (*c_pt++ != (int)*c)
-		;
-
-	return c_pt - c_st;
-}
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Compaire.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
 
 /*
  * If the string starts with a number, read it and convert to a float.
@@ -281,6 +240,72 @@ static double readnumber(char *n)
 
 	return num;
 }
+
+/*
+ * Check which is largest number, deal with floatingpoint by seperating and
+ * multiplying the decimal part by 100 and then changing it to an int.
+ */
+static size_t numcheck(double in1, double in2)
+{
+	int i1 = (int) in1;
+	int i2 = (int) in2;
+	int d1 = (int) ((in1 - i1) * DECIMAL);
+	int d2 = (int) ((in2 - i2) * DECIMAL);
+
+	if (i1 == i2)
+		return d1 - d2;
+
+	return i1 - i2;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Sort maps.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/*
+ * Sorting character maps.
+ */
+static int sortAlpha(char *c)
+{
+	int chars[] = {
+		'\0','0','1','2','3','4','5','6','7','8','9',
+		'a','b','c','d','e','f','g','h','i','j','k','l','m',
+		'n','o','p','q','r','s','t','u','v','w','x','y','z',
+		'A','B','C','D','E','F','G','H','I','J','K','L','M',
+		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+	};
+	int *c_st = chars;
+	int *c_pt = chars;
+
+	while (*c_pt++ != (int)*c)
+		;
+
+	return c_pt - c_st;
+}
+
+static int sortAlphaCase(char *c)
+{
+	int chars[] = {
+		'\0','0','1','2','3','4','5','6','7','8','9',
+		'a','A','b','B','c','C','d','D','e','E','f','F','g',
+		'G','h','H','i','I','j','J','k','K','l','L','m','M',
+		'n','N','o','O','p','P','q','Q','r','R','s','S','t',
+		'T','u','U','v','V','w','W','x','X','y','Y','z','Z'
+	};
+	int *c_st = chars;
+	int *c_pt = chars;
+
+	while (*c_pt++ != (int)*c)
+		;
+
+	return c_pt - c_st;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Compaire.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 
 /*
  * Compaire s1 and s2 alphabeticaly.
@@ -314,7 +339,7 @@ static int strsrt(char *s1, char *s2)
 	 * Return either alpahbetical or numerical order.
 	 */
 	if (b1 && b2)
-		res = num1*100 - num2*100;
+		return numcheck(num1, num2);
 	else {
 		res = sortAlpha(s1) - sortAlpha(s2);
 		if (!res && *s1 != '\0')
@@ -356,7 +381,7 @@ static int fldcse(char *s1, char *s2)
 	 * Return either alpahbetical or numerical order.
 	 */
 	if (b1 && b2)
-		res = num1*100 - num2*100;
+		return numcheck(num1, num2);
 	else {
 		res = sortAlphaCase(s1) - sortAlphaCase(s2);
 		if (!res && *s1 != '\0')
