@@ -189,12 +189,12 @@ static void sortArray(uint_fast16_t array[], const uint_fast16_t len)
  * CLOCK_MONOTONIC time is the total time and CLOCK_PROCESS_CPUTIME_ID is the
  * time for the individual process.
  */
-static uint64_t* timeIt(const search_fn fn,
-			const uint_fast16_t x,
-			uint_fast16_t v[],
-			const uint_fast16_t n,
-			const uint8_t time_method,
-			uint64_t *time)
+static uint64_t* timeIt(		const search_fn fn,
+					const uint_fast16_t x,
+					uint_fast16_t v[],
+					const uint_fast16_t n,
+					const uint8_t time_method,
+					uint64_t *time)
 {
 	struct timespec start, end;
 	size_t i;
