@@ -1,6 +1,7 @@
 /*
- * Exercise 5-14. Modify the sort program to handle a -r flag, which indicates
- * sorting in reverse (decreasing) order. Be sure that -r works with -n.
+ * Exercise 5-16. Add the -d ("directory order") option, which makes
+ * comparisons only on letters, numbers and blanks. Make sure it works in
+ * conjunction with -f.
  */
 
 /* Redefine getline */
@@ -23,6 +24,7 @@ static void writelines(char *lineptr[], size_t nlines);
 static void _qsort(void *lineptr[], int left, int right,
 		int (*comp)(void *, void *), int direction);
 static void swap(void *v[], size_t i, size_t j);
+static int strsrt(char *s1, char *s2);
 static int fldcse(char *s1, char *s2);
 static int numcmp(char *s1, char *s2);
 
@@ -30,7 +32,7 @@ static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
 static char *allocp = allocbuf;			/* next free position */
 
-enum function { alpha, numeric, fold };
+enum function { alpha, numeric, fold, nosort };
 
 /*
  * Sort input lines.
@@ -57,6 +59,9 @@ int main(int argc, char *argv[])
 				case 'f':
 					func = fold;
 					break;
+				case 'p':
+					func = nosort;
+					break;
 				default:
 					break;
 			}
@@ -68,7 +73,7 @@ int main(int argc, char *argv[])
 		switch (func) {
 			case alpha:
 				_qsort((void **) lineptr, 0, nlines-1,
-						(int (*)(void*, void*))(strcmp),
+						(int (*)(void*, void*))(strsrt),
 						reverse);
 				break;
 			case numeric:
@@ -81,7 +86,12 @@ int main(int argc, char *argv[])
 						(int (*)(void*, void*))(fldcse),
 						reverse);
 				break;
+			case nosort:
+				break;
+			default:
+				break;
 		}
+
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
@@ -181,14 +191,165 @@ static void _qsort(void *v[], int left, int right,
 }
 
 /*
+ * Interchange v[i] and v[j]
+ */
+static void swap(void *v[], size_t i, size_t j)
+{
+	void *temp;
+
+	temp = v[i];
+	v[i] = v[j];
+	v[j] = temp;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Buffer.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+#define BUFSIZE	100
+
+static char buf[BUFSIZE];	/* Buffer for next ungetch */
+static int bufp = 0;		/* next free position in buf */
+
+static void getnumber(int c)	/* push character back on input */
+{
+	if (bufp >= BUFSIZE)
+		printf("getnumber: too many characters\n");
+	else {
+		buf[bufp++] = c;
+		buf[bufp] = '\0';
+	}
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Sort maps.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+/*
+ * Sorting character maps.
+ */
+static int sortAlpha(char *c)
+{
+	int chars[] = {
+		'\0','0','1','2','3','4','5','6','7','8','9',
+		'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+		'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+	};
+	int *c_st = chars;
+	int *c_pt = chars;
+
+	while (*c_pt++ != (int)*c)
+		;
+
+	return c_pt - c_st;
+}
+
+static int sortAlphaCase(char *c)
+{
+	int chars[] = {
+		'\0','0','1','2','3','4','5','6','7','8','9',
+		'a','A','b','B','c','C','d','D','e','E','f','F','g','G','h','H','i','I','j','J','k','K','l','L','m','M',
+		'n','N','o','O','p','P','q','Q','r','R','s','S','t','T','u','U','v','V','w','W','x','X','y','Y','z','Z'
+	};
+	int *c_st = chars;
+	int *c_pt = chars;
+
+	while (*c_pt++ != (int)*c)
+		;
+
+	return c_pt - c_st;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Compaire.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+static double readnumber(char *n)
+{
+	double num;
+
+	getnumber(*n++);
+	while (isdigit(*n) || *n == '.')
+		getnumber(*n++);
+	num = atof(buf);
+	bufp = 0;
+
+	return num;
+}
+
+static int strsrt(char *s1, char *s2)
+{
+	int res;
+	int b1, b2;
+	double num1, num2;
+
+	res = num1 = b1 = num2 = b2 = 0;
+	num1 = num2 = 0.0;
+
+	/*
+	 * Test s1.
+	 */
+	while (!isalnum(*s1) && *s1 != '\0')
+		*s1++;
+	if (isdigit(*s1))
+		num1 = readnumber(s1), b1 = 1;
+
+	/*
+	 * Test s2.
+	 */
+	while (!isalnum(*s2) && *s2 != '\0')
+		*s2++;
+	if (isdigit(*s2))
+		num2 = readnumber(s2), b2 = 1;
+
+	/*
+	 * Return either alpahbetical or numerical order.
+	 */
+	if (b1 && b2)
+		res = num1*100 - num2*100;
+	else
+		res = sortAlpha(s1) - sortAlpha(s2);
+
+        return res;
+}
+
+/*
  * Compaire s1 and s2 alphabeticaly.
  */
 static int fldcse(char *s1, char *s2)
 {
-        for ( ; tolower(*s1) == tolower(*s2); s1++, s2++)
-                if (*s1 == '\0')
-                        return 0;
-        return tolower(*s1) - tolower(*s2);
+	int res;
+	int b1, b2;
+	double num1, num2;
+
+	res = num1 = b1 = num2 = b2 = 0;
+	num1 = num2 = 0.0;
+
+	/*
+	 * Test s1.
+	 */
+	while (!isalnum(*s1) && *s1 != '\0')
+		*s1++;
+	if (isdigit(*s1))
+		num1 = readnumber(s1), b1 = 1;
+
+	/*
+	 * Test s2.
+	 */
+	while (!isalnum(*s2) && *s2 != '\0')
+		*s2++;
+	if (isdigit(*s2))
+		num2 = readnumber(s2), b2 = 1;
+
+	/*
+	 * Return either alpahbetical or numerical order.
+	 */
+	if (b1 && b2)
+		res = num1*100 - num2*100;
+	else
+		res = sortAlphaCase(s1) - sortAlphaCase(s2);
+
+        return res;
 }
 
 /*
@@ -206,17 +367,5 @@ static int numcmp(char *s1, char *s2)
 		return 1;
 	else
 		return 0;
-}
-
-/*
- * Interchange v[i] and v[j]
- */
-static void swap(void *v[], size_t i, size_t j)
-{
-	void *temp;
-
-	temp = v[i];
-	v[i] = v[j];
-	v[j] = temp;
 }
 
