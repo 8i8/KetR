@@ -203,7 +203,7 @@ static void swap(void *v[], size_t i, size_t j)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Buffer.
+ *  Buffer for reading numerical values.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define BUFSIZE	100
@@ -225,6 +225,7 @@ static void getnumber(int c)	/* push character back on input */
  *  Sort maps.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
 /*
  * Sorting character maps.
  */
@@ -264,6 +265,10 @@ static int sortAlphaCase(char *c)
  *  Compaire.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
+/*
+ * If the string starts with a number, read it and convert to a float.
+ */
 static double readnumber(char *n)
 {
 	double num;
@@ -277,6 +282,9 @@ static double readnumber(char *n)
 	return num;
 }
 
+/*
+ * Compaire s1 and s2 alphabeticaly.
+ */
 static int strsrt(char *s1, char *s2)
 {
 	int res;
