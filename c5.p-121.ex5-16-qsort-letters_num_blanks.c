@@ -315,8 +315,11 @@ static int strsrt(char *s1, char *s2)
 	 */
 	if (b1 && b2)
 		res = num1*100 - num2*100;
-	else
+	else {
 		res = sortAlpha(s1) - sortAlpha(s2);
+		if (!res && *s1 != '\0')
+			res = strsrt(++s1, ++s2);
+	}
 
         return res;
 }
@@ -354,8 +357,11 @@ static int fldcse(char *s1, char *s2)
 	 */
 	if (b1 && b2)
 		res = num1*100 - num2*100;
-	else
+	else {
 		res = sortAlphaCase(s1) - sortAlphaCase(s2);
+		if (!res && *s1 != '\0')
+			res = fldcse(++s1, ++s2);
+	}
 
         return res;
 }
