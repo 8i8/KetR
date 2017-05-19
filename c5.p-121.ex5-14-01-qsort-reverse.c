@@ -12,28 +12,39 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAXLEN		1000			/* max length of any input line */
+#define MAXLEN		1000			/* max length of input line */
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define ALLOCSIZE	5000000			/* size of available space */
 
+typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 typedef short int bool;
-enum boolean { false, true };
 
 static int readlines(char *lineptr[], size_t maxlines);
 static int getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
-static void _qsort(void *lineptr[], int left, int right, int (*comp)(void *, void *));
+static void _qsort(void *lineptr[], int left, int right, comp fn);
 
-static int strsrt(char *s1, char *s2);
-static int numcmp(char *s1, char *s2);
+/* Sort functions */
+static int sortAlpha(char *s1, char *s2);
+static int sortNumeric(char *s1, char *s2);
 
+/* Function pointers */
+static comp strings = (int (*)(void*, void*)) sortAlpha;
+static comp numsort = (int (*)(void*, void*)) sortNumeric;
+
+/* Global Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
 static char *allocp = allocbuf;			/* next free position */
 
-static int numeric = 0;				/* 1 if numeric sort */
-static int reverse = 0;				/* reverse search order */
+enum function { alpha, number, nosort };
+enum boolean { false, true };
+
+/* Global flags */
+#define DEBUG		false
+static int numeric = 	false;			/* numeric sort ectra cycles */
+static int reverse = 	false;			/* reverse search order */
 
 /*
  * Sort input lines.
@@ -41,24 +52,39 @@ static int reverse = 0;				/* reverse search order */
 int main(int argc, char *argv[])
 {
 	int nlines;		/* number of input lines to read */
+	int func = alpha;
 	int c;
 
 	while (--argc > 0 && (*++argv)[0] == '-')
 		while ((c = *++argv[0]))
 			switch (c) {
 				case 'n':
-					numeric = 1;
+					numeric = true;
+					func = number;
 					break;
 				case 'r':
-					reverse = 1;
+					reverse = true;
 					break;
 				default:
 					break;
 			}
 			
+	/*
+	 * Run quicksort with appropriate function and settings.
+	 */
 	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
-		_qsort((void **) lineptr, 0, nlines-1,
-				(int (*)(void*, void*))(strsrt));
+		switch (func) {
+			case alpha:
+				_qsort((void **) lineptr, 0, nlines-1, strings);
+				break;
+			case number:
+				_qsort((void **) lineptr, 0, nlines-1, numsort);
+				break;
+			case nosort:
+				break;
+			default:
+				break;
+		}
 		writelines(lineptr, nlines);
 		return 0;
 	} else {
@@ -128,6 +154,86 @@ static void writelines(char *lineptr[], size_t nlines)
 		printf("%s\n", *lineptr++);
 }
 
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Compaire and sort.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+static void swap(void *v[], size_t i, size_t j);
+static int rsort(char *left, char *right, comp fn);
+static int numcmp(char *s1, char *s2);
+
+/*
+ * Sort v[left]...v[right] into increasing order.
+ */
+static void _qsort(void *v[], int left, int right, comp fn)
+{
+	size_t i, last;
+
+	if (left >= right)	/* do nothing if array contains */
+		return;		/* fewer than two elements */
+
+	swap(v, left, (left + right)/2);
+	last = left;
+
+	if (!reverse) {
+		for (i = left+1; i <= right; i++)
+			if (rsort(v[i], v[left], fn) < 0)
+				swap(v, ++last, i);
+	} else
+		for (i = left+1; i <= right; i++)
+			if (rsort(v[i], v[left], fn) > 0)
+				swap(v, ++last, i);
+
+	swap(v, left, last);
+	_qsort(v, left, last-1, fn);
+	_qsort(v, last+1, right, fn);
+}
+
+/*
+ * Prepare string for sort function, filter numbers and letters and allow for
+ * recursive call to sort function provided to _qsort(); seperating this
+ * section of the function allows for the reverse '-r' functionality.
+ */
+static int rsort(char *left, char *right, comp fn)
+{
+	int res;
+	bool b1, b2;
+	double num1, num2;
+
+	res = num1 = b1 = num2 = b2 = 0;
+	num1 = num2 = 0.0;
+
+	/*
+	 * Test left.
+	 */
+	while (!isalnum(*left) && *left != '\0')
+		*left++;
+	if (numeric)
+		if (isdigit(*left))
+			b1 = true;
+	/*
+	 * Test right.
+	 */
+	while (!isalnum(*right) && *right != '\0')
+		*right++;
+	if (numeric)
+		if (isdigit(*right))
+			b2 = true;
+	/*
+	 * Return either alphabetical or numerical order.
+	 */
+	if (b1 && b2)
+		res = numcmp(left, right);
+	else {
+		res = (*fn)(left, right);
+		if (!res && *left != '\0')
+			res = rsort(++left, ++right, fn);
+	}
+
+        return res;
+}
+
 /*
  * Interchange v[i] and v[j]
  */
@@ -140,43 +246,26 @@ static void swap(void *v[], size_t i, size_t j)
 	v[j] = temp;
 }
 
-/*
- * Sort v[left]...v[right] into increasing order.
- */
-static void _qsort(void *v[], int left, int right,
-		int (*comp)(void *, void *))
-{
-	size_t i, last;
-
-	if (left >= right)	/* do nothing if array contains */
-		return;		/* fewer than two elements */
-
-	swap(v, left, (left + right)/2);
-	last = left;
-
-	if (!reverse) {
-		for (i = left+1; i <= right; i++)
-			if ((*comp)(v[i], v[left]) < 0)
-				swap(v, ++last, i);
-	} else
-		for (i = left+1; i <= right; i++)
-			if ((*comp)(v[i], v[left]) > 0)
-				swap(v, ++last, i);
-
-	swap(v, left, last);
-	_qsort(v, left, last-1, comp);
-	_qsort(v, last+1, right, comp);
-}
-
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Sort maps.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+static int getposit(int *chars, char *c)
+{
+	int *in_pt;
+	in_pt = chars;
+
+	while (*chars++ != (int)*c)
+		;
+
+	return --chars - in_pt;
+}
+
 /*
  * Sorting character maps.
  */
-static int sortAlpha(char *c)
+static int sortAlpha(char *s1, char *s2)
 {
 	int chars[] = {
 		'\0','0','1','2','3','4','5','6','7','8','9',
@@ -185,62 +274,22 @@ static int sortAlpha(char *c)
 		'A','B','C','D','E','F','G','H','I','J','K','L','M',
 		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
 	};
-	int *c_st = chars;
-	int *c_pt = chars;
 
-	while (*c_pt++ != (int)*c)
-		;
-
-	return c_pt - c_st;
+	return getposit(chars, s1) - getposit(chars, s2);
 }
 
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Compaire.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-/*
- * Compaire s1 and s2 alphabeticaly.
- */
-static int strsrt(char *s1, char *s2)
+static int sortNumeric(char *s1, char *s2)
 {
-	int res;
-	bool b1, b2;
-	double num1, num2;
+	int chars[] = {
+		'\0',
+		'a','b','c','d','e','f','g','h','i','j','k','l','m',
+		'n','o','p','q','r','s','t','u','v','w','x','y','z',
+		'A','B','C','D','E','F','G','H','I','J','K','L','M',
+		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+		'0','1','2','3','4','5','6','7','8','9'
+	};
 
-	res = num1 = b1 = num2 = b2 = 0;
-	num1 = num2 = 0.0;
-
-	/*
-	 * Test s1.
-	 */
-	while (!isalnum(*s1) && *s1 != '\0')
-		*s1++;
-	if (numeric)
-		if (isdigit(*s1))
-			b1 = true;
-
-	/*
-	 * Test s2.
-	 */
-	while (!isalnum(*s2) && *s2 != '\0')
-		*s2++;
-	if (numeric)
-		if (isdigit(*s2))
-			b2 = true;
-
-	/*
-	 * Return either alphabetical or numerical order.
-	 */
-	if (b1 && b2)
-		res = numcmp(s1, s2);
-	else {
-		res = sortAlpha(s1) - sortAlpha(s2);
-		if (!res && *s1 != '\0')
-			res = strsrt(++s1, ++s2);
-	}
-
-        return res;
+	return getposit(chars, s1) - getposit(chars, s2);
 }
 
 /*
