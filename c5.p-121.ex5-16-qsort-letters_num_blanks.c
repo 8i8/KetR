@@ -18,7 +18,7 @@
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define ALLOCSIZE	5000000			/* size of available space */
 
-typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
+typedef long int (*comp)(void *, void *);	/* Sort functions for qsort */
 
 static int readlines(char *lineptr[], size_t maxlines);
 static int getline(char *, size_t);
@@ -32,9 +32,9 @@ static long int fldcse(char *s1, char *s2);
 static long int dircse(char *s1, char *s2);
 
 /* Function pointers */
-static comp strings = (int (*)(void*, void*)) strsrt;
-static comp strfold = (int (*)(void*, void*)) fldcse;
-static comp directc = (int (*)(void*, void*)) dircse;
+static comp strings = (long int (*)(void*, void*)) strsrt;
+static comp strfold = (long int (*)(void*, void*)) fldcse;
+static comp directc = (long int (*)(void*, void*)) dircse;
 
 /* Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
@@ -221,10 +221,10 @@ static void _qsort(void *v[], int left, int right, comp fn, int reversed)
 #define BUFSIZE		100
 #define DECIMAL 	INT_MAX
 
-static char buf[BUFSIZE];	/* Buffer for next ungetch */
+static char buf[BUFSIZE];	/* Buffer for next char */
 static int bufp = 0;		/* next free position in buf */
 
-static void getnumber(int c)	/* push character back on input */
+static void getnumber(int c)	/* push character */
 {
 	if (bufp >= BUFSIZE)
 		printf("getnumber: too many characters\n");
@@ -350,7 +350,7 @@ static long int strsrt(char *s1, char *s2)
 	 * Return either alpahbetical or numerical order.
 	 */
 	if (b1 && b2)
-		return numcheck(num1, num2);
+		res = numcheck(num1, num2);
 	else {
 		res = sortAlpha(s1) - sortAlpha(s2);
 		if (!res && *s1 != '\0')
