@@ -27,9 +27,9 @@ static void writelines(char *lineptr[], size_t nlines);
 static void _qsort(void *lineptr[], int left, int right, comp fn, int direction);
 
 /* Functions for function pointers */
-static int strsrt(char *s1, char *s2);
-static int fldcse(char *s1, char *s2);
-static int dircse(char *s1, char *s2);
+static long int strsrt(char *s1, char *s2);
+static long int fldcse(char *s1, char *s2);
+static long int dircse(char *s1, char *s2);
 
 /* Function pointers */
 static comp strings = (int (*)(void*, void*)) strsrt;
@@ -254,12 +254,12 @@ static double readnumber(char *n)
  * Check which is largest number, deal with floatingpoint by seperating and
  * multiplying the decimal part by 100 and then changing it to an int.
  */
-static size_t numcheck(const double in1, const double in2)
+static long int numcheck(const double in1, const double in2)
 {
-	int i1 = (int) in1;
-	int i2 = (int) in2;
-	int d1 = (int) ((in1 - i1) * DECIMAL);
-	int d2 = (int) ((in2 - i2) * DECIMAL);
+	long int i1 = (long int) in1;
+	long int i2 = (long int) in2;
+	long int d1 = (long int) ((in1 - i1) * DECIMAL);
+	long int d2 = (long int) ((in2 - i2) * DECIMAL);
 
 	if (i1 == i2)
 		return d1 - d2;
@@ -319,9 +319,9 @@ static int sortAlphaCase(char *c)
 /*
  * Compaire s1 and s2 alphabeticaly.
  */
-static int strsrt(char *s1, char *s2)
+static long int strsrt(char *s1, char *s2)
 {
-	int res;
+	long int res;
 	int b1, b2;
 	double num1, num2;
 
@@ -363,9 +363,9 @@ static int strsrt(char *s1, char *s2)
 /*
  * Compaire s1 and s2 alphabeticaly.
  */
-static int fldcse(char *s1, char *s2)
+static long int fldcse(char *s1, char *s2)
 {
-	int res;
+	long int res;
 	int b1, b2;
 	double num1, num2;
 
@@ -407,9 +407,9 @@ static int fldcse(char *s1, char *s2)
 /*
  * Compaire s1 and s2 alphabeticaly.
  */
-static int dircse(char *s1, char *s2)
+static long int dircse(char *s1, char *s2)
 {
-	int res;
+	long int res;
 	int b1, b2;
 	double num1, num2;
 
