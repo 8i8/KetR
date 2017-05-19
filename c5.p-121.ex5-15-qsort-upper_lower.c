@@ -208,10 +208,8 @@ static int rsort(char *left, char *right, comp fn)
 {
 	int res;
 	bool b1, b2;
-	double num1, num2;
 
-	res = num1 = b1 = num2 = b2 = 0;
-	num1 = num2 = 0.0;
+	res = b1 = b2 = 0;
 
 	/*
 	 * Test left.
