@@ -12,35 +12,41 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
-#define MAXLEN		1000			/* max length of any input line */
+#define MAXLEN		1000			/* max length of input line */
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define ALLOCSIZE	5000000			/* size of available space */
+
+typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 
 static int readlines(char *lineptr[], size_t maxlines);
 static int getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
-static void _qsort(void *lineptr[], int left, int right,
-		int (*comp)(void *, void *), int direction);
-static void swap(void *v[], size_t i, size_t j);
+static void _qsort(void *lineptr[], int left, int right, comp fn, int direction);
 
 /* Functions for function pointers */
 static int strsrt(char *s1, char *s2);
 static int fldcse(char *s1, char *s2);
-static int numcmp(char *s1, char *s2);
+static int dircse(char *s1, char *s2);
 
-typedef int (*comp)(void *, void *);
 /* Function pointers */
 static comp strings = (int (*)(void*, void*)) strsrt;
-static comp numbers = (int (*)(void*, void*)) numcmp;
 static comp strfold = (int (*)(void*, void*)) fldcse;
+static comp directc = (int (*)(void*, void*)) dircse;
 
+/* Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
 static char *allocp = allocbuf;			/* next free position */
 
-enum function { alpha, numeric, fold, nosort };
+enum function { alpha, fold, directory, nosort };
+enum boolean { false, true };
+
+/* Global flags */
+#define DEBUG		false
+static int numeric = 	false;
 
 /*
  * Sort input lines.
@@ -58,11 +64,14 @@ int main(int argc, char *argv[])
 	while (--argc > 0 && (*++argv)[0] == '-')
 		while ((c = *++argv[0]))
 			switch (c) {
+				case 'd':
+					func = directory;
+					break;
 				case 'n':
-					func = numeric;
+					numeric = true;
 					break;
 				case 'r':
-					reverse = 1;
+					reverse = true;
 					break;
 				case 'f':
 					func = fold;
@@ -83,13 +92,13 @@ int main(int argc, char *argv[])
 				_qsort((void **) lineptr, 0,
 						nlines-1, strings, reverse);
 				break;
-			case numeric:
-				_qsort((void **) lineptr, 0,
-						nlines-1, numbers, reverse);
-				break;
 			case fold:
 				_qsort((void **) lineptr, 0,
 						nlines-1, strfold, reverse);
+				break;
+			case directory:
+				_qsort((void **) lineptr, 0,
+						nlines-1, directc, reverse);
 				break;
 			case nosort:
 				break;
@@ -166,6 +175,18 @@ static void writelines(char *lineptr[], size_t nlines)
 }
 
 /*
+ * Interchange v[i] and v[j]
+ */
+static void swap(void *v[], size_t i, size_t j)
+{
+	void *temp;
+
+	temp = v[i];
+	v[i] = v[j];
+	v[j] = temp;
+}
+
+/*
  * Sort v[left]...v[right] into increasing order.
  */
 static void _qsort(void *v[], int left, int right, comp fn, int reversed)
@@ -193,24 +214,12 @@ static void _qsort(void *v[], int left, int right, comp fn, int reversed)
 	_qsort(v, last+1, right, fn, reversed);
 }
 
-/*
- * Interchange v[i] and v[j]
- */
-static void swap(void *v[], size_t i, size_t j)
-{
-	void *temp;
-
-	temp = v[i];
-	v[i] = v[j];
-	v[j] = temp;
-}
-
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Buffer for reading numerical values.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define BUFSIZE		100
-#define DECIMAL 	1000000000000000
+#define DECIMAL 	INT_MAX
 
 static char buf[BUFSIZE];	/* Buffer for next ungetch */
 static int bufp = 0;		/* next free position in buf */
@@ -245,15 +254,20 @@ static double readnumber(char *n)
  * Check which is largest number, deal with floatingpoint by seperating and
  * multiplying the decimal part by 100 and then changing it to an int.
  */
-static size_t numcheck(double in1, double in2)
+static size_t numcheck(const double in1, const double in2)
 {
+	if(DEBUG) printf("double -> %f %f\n", in1, in2);
+
 	int i1 = (int) in1;
 	int i2 = (int) in2;
 	int d1 = (int) ((in1 - i1) * DECIMAL);
 	int d2 = (int) ((in2 - i2) * DECIMAL);
 
-	if (i1 == i2)
+	if(DEBUG) printf("i1= %d, i2= %d, d1= %d, d2= %d\n", i1, i2, d1, d2);
+
+	if (i1 == i2) {
 		return d1 - d2;
+	}
 
 	return i1 - i2;
 }
@@ -324,16 +338,18 @@ static int strsrt(char *s1, char *s2)
 	 */
 	while (!isalnum(*s1) && *s1 != '\0')
 		*s1++;
-	if (isdigit(*s1))
-		num1 = readnumber(s1), b1 = 1;
+	if (numeric)
+		if (isdigit(*s1))
+			num1 = readnumber(s1), b1 = true;
 
 	/*
 	 * Test s2.
 	 */
 	while (!isalnum(*s2) && *s2 != '\0')
 		*s2++;
-	if (isdigit(*s2))
-		num2 = readnumber(s2), b2 = 1;
+	if (numeric)
+		if (isdigit(*s2))
+			num2 = readnumber(s2), b2 = true;
 
 	/*
 	 * Return either alpahbetical or numerical order.
@@ -366,16 +382,18 @@ static int fldcse(char *s1, char *s2)
 	 */
 	while (!isalnum(*s1) && *s1 != '\0')
 		*s1++;
-	if (isdigit(*s1))
-		num1 = readnumber(s1), b1 = 1;
+	if (numeric)
+		if (isdigit(*s1))
+			num1 = readnumber(s1), b1 = true;
 
 	/*
 	 * Test s2.
 	 */
 	while (!isalnum(*s2) && *s2 != '\0')
 		*s2++;
-	if (isdigit(*s2))
-		num2 = readnumber(s2), b2 = 1;
+	if (numeric)
+		if (isdigit(*s2))
+			num2 = readnumber(s2), b2 = true;
 
 	/*
 	 * Return either alpahbetical or numerical order.
@@ -392,19 +410,44 @@ static int fldcse(char *s1, char *s2)
 }
 
 /*
- * Compaire s1 and s2 numericaly.
+ * Compaire s1 and s2 alphabeticaly.
  */
-static int numcmp(char *s1, char *s2)
+static int dircse(char *s1, char *s2)
 {
-	double v1, v2;
+	int res;
+	int b1, b2;
+	double num1, num2;
 
-	v1 = atof(s1);
-	v2 = atof(s2);
-	if (v1 < v2)
-		return -1;
-	else if (v1 > v2)
-		return 1;
-	else
-		return 0;
+	res = b1 = b2 = 0;
+	num1 = num2 = 0.0;
+
+	/*
+	 * Test s1.
+	 */
+	while (!isalnum(*s1) && *s1 != '\0')
+		*s1++;
+	if (isdigit(*s1))
+		num1 = readnumber(s1), b1 = true;
+
+	/*
+	 * Test s2.
+	 */
+	while (!isalnum(*s2) && *s2 != '\0')
+		*s2++;
+	if (isdigit(*s2))
+		num2 = readnumber(s2), b2 = true;
+
+	/*
+	 * Return either alpahbetical or numerical order.
+	 */
+	if (b1 && b2)
+		return numcheck(num1, num2);
+	else {
+		res = sortAlphaCase(s1) - sortAlphaCase(s2);
+		if (!res && *s1 != '\0')
+			res = fldcse(++s1, ++s2);
+	}
+
+        return res;
 }
 
