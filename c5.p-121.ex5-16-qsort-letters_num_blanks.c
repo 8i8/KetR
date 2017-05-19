@@ -170,7 +170,7 @@ static void writelines(char *lineptr[], size_t nlines)
  */
 
 static void swap(void *v[], size_t i, size_t j);
-static long int rsort(char *left, char *right, comp fn);
+static int rsort(char *left, char *right, comp fn);
 static int numcmp(char *s1, char *s2);
 
 /*
@@ -205,9 +205,9 @@ static void _qsort(void *v[], int left, int right, comp fn)
  * recursive call to sort function provided to _qsort(); seperating this
  * section of the function allows for the reverse '-r' functionality.
  */
-static long int rsort(char *left, char *right, comp fn)
+static int rsort(char *left, char *right, comp fn)
 {
-	long int res;
+	int res;
 	bool b1, b2;
 
 	res = b1 = b2 = 0;
