@@ -256,18 +256,13 @@ static double readnumber(char *n)
  */
 static size_t numcheck(const double in1, const double in2)
 {
-	if(DEBUG) printf("double -> %f %f\n", in1, in2);
-
 	int i1 = (int) in1;
 	int i2 = (int) in2;
 	int d1 = (int) ((in1 - i1) * DECIMAL);
 	int d2 = (int) ((in2 - i2) * DECIMAL);
 
-	if(DEBUG) printf("i1= %d, i2= %d, d1= %d, d2= %d\n", i1, i2, d1, d2);
-
-	if (i1 == i2) {
+	if (i1 == i2)
 		return d1 - d2;
-	}
 
 	return i1 - i2;
 }
