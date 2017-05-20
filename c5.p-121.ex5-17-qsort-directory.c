@@ -240,6 +240,7 @@ static void swap(void *v[], size_t i, size_t j);
 static int nsort(char *left, char *right, comp fn);
 static int numcmp(char *s1, char *s2);
 static char* remchar(char *c);
+static char* remtab(char *c, int n);
 
 /*
  * Sort v[left]...v[right] into increasing order.
@@ -272,15 +273,22 @@ static void _qsort(void *v[], int left, int right, comp fn)
 }
 
 /*
- * Prepare string for sort function, filter numbers and letters and allow for
- * recursive call to sort function provided to _qsort(); separating this
- * section of the function allows for the reverse '-r' functionality.
+ * Prepare string for sort function, filter numbers and letters, recursive call
+ * to sort function; By separating this section of the function from the body
+ * of qsort, enabeling shorter reverse '-r' code in qsort.
  */
+
 static int nsort(char *left, char *right, comp fn)
 {
 	int res = 0;
 	bool b1, b2;
 	b1 = b2 = false;
+
+	/*
+	 * Move to desired tab.
+	 */
+	left = remtab(left, 1);
+	right = remtab(right, 1);
 
 	/*
 	 * Remove redundant char.
@@ -328,9 +336,23 @@ static void swap(void *v[], size_t i, size_t j)
  */
 static char* remchar(char *c)
 {
-	while (!isalnum(*c) && *c != '\0')
+	while (!isalnum(*c) && *c != '\0' && *c != '\t')
 		c++;
 	return c;
+}
+
+/*
+ * Skip to the n'th tab.
+ */
+static char* remtab(char *c, int n)
+{
+	char *c_pt;
+	c_pt = c;
+
+	while (*c != '\0')
+		if (*c++ == '\t' && --n <= 0)
+			return c;
+	return c_pt;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
