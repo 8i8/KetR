@@ -65,10 +65,8 @@ int main(int argc, char *argv[])
 		while ((c = *++argv[0]))
 			switch (c) {
 				case 'd':
-					numeric = true;
 					emptylines = false;
 					directory = true;
-					func = fold;
 					break;
 				case 'e':
 					emptylines = false;
