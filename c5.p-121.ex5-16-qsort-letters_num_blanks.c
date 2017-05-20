@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include <limits.h>
 
 #define MAXLEN		1000			/* max length of input line */
 #define MAXLINES	5000			/* Maxlines to be sorted */
@@ -21,11 +20,13 @@
 typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 typedef short int bool;
 
-static int readlines(char *lineptr[], size_t maxlines);
+static int readlines(char *lineptr[], size_t maxlines, bool emptylines);
 static int getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
+static size_t addspaces(char *lineptr[], size_t maxlines, size_t nlines);
 static void _qsort(void *lineptr[], int left, int right, comp fn);
+static int firstcmp(char *s1, char *s2);
 
 /* Sort functions */
 static int sortAlpha(char *s1, char *s2);
@@ -33,7 +34,7 @@ static int sortAlphaCase(char *s1, char *s2);
 
 /* Function pointers */
 static comp strsimp = (int (*)(void*, void*)) strcmp;
-static comp strsort = (int (*)(void*, void*)) sortAlpha;
+static comp stnsort = (int (*)(void*, void*)) sortAlpha;
 static comp strfold = (int (*)(void*, void*)) sortAlphaCase;
 
 /* Global Memory */
@@ -46,8 +47,8 @@ enum boolean { false, true };
 
 /* Global flags */
 #define DEBUG		false
-static int numeric = 	false;			/* numeric sort ectra cycles */
-static int reverse = 	false;			/* reverse search order */
+static bool numeric = 	false;			/* use numeric sort in qsort */
+static bool reverse = 	false;			/* reverse search order */
 
 /*
  * Sort input lines.
@@ -57,36 +58,48 @@ int main(int argc, char *argv[])
 	int nlines;		/* number of input lines to read */
 	int func = alpha;
 	int c;
+	bool emptylines = true;
+	bool directory = false;
 
 	while (--argc > 0 && (*++argv)[0] == '-')
 		while ((c = *++argv[0]))
 			switch (c) {
-				case 's':
-					func = simple;
+				case 'd':
+					emptylines = false;
+					directory = true;
+					break;
+				case 'e':
+					emptylines = false;
+					break;
+				case 'f':
+					func = fold;
 					break;
 				case 'n':
 					numeric = true;
 					break;
+				case 'p':
+					func = nosort;
+					break;
 				case 'r':
 					reverse = true;
 					break;
-				case 'f':
-					func = fold;
+				case 's':
+					func = simple;
 					break;
 				default:
 					break;
 			}
 			
 	/*
-	 * Run quicksort with appropriate function and settings.
+	 * Run qsort with appropriate function and settings.
 	 */
-	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
+	if ((nlines = readlines(lineptr, MAXLINES, emptylines)) >= 0)
 		switch (func) {
 			case simple:
 				_qsort((void **) lineptr, 0, nlines-1, strsimp);
 				break;
 			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1, strsort);
+				_qsort((void **) lineptr, 0, nlines-1, stnsort);
 				break;
 			case fold:
 				_qsort((void **) lineptr, 0, nlines-1, strfold);
@@ -96,12 +109,24 @@ int main(int argc, char *argv[])
 			default:
 				break;
 		}
-		writelines(lineptr, nlines);
-		return 0;
-	} else {
+	else {
 		printf("Error: input to big to sort\n");
 		return 1;
 	}
+
+	/*
+	 * If directory setting is used, add a blank line break after each new
+	 * starting letter.
+	 */
+	if (directory)
+		nlines = addspaces(lineptr, MAXLINES, nlines);
+
+	/*
+	 * Output to terminal.
+	 */
+	writelines(lineptr, nlines);
+
+	return 0;
 }
 
 /*
@@ -109,7 +134,7 @@ int main(int argc, char *argv[])
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-static int readlines(char *lineptr[], size_t maxlines)
+static int readlines(char *lineptr[], size_t maxlines, bool emptylines)
 {
 	size_t len, nlines;
 	char *p, line[MAXLEN];
@@ -119,6 +144,8 @@ static int readlines(char *lineptr[], size_t maxlines)
 		if (nlines >= maxlines || (p = alloc(len)) == NULL)
 			return -1;
 		else {
+			if (!emptylines && len == 1)
+				continue;
 			line[len-1] = '\0'; /* delete newline char*/
 			strcpy(p, line);
 			lineptr[nlines++] = p;
@@ -145,15 +172,42 @@ static int getline(char *s, size_t lim)
 }
 
 /*
- * Count memory use for the sort operation.
+ * Add empty line to char* array, after given index value.
  */
-static char *alloc(size_t n)	/* return pointer to  characters */
+static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t nlines)
 {
-	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
-		allocp += n;
-		return allocp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
+	char line[1] = { '\0' };
+	char *p;
+	size_t i;
+
+	if (nlines >= maxlines || (p = alloc(1)) == NULL)
+		return -1;
+
+	strcpy(p, line);
+	nlines++;
+
+	i = nlines;
+
+	while (i > index)
+		lineptr[i] = lineptr[--i];
+
+	lineptr[++index] = p; 
+
+	return nlines;
+}
+
+/*
+ * Add line when sorted and first letter of the line changes.
+ */
+static size_t addspaces(char *lineptr[], size_t maxlines, size_t nlines)
+{
+	size_t i = 1;
+
+	for (; i < nlines; i++)
+		if (firstcmp(lineptr[i-1], lineptr[i]))
+			nlines = insertline(lineptr, maxlines, i-1, nlines), i++;
+
+	return nlines;
 }
 
 /*
@@ -165,14 +219,27 @@ static void writelines(char *lineptr[], size_t nlines)
 		printf("%s\n", *lineptr++);
 }
 
+/*
+ * Count memory use for the sort operation.
+ */
+static char *alloc(size_t n)	/* return pointer to  characters */
+{
+	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
+		allocp += n;
+		return allocp - n;	/* old p */
+	} else		/* not enough room */
+		return 0;
+}
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Compaire and sort.
+ *  Compare and sort.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
 static void swap(void *v[], size_t i, size_t j);
-static int rsort(char *left, char *right, comp fn);
+static int nsort(char *left, char *right, comp fn);
 static int numcmp(char *s1, char *s2);
+static char* remchar(char *c);
 
 /*
  * Sort v[left]...v[right] into increasing order.
@@ -187,13 +254,16 @@ static void _qsort(void *v[], int left, int right, comp fn)
 	swap(v, left, (left + right)/2);
 	last = left;
 
+	/*
+	 * Perform sort in either the direct or the reverse order.
+	 */
 	if (!reverse) {
 		for (i = left+1; i <= right; i++)
-			if (rsort(v[i], v[left], fn) < 0)
+			if (nsort(v[i], v[left], fn) < 0)
 				swap(v, ++last, i);
 	} else
 		for (i = left+1; i <= right; i++)
-			if (rsort(v[i], v[left], fn) > 0)
+			if (nsort(v[i], v[left], fn) > 0)
 				swap(v, ++last, i);
 
 	swap(v, left, last);
@@ -203,42 +273,39 @@ static void _qsort(void *v[], int left, int right, comp fn)
 
 /*
  * Prepare string for sort function, filter numbers and letters and allow for
- * recursive call to sort function provided to _qsort(); seperating this
+ * recursive call to sort function provided to _qsort(); separating this
  * section of the function allows for the reverse '-r' functionality.
  */
-static int rsort(char *left, char *right, comp fn)
+static int nsort(char *left, char *right, comp fn)
 {
-	int res;
+	int res = 0;
 	bool b1, b2;
-	res = b1 = b2 = 0;
+	b1 = b2 = false;
 
 	/*
-	 * Test left.
+	 * Remove redundant char.
 	 */
-	while (!isalnum(*left) && *left != '\0')
-		*left++;
-	if (numeric)
+	left = remchar(left);
+	right = remchar(right);
+
+	if (numeric) {
 		if (isdigit(*left))
 			b1 = true;
-	/*
-	 * Test right.
-	 */
-	while (!isalnum(*right) && *right != '\0')
-		*right++;
-	if (numeric)
 		if (isdigit(*right))
 			b2 = true;
+	}
+
 	/*
 	 * Return either alphabetical or numerical order.
 	 */
 	if (b1 && b2) {
 		res = numcmp(left, right);
 		if (!res && *left != '\0')
-			res = rsort(++left, ++right, fn);
+			res = nsort(++left, ++right, fn);
 	} else {
 		res = (*fn)(left, right);
 		if (!res && *left != '\0')
-			res = rsort(++left, ++right, fn);
+			res = nsort(++left, ++right, fn);
 	}
 
         return res;
@@ -256,8 +323,18 @@ static void swap(void *v[], size_t i, size_t j)
 	v[j] = temp;
 }
 
+/*
+ * Skip over all spaces and non alphanumeric char from the start of the string.
+ */
+static char* remchar(char *c)
+{
+	while (!isalnum(*c) && *c != '\0')
+		*c++;
+	return c;
+}
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Sort maps.
+ *  Sort maps and comparisons.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -291,6 +368,9 @@ static int sortAlpha(char *s1, char *s2)
 	return c1 - c2;
 }
 
+/*
+ * Sort string with Upper case folded in.
+ */
 static int sortAlphaCase(char *s1, char *s2)
 {
 	int c1, c2;
@@ -316,5 +396,17 @@ static int numcmp(char *s1, char *s2)
 		return 1;
 	else
 		return 0;
+}
+
+/*
+ * Compare the first char of each line, used to separate alphabetically.
+ */
+static int firstcmp(char *s1, char *s2)
+{
+	s1 = remchar(s1);
+	s2 = remchar(s2);
+	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
+		return 1;
+	return 0;
 }
 

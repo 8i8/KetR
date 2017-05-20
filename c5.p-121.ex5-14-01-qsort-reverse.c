@@ -30,7 +30,7 @@ static int sortAlpha(char *s1, char *s2);
 
 /* Function pointers */
 static comp strsimp = (int (*)(void*, void*)) strcmp;
-static comp strings = (int (*)(void*, void*)) sortAlpha;
+static comp stnsort = (int (*)(void*, void*)) sortAlpha;
 
 /* Global Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
@@ -79,10 +79,7 @@ int main(int argc, char *argv[])
 				_qsort((void **) lineptr, 0, nlines-1, strsimp);
 				break;
 			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1, strings);
-				break;
-			case number:
-				numeric = true;
+				_qsort((void **) lineptr, 0, nlines-1, stnsort);
 				break;
 			case nosort:
 				break;
@@ -164,7 +161,7 @@ static void writelines(char *lineptr[], size_t nlines)
  */
 
 static void swap(void *v[], size_t i, size_t j);
-static int rsort(char *left, char *right, comp fn);
+static int nsort(char *left, char *right, comp fn);
 static int numcmp(char *s1, char *s2);
 
 /*
@@ -182,11 +179,11 @@ static void _qsort(void *v[], int left, int right, comp fn)
 
 	if (!reverse) {
 		for (i = left+1; i <= right; i++)
-			if (rsort(v[i], v[left], fn) < 0)
+			if (nsort(v[i], v[left], fn) < 0)
 				swap(v, ++last, i);
 	} else
 		for (i = left+1; i <= right; i++)
-			if (rsort(v[i], v[left], fn) > 0)
+			if (nsort(v[i], v[left], fn) > 0)
 				swap(v, ++last, i);
 
 	swap(v, left, last);
@@ -199,11 +196,10 @@ static void _qsort(void *v[], int left, int right, comp fn)
  * recursive call to sort function provided to _qsort(); seperating this
  * section of the function allows for the reverse '-r' functionality.
  */
-static int rsort(char *left, char *right, comp fn)
+static int nsort(char *left, char *right, comp fn)
 {
 	int res;
 	bool b1, b2;
-
 	res = b1 = b2 = 0;
 
 	/*
@@ -225,12 +221,14 @@ static int rsort(char *left, char *right, comp fn)
 	/*
 	 * Return either alphabetical or numerical order.
 	 */
-	if (b1 && b2)
+	if (b1 && b2) {
 		res = numcmp(left, right);
-	else {
+		if (!res && *left != '\0')
+			res = nsort(++left, ++right, fn);
+	} else {
 		res = (*fn)(left, right);
 		if (!res && *left != '\0')
-			res = rsort(++left, ++right, fn);
+			res = nsort(++left, ++right, fn);
 	}
 
         return res;
