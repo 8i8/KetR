@@ -284,9 +284,7 @@ static int sortascii(int *c, bool fold)
 static int sortAlpha(char *s1, char *s2)
 {
 	int c1, c2;
-	
 	c1 = *s1, c2 = *s2;
-
 	c1 = sortascii(&c1, false);
 	c2 = sortascii(&c2, false);
 
@@ -296,9 +294,7 @@ static int sortAlpha(char *s1, char *s2)
 static int sortAlphaCase(char *s1, char *s2)
 {
 	int c1, c2;
-	
 	c1 = *s1, c2 = *s2;
-
 	c1 = sortascii(&c1, true);
 	c2 = sortascii(&c2, true);
 

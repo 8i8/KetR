@@ -29,19 +29,18 @@ static void _qsort(void *lineptr[], int left, int right, comp fn);
 /* Sort functions */
 static int sortAlpha(char *s1, char *s2);
 static int sortAlphaCase(char *s1, char *s2);
-static int sortNumeric(char *s1, char *s2);
 
 /* Function pointers */
-static comp strings = (int (*)(void*, void*)) sortAlpha;
+static comp strsimp = (int (*)(void*, void*)) strcmp;
+static comp strsort = (int (*)(void*, void*)) sortAlpha;
 static comp strfold = (int (*)(void*, void*)) sortAlphaCase;
-static comp numsort = (int (*)(void*, void*)) sortNumeric;
 
 /* Global Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* storage for alloc */
 static char *allocp = allocbuf;			/* next free position */
 
-enum function { alpha, fold, number, nosort };
+enum function { simple, alpha, fold, number, nosort };
 enum boolean { false, true };
 
 /* Global flags */
@@ -61,9 +60,11 @@ int main(int argc, char *argv[])
 	while (--argc > 0 && (*++argv)[0] == '-')
 		while ((c = *++argv[0]))
 			switch (c) {
+				case 's':
+					func = simple;
+					break;
 				case 'n':
 					numeric = true;
-					func = number;
 					break;
 				case 'r':
 					reverse = true;
@@ -80,14 +81,14 @@ int main(int argc, char *argv[])
 	 */
 	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
 		switch (func) {
+			case simple:
+				_qsort((void **) lineptr, 0, nlines-1, strsimp);
+				break;
 			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1, strings);
+				_qsort((void **) lineptr, 0, nlines-1, strsort);
 				break;
 			case fold:
 				_qsort((void **) lineptr, 0, nlines-1, strfold);
-				break;
-			case number:
-				_qsort((void **) lineptr, 0, nlines-1, numsort);
 				break;
 			case nosort:
 				break;
@@ -258,15 +259,21 @@ static void swap(void *v[], size_t i, size_t j)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-static int getposit(int *chars, char *c)
+/*
+ * Conversion used for sortAlphaCase.
+ */
+static int sortascii(int *c, bool fold)
 {
-	int *in_pt;
-	in_pt = chars;
-
-	while (*chars++ != (int)*c)
-		;
-
-	return --chars - in_pt;
+	if (isupper(*c))
+		if (fold)
+			return *c = tolower(*c);
+		else
+			return *c += 57;
+	else if (islower(*c))
+		return *c;
+	else if (isdigit(*c))
+		return *c += 118;
+	return 0;
 }
 
 /*
@@ -274,43 +281,22 @@ static int getposit(int *chars, char *c)
  */
 static int sortAlpha(char *s1, char *s2)
 {
-	int chars[] = {
-		'\0','0','1','2','3','4','5','6','7','8','9',
-		'a','b','c','d','e','f','g','h','i','j','k','l','m',
-		'n','o','p','q','r','s','t','u','v','w','x','y','z',
-		'A','B','C','D','E','F','G','H','I','J','K','L','M',
-		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
-	};
+	int c1, c2;
+	c1 = *s1, c2 = *s2;
+	c1 = sortascii(&c1, false);
+	c2 = sortascii(&c2, false);
 
-	return getposit(chars, s1) - getposit(chars, s2);
+	return c1 - c2;
 }
 
 static int sortAlphaCase(char *s1, char *s2)
 {
-	int chars[] = {
-		'\0',
-		'a','A','b','B','c','C','d','D','e','E','f','F','g',
-		'G','h','H','i','I','j','J','k','K','l','L','m','M',
-		'n','N','o','O','p','P','q','Q','r','R','s','S','t',
-		'T','u','U','v','V','w','W','x','X','y','Y','z','Z',
-		'0','1','2','3','4','5','6','7','8','9'
-	};
+	int c1, c2;
+	c1 = *s1, c2 = *s2;
+	c1 = sortascii(&c1, true);
+	c2 = sortascii(&c2, true);
 
-	return getposit(chars, s1) - getposit(chars, s2);
-}
-
-static int sortNumeric(char *s1, char *s2)
-{
-	int chars[] = {
-		'\0',
-		'a','b','c','d','e','f','g','h','i','j','k','l','m',
-		'n','o','p','q','r','s','t','u','v','w','x','y','z',
-		'A','B','C','D','E','F','G','H','I','J','K','L','M',
-		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-		'0','1','2','3','4','5','6','7','8','9'
-	};
-
-	return getposit(chars, s1) - getposit(chars, s2);
+	return c1 - c2;
 }
 
 /*
