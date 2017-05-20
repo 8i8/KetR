@@ -329,7 +329,7 @@ static void swap(void *v[], size_t i, size_t j)
 static char* remchar(char *c)
 {
 	while (!isalnum(*c) && *c != '\0')
-		*c++;
+		c++;
 	return c;
 }
 

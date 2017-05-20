@@ -206,7 +206,7 @@ static int nsort(char *left, char *right, comp fn)
 	 * Test left.
 	 */
 	while (!isalnum(*left) && *left != '\0')
-		*left++;
+		left++;
 	if (numeric)
 		if (isdigit(*left))
 			b1 = true;
@@ -214,7 +214,7 @@ static int nsort(char *left, char *right, comp fn)
 	 * Test right.
 	 */
 	while (!isalnum(*right) && *right != '\0')
-		*right++;
+		right++;
 	if (numeric)
 		if (isdigit(*right))
 			b2 = true;
