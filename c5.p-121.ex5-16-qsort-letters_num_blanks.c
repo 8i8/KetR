@@ -65,8 +65,10 @@ int main(int argc, char *argv[])
 		while ((c = *++argv[0]))
 			switch (c) {
 				case 'd':
+					numeric = true;
 					emptylines = false;
 					directory = true;
+					func = fold;
 					break;
 				case 'e':
 					emptylines = false;
@@ -178,7 +180,7 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 {
 	char line[1] = { '\0' };
 	char *p;
-	size_t i;
+	size_t i = 0;
 
 	if (nlines >= maxlines || (p = alloc(1)) == NULL)
 		return -1;
@@ -188,8 +190,8 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 
 	i = nlines;
 
-	while (i > index)
-		lineptr[i] = lineptr[--i];
+	while (--i > index)
+		lineptr[i] = lineptr[i-1];
 
 	lineptr[++index] = p; 
 
