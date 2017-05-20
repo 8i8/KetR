@@ -1,7 +1,8 @@
 /*
- * Exercise 5-16. Add the -d ("directory order") option, which makes
- * comparisons only on letters, numbers and blanks. Make sure it works in
- * conjunction with -f.
+ * Exercise 5-17. Add a field-searching capability, so sorting may be done on
+ * fields within lines, each field sorted according to an independent set of
+ * options. (The index for this book was sorted with -df for the index category
+ * and -n for the page numbers.)
  */
 
 /* Redefine getline */
@@ -24,9 +25,9 @@ static int readlines(char *lineptr[], size_t maxlines, bool emptylines);
 static int getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
-static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines);
-static void _qsort(void *lineptr[], int left, int right, comp fn);
-static int firstcmp(char *s1, char *s2);
+static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab);
+static void _qsort(void *lineptr[], int left, int right, comp fn, int ntab);
+static int firstcmp(char *s1, char *s2, int ntab);
 
 /* Sort functions */
 static int sortAlpha(char *s1, char *s2);
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
 	int c;
 	bool emptylines = true;
 	bool directory = false;
+	int ntab = 0;
 
 	while (--argc > 0 && (*++argv)[0] == '-')
 		while ((c = *++argv[0]))
@@ -86,6 +88,9 @@ int main(int argc, char *argv[])
 				case 's':
 					func = simple;
 					break;
+				case '1':
+					ntab = 1;
+					break;
 				default:
 					break;
 			}
@@ -96,13 +101,13 @@ int main(int argc, char *argv[])
 	if ((nlines = readlines(lineptr, MAXLINES, emptylines)) >= 0)
 		switch (func) {
 			case simple:
-				_qsort((void **) lineptr, 0, nlines-1, strsimp);
+				_qsort((void **) lineptr, 0, nlines-1, strsimp, ntab);
 				break;
 			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1, stnsort);
+				_qsort((void **) lineptr, 0, nlines-1, stnsort, ntab);
 				break;
 			case fold:
-				_qsort((void **) lineptr, 0, nlines-1, strfold);
+				_qsort((void **) lineptr, 0, nlines-1, strfold, ntab);
 				break;
 			case nosort:
 				break;
@@ -119,7 +124,7 @@ int main(int argc, char *argv[])
 	 * starting letter.
 	 */
 	if (directory)
-		nlines = addspacer(lineptr, MAXLINES, nlines);
+		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
 
 	/*
 	 * Output to terminal.
@@ -211,12 +216,12 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 /*
  * Add empty 'spacer' line.
  */
-static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines)
+static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
 {
 	size_t i = 1;
 
 	for (; i < nlines; i++)
-		if (firstcmp(lineptr[i-1], lineptr[i]))
+		if (firstcmp(lineptr[i-1], lineptr[i], ntab))
 			nlines = insertline(lineptr, maxlines, i-1, nlines), i++;
 
 	return nlines;
@@ -237,15 +242,15 @@ static void writelines(char *lineptr[], size_t nlines)
  */
 
 static void swap(void *v[], size_t i, size_t j);
-static int nsort(char *left, char *right, comp fn);
+static int nsort(char *left, char *right, comp fn, int ntab);
 static int numcmp(char *s1, char *s2);
 static char* remchar(char *c);
-static char* remtab(char *c, int n);
+static char* remtab(char *c, int ntab);
 
 /*
  * Sort v[left]...v[right] into increasing order.
  */
-static void _qsort(void *v[], int left, int right, comp fn)
+static void _qsort(void *v[], int left, int right, comp fn, int ntab)
 {
 	size_t i, last;
 
@@ -260,16 +265,16 @@ static void _qsort(void *v[], int left, int right, comp fn)
 	 */
 	if (!reverse) {
 		for (i = left+1; i <= right; i++)
-			if (nsort(v[i], v[left], fn) < 0)
+			if (nsort(v[i], v[left], fn, ntab) < 0)
 				swap(v, ++last, i);
 	} else
 		for (i = left+1; i <= right; i++)
-			if (nsort(v[i], v[left], fn) > 0)
+			if (nsort(v[i], v[left], fn, ntab) > 0)
 				swap(v, ++last, i);
 
 	swap(v, left, last);
-	_qsort(v, left, last-1, fn);
-	_qsort(v, last+1, right, fn);
+	_qsort(v, left, last-1, fn, ntab);
+	_qsort(v, last+1, right, fn, ntab);
 }
 
 /*
@@ -278,7 +283,7 @@ static void _qsort(void *v[], int left, int right, comp fn)
  * of qsort, enabeling shorter reverse '-r' code in qsort.
  */
 
-static int nsort(char *left, char *right, comp fn)
+static int nsort(char *left, char *right, comp fn, int ntab)
 {
 	int res = 0;
 	bool b1, b2;
@@ -287,8 +292,8 @@ static int nsort(char *left, char *right, comp fn)
 	/*
 	 * Move to desired tab.
 	 */
-	left = remtab(left, 1);
-	right = remtab(right, 1);
+	left = remtab(left, ntab);
+	right = remtab(right, ntab);
 
 	/*
 	 * Remove redundant char.
@@ -309,11 +314,11 @@ static int nsort(char *left, char *right, comp fn)
 	if (b1 && b2) {
 		res = numcmp(left, right);
 		if (!res && *left != '\0')
-			res = nsort(++left, ++right, fn);
+			res = nsort(++left, ++right, fn, ntab);
 	} else {
 		res = (*fn)(left, right);
 		if (!res && *left != '\0')
-			res = nsort(++left, ++right, fn);
+			res = nsort(++left, ++right, fn, ntab);
 	}
 
         return res;
@@ -344,13 +349,13 @@ static char* remchar(char *c)
 /*
  * Skip to the n'th tab.
  */
-static char* remtab(char *c, int n)
+static char* remtab(char *c, int ntab)
 {
 	char *c_pt;
 	c_pt = c;
 
 	while (*c != '\0')
-		if (*c++ == '\t' && --n <= 0)
+		if (*c++ == '\t' && ntab-- > 0)
 			return c;
 	return c_pt;
 }
@@ -422,8 +427,10 @@ static int numcmp(char *s1, char *s2)
 /*
  * Compare the first char of each line, used to separate alphabetically.
  */
-static int firstcmp(char *s1, char *s2)
+static int firstcmp(char *s1, char *s2, int ntab)
 {
+	s1 = remtab(s1, ntab);
+	s2 = remtab(s2, ntab);
 	s1 = remchar(s1);
 	s2 = remchar(s2);
 	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
