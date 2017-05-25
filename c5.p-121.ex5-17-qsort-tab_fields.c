@@ -3,6 +3,16 @@
  * fields within lines, each field sorted according to an independent set of
  * options. (The index for this book was sorted with -df for the index category
  * and -n for the page numbers.)
+ *
+ * input arguments:
+ *
+ * 	-d, directory sort
+ * 	-e, remove blank lines
+ *	-f, fold lower case to upper case characters
+ *	-n, numerical sort
+ *	-p, no sort
+ *	-r, reverse sort
+ *	-s, basic string compare
  */
 
 /* Redefine getline */
@@ -14,19 +24,27 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAXLEN		1000			/* max length of input line */
-#define MAXLINES	5000			/* Maxlines to be sorted */
-#define ALLOCSIZE	5000000			/* size of available space */
+#define MAXLEN		1000			/* Max length of input line */
+#define MAXLINES	5000			/* Lines to be sorted */
+#define ALLOCSIZE	5000000			/* Size of available space */
+#define MAXTOKEN	6			/* Maximum number of tokens */
+#define TOKENSIZE	24			/* Size of space for input tokens */
 
 typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 typedef short int bool;
 
-static int readlines(char *lineptr[], size_t maxlines, bool emptylines);
-static int getline(char *, size_t);
+static void settings(int argc, char*argv[]);
+static void settabs(char n[]);
+static size_t readlines(char *lineptr[], size_t maxlines);
+static size_t getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
-static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab);
+/* */
+static void sortsection(char *lineptr[],int func, int left, int right, int ntab);
+static size_t sortdevide(char *lineptr[], int func, size_t nlines, int ntab);
+/* */
 static void _qsort(void *lineptr[], int left, int right, comp fn, int ntab);
+static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab);
 static int firstcmp(char *s1, char *s2, int ntab);
 
 /* Sort functions */
@@ -40,38 +58,106 @@ static comp strfold = (int (*)(void*, void*)) sortAlphaCase;
 
 /* Global Memory */
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
-static char allocbuf[ALLOCSIZE];		/* storage for alloc */
-static char *allocp = allocbuf;			/* next free position */
+static char allocbuf[ALLOCSIZE];		/* Storage for alloc */
+static char *allocp = allocbuf;			/* Next free position */
 
 enum function { simple, alpha, fold, number, nosort };
 enum boolean { false, true };
 
 /* Global flags */
-#define DEBUG		false
+#define DEBUG		true
 static bool numeric = 	false;			/* use numeric sort in qsort */
 static bool reverse = 	false;			/* reverse search order */
+static bool remempty =	true;
+static bool directory =	false;
+static bool resort = 	false;
+static int func = alpha;
 
 /*
  * Sort input lines.
  */
 int main(int argc, char *argv[])
 {
-	int nlines;		/* number of input lines to read */
-	int func = alpha;
-	int c;
-	bool emptylines = true;
-	bool directory = false;
-	int ntab = 0;
+	size_t nlines;		/* number of input lines to read */
+	int i;
 
-	while (--argc > 0 && (*++argv)[0] == '-')
-		while ((c = *++argv[0]))
+	/* Set system tab size */
+	settabs("24");
+
+	/* If there are arguments entered, read argv[1] */
+	i = 1;
+	if (argc > i)
+		settings(i, argv);
+
+	/*
+	 * Fill lineptr array from stdin.
+	 */
+	if ((nlines = readlines(lineptr, MAXLINES)) < 0) {
+		printf("Error: input to big to sort\n");
+		return 1;
+	}
+	
+	/* Sort input */
+	sortsection(lineptr, func, 0, nlines-1, 0);
+	
+	if (directory)
+		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
+
+	/* Sort using argv */
+	while (++i < argc) {
+		settings(i, argv);
+
+		/* Sort input */
+		if (resort)
+			sortsection(lineptr, func, 0, nlines-1, i-1);
+
+		sortdevide(lineptr, func, nlines, i-1);
+
+		/*
+		 * If directory setting is used, add a blank line break
+		 * after each new starting letter.
+		 */
+		if (directory) {
+			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
+			printf("Devided at tab -> %d\n", i-1 );
+		}
+	}
+
+	/*
+	 * Output to terminal.
+	 */
+	writelines(lineptr, nlines);
+
+	/* Set system default tab size */
+	settabs("-8");
+
+	return 0;
+}
+
+static void settings(int argc, char*argv[])
+{
+	int c;
+
+	if (DEBUG) printf("argc %d argv --> -", argc);
+
+	numeric = 	false;
+	reverse = 	false;
+	remempty =	true;
+	directory =	false;
+	resort = 	false;
+
+	if (*argv[argc] == '-')
+		while ((c = *++argv[argc])) {
+			if (DEBUG) printf("%c", *argv[argc]);
 			switch (c) {
+				case 'a':
+					func = alpha;
+					break;
 				case 'd':
-					emptylines = false;
 					directory = true;
 					break;
 				case 'e':
-					emptylines = false;
+					remempty = true;
 					break;
 				case 'f':
 					func = fold;
@@ -88,50 +174,23 @@ int main(int argc, char *argv[])
 				case 's':
 					func = simple;
 					break;
-				case '1':
-					ntab = 1;
-					break;
+				case 'R':
+					resort = true;
 				default:
 					break;
 			}
-			
-	/*
-	 * Run qsort with appropriate function and settings.
-	 */
-	if ((nlines = readlines(lineptr, MAXLINES, emptylines)) >= 0)
-		switch (func) {
-			case simple:
-				_qsort((void **) lineptr, 0, nlines-1, strsimp, ntab);
-				break;
-			case alpha:
-				_qsort((void **) lineptr, 0, nlines-1, stnsort, ntab);
-				break;
-			case fold:
-				_qsort((void **) lineptr, 0, nlines-1, strfold, ntab);
-				break;
-			case nosort:
-				break;
-			default:
-				break;
 		}
-	else {
-		printf("Error: input to big to sort\n");
-		return 1;
-	}
+	if (DEBUG) putchar('\n');
+}
 
-	/*
-	 * If directory setting is used, add a blank line break after each new
-	 * starting letter.
-	 */
-	if (directory)
-		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
-
-	/*
-	 * Output to terminal.
-	 */
-	writelines(lineptr, nlines);
-
-	return 0;
+/*
+ * Set system tab width.
+ */
+static void settabs(char n[])
+{
+	char tabs[10] = { "tabs " };
+	strcat(tabs, n);
+	system(tabs);
 }
 
 /*
@@ -139,7 +198,7 @@ int main(int argc, char *argv[])
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-static int readlines(char *lineptr[], size_t maxlines, bool emptylines)
+static size_t readlines(char *lineptr[], size_t maxlines)
 {
 	size_t len, nlines;
 	char *p, line[MAXLEN];
@@ -149,19 +208,20 @@ static int readlines(char *lineptr[], size_t maxlines, bool emptylines)
 		if (nlines >= maxlines || (p = alloc(len)) == NULL)
 			return -1;
 		else {
-			if (!emptylines && len == 1)
+			if (remempty && len == 1)
 				continue;
 			line[len-1] = '\0'; /* delete newline char*/
 			strcpy(p, line);
 			lineptr[nlines++] = p;
 		}
+
 	return nlines;
 }
 
 /*
  * Input from stdin line by line.
  */
-static int getline(char *s, size_t lim)
+static size_t getline(char *s, size_t lim)
 {
 	char *s_in;
 	int c;
@@ -189,7 +249,7 @@ static char *alloc(size_t n)	/* return pointer to  characters */
 }
 
 /*
- * Add empty line to char* array, after given index value.
+ * Add newly created empty line to char* array, after given index value.
  */
 static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t nlines)
 {
@@ -197,18 +257,21 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 	char *p;
 	size_t i = 0;
 
+	/* If there is room in alloc buffer ... */
 	if (nlines >= maxlines || (p = alloc(1)) == NULL)
 		return -1;
 
+	/* Copy the above line to p */
 	strcpy(p, line);
 	nlines++;
 
+	/* Add a new index space shunting all pointers forwards one place. */
 	i = nlines;
-
 	while (--i > index)
 		lineptr[i] = lineptr[i-1];
-
-	lineptr[++index] = p; 
+ 
+	 /* Add p to the newly created index space. */
+	lineptr[i] = p; 
 
 	return nlines;
 }
@@ -216,13 +279,53 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 /*
  * Add empty 'spacer' line.
  */
-static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
+static size_t addspacer(char *v[], size_t maxlines, size_t nlines, int ntab)
 {
-	size_t i = 1;
+	size_t i = 0;
 
-	for (; i < nlines; i++)
-		if (firstcmp(lineptr[i-1], lineptr[i], ntab))
-			nlines = insertline(lineptr, maxlines, i-1, nlines), i++;
+	while (++i < nlines)
+		if (firstcmp(v[i-1], v[i], ntab) && (!isdigit(*v[i-1]) || !isdigit(*v[i])))
+			nlines = insertline(v, maxlines, i++, nlines);
+
+	return nlines;
+}
+
+/*
+ * Switch the sortfunction for qsort.
+ */
+static void sortsection(char *lineptr[],int func, int left, int right, int ntab)
+{
+	switch (func) {
+		case simple:
+			_qsort((void **) lineptr, left, right, strsimp, ntab);
+			break;
+		case alpha:
+			_qsort((void **) lineptr, left, right, stnsort, ntab);
+			break;
+		case fold:
+			_qsort((void **) lineptr, left, right, strfold, ntab);
+			break;
+		case nosort:
+			break;
+		default:
+			break;
+	}
+}
+
+/*
+ */
+static size_t sortdevide(char *lineptr[], int func, size_t nlines, int ntab)
+{
+	size_t i, j;
+	i = j = 0;
+
+	while (++i < nlines)
+		if (!firstcmp(lineptr[i-1], lineptr[i], ntab)) {
+			/* perform sort between this curent change of letter
+			 * and the last stored index j; then store i as j */
+			sortsection(lineptr, func, j, i-1, ntab);
+			j = i;
+		}
 
 	return nlines;
 }
@@ -244,8 +347,8 @@ static void writelines(char *lineptr[], size_t nlines)
 static void swap(void *v[], size_t i, size_t j);
 static int nsort(char *left, char *right, comp fn, int ntab);
 static int numcmp(char *s1, char *s2);
-static char* remchar(char *c);
-static char* remtab(char *c, int ntab);
+static char* jumptochar(char *c);
+static char* jumptotab(char *c, int ntab);
 
 /*
  * Sort v[left]...v[right] into increasing order.
@@ -282,24 +385,38 @@ static void _qsort(void *v[], int left, int right, comp fn, int ntab)
  * to sort function; By separating this section of the function from the body
  * of qsort, enabeling shorter reverse '-r' code in qsort.
  */
-
 static int nsort(char *left, char *right, comp fn, int ntab)
 {
+	char *l_pt, *r_pt;
 	int res = 0;
-	bool b1, b2;
-	b1 = b2 = false;
+	bool b1, b2, p1, p2;
+	b1 = b2 = p1 = p2 = false;
+	l_pt = left, r_pt = right;
 
 	/*
 	 * Move to desired tab.
 	 */
-	left = remtab(left, ntab);
-	right = remtab(right, ntab);
+	if (ntab) {
+		if ((left = jumptotab(left, ntab)) == NULL)
+			left = l_pt, p1 = true;
+		if ((right = jumptotab(right, ntab)) == NULL)
+			right = r_pt, p2 = true;
+		/* If both pointers return null, return 0 */
+		if (p1 == true && p2 == true)
+			return 0;
+		/* left is tab pointer and right a null pointer */
+		if (p1 == false && p2 == true)
+			return 0;
+		/* right is tab pointer and left a null pointer */
+		if (p1 == true && p2 == false)
+			return 0;
+	}
 
 	/*
 	 * Remove redundant char.
 	 */
-	left = remchar(left);
-	right = remchar(right);
+	left = jumptochar(left);
+	right = jumptochar(right);
 
 	if (numeric) {
 		if (isdigit(*left))
@@ -313,11 +430,11 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 	 */
 	if (b1 && b2) {
 		res = numcmp(left, right);
-		if (!res && *left != '\0')
+		if (!res && (*left != '\0' || *left != '\t'))
 			res = nsort(++left, ++right, fn, ntab);
 	} else {
 		res = (*fn)(left, right);
-		if (!res && *left != '\0')
+		if (!res && (*left != '\0' || *left != '\t'))
 			res = nsort(++left, ++right, fn, ntab);
 	}
 
@@ -339,7 +456,7 @@ static void swap(void *v[], size_t i, size_t j)
 /*
  * Skip over all spaces and non alphanumeric char from the start of the string.
  */
-static char* remchar(char *c)
+static char* jumptochar(char *c)
 {
 	while (!isalnum(*c) && *c != '\0' && *c != '\t')
 		c++;
@@ -349,16 +466,16 @@ static char* remchar(char *c)
 /*
  * Skip to the n'th tab.
  */
-static char* remtab(char *c, int ntab)
+static char* jumptotab(char *c, int ntab)
 {
-	char *c_pt;
-	c_pt = c;
-
 	while (*c != '\0')
-		if (*c++ == '\t' && ntab-- > 0)
+		if (*c++ == '\t' && --ntab == 0)
 			return c;
-	return c_pt;
+
+	return NULL;
 }
+
+
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Sort maps and comparisons.
@@ -391,7 +508,6 @@ static int sortAlpha(char *s1, char *s2)
 	c1 = *s1, c2 = *s2;
 	c1 = sortascii(&c1, false);
 	c2 = sortascii(&c2, false);
-
 	return c1 - c2;
 }
 
@@ -404,7 +520,6 @@ static int sortAlphaCase(char *s1, char *s2)
 	c1 = *s1, c2 = *s2;
 	c1 = sortascii(&c1, true);
 	c2 = sortascii(&c2, true);
-
 	return c1 - c2;
 }
 
@@ -414,7 +529,6 @@ static int sortAlphaCase(char *s1, char *s2)
 static int numcmp(char *s1, char *s2)
 {
 	double v1, v2;
-
 	v1 = atof(s1);
 	v2 = atof(s2);
 	if (v1 < v2)
@@ -425,15 +539,51 @@ static int numcmp(char *s1, char *s2)
 }
 
 /*
- * Compare the first char of each line, used to separate alphabetically.
+ * Compare the first char of each line, return 0 if there is an alphabetical
+ * match and 1 if there is a differance.
+ *
+ * TODO something is stopping the sort order from working across the different
+ * tab zones, for example -d does not work other than in columns one and two.
  */
 static int firstcmp(char *s1, char *s2, int ntab)
 {
-	s1 = remtab(s1, ntab);
-	s2 = remtab(s2, ntab);
-	s1 = remchar(s1);
-	s2 = remchar(s2);
+	bool p1, p2;
+	char *s1_pt, *s2_pt;
+	p1 = p2 = false;
+	s1_pt = s1, s2_pt = s2;
+
+	/*
+	 * Jump to specified tab if it exists in both strings, else return 0;
+	 */
+	if (ntab) {
+		if ((s1 = jumptotab(s1, ntab)) == NULL)
+			s1 = s1_pt, p1 = true;
+		if ((s2 = jumptotab(s2, ntab)) == NULL)
+			s2 = s2_pt, p2 = true;
+		/* If both pointers return null, return 0 */
+		if (p1 == true && p2 == true)
+			return 0;
+		/* left is tab pointer and right a null pointer */
+		if (p1 == false && p2 == true)
+			return 0;
+		/* right is tab pointer and left a null pointer */
+		if (p1 == true && p2 == false)
+			return 0;
+	}
+
+	/*
+	 * Jump to the first relevant character.
+	 */
+	s1 = jumptochar(s1);
+	s2 = jumptochar(s2);
+
+	/*
+	 * If the compared characters are not the same and one of the two is a
+	 * letter, then add a line space.
+	 */
 	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
+		return 1;
+	else if (isdigit(*s1) && isdigit(*s2))
 		return 1;
 	return 0;
 }
