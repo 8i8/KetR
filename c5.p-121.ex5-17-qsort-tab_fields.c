@@ -41,7 +41,7 @@ static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
 /* */
 static void sortsection(char *lineptr[],int func, int left, int right, int ntab);
-static size_t sortdevide(char *lineptr[], int func, size_t nlines, int ntab);
+static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab);
 /* */
 static void _qsort(void *lineptr[], int left, int right, comp fn, int ntab);
 static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab);
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Fill lineptr array from stdin.
 	 */
-	if ((nlines = readlines(lineptr, MAXLINES)) < 0) {
+	if (!(nlines = readlines(lineptr, MAXLINES))) {
 		printf("Error: input to big to sort\n");
 		return 1;
 	}
@@ -111,16 +111,14 @@ int main(int argc, char *argv[])
 		if (resort)
 			sortsection(lineptr, func, 0, nlines-1, i-1);
 
-		sortdevide(lineptr, func, nlines, i-1);
+		sortdivide(lineptr, func, nlines, i-1);
 
 		/*
 		 * If directory setting is used, add a blank line break
 		 * after each new starting letter.
 		 */
-		if (directory) {
+		if (directory)
 			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
-			printf("Devided at tab -> %d\n", i-1 );
-		}
 	}
 
 	/*
@@ -206,7 +204,7 @@ static size_t readlines(char *lineptr[], size_t maxlines)
 	nlines = 0;
 	while ((len = getline(line, MAXLEN)) > 0)
 		if (nlines >= maxlines || (p = alloc(len)) == NULL)
-			return -1;
+			return 0;
 		else {
 			if (remempty && len == 1)
 				continue;
@@ -279,13 +277,14 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 /*
  * Add empty 'spacer' line.
  */
-static size_t addspacer(char *v[], size_t maxlines, size_t nlines, int ntab)
+static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
 {
 	size_t i = 0;
 
 	while (++i < nlines)
-		if (firstcmp(v[i-1], v[i], ntab) && (!isdigit(*v[i-1]) || !isdigit(*v[i])))
-			nlines = insertline(v, maxlines, i++, nlines);
+		if (firstcmp(lineptr[i-1], lineptr[i], ntab) && 
+				(!isdigit(*lineptr[i-1]) || !isdigit(*lineptr[i])))
+			nlines = insertline(lineptr, maxlines, i++, nlines);
 
 	return nlines;
 }
@@ -313,8 +312,9 @@ static void sortsection(char *lineptr[],int func, int left, int right, int ntab)
 }
 
 /*
+ * TODO this function is not working correctly.
  */
-static size_t sortdevide(char *lineptr[], int func, size_t nlines, int ntab)
+static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 {
 	size_t i, j;
 	i = j = 0;
@@ -323,8 +323,8 @@ static size_t sortdevide(char *lineptr[], int func, size_t nlines, int ntab)
 		if (!firstcmp(lineptr[i-1], lineptr[i], ntab)) {
 			/* perform sort between this curent change of letter
 			 * and the last stored index j; then store i as j */
-			sortsection(lineptr, func, j, i-1, ntab);
-			j = i;
+			sortsection(lineptr, func, j, i, ntab);
+			j = i+1;
 		}
 
 	return nlines;
@@ -410,6 +410,8 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 		/* right is tab pointer and left a null pointer */
 		if (p1 == true && p2 == false)
 			return 0;
+		if (p1 == false && p2 == false)
+			printf("numeric = %s\n", numeric ? "true" : "false");
 	}
 
 	/*
@@ -419,10 +421,14 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 	right = jumptochar(right);
 
 	if (numeric) {
-		if (isdigit(*left))
+		if (isdigit(*left)) {
 			b1 = true;
-		if (isdigit(*right))
+			if (DEBUG) printf("digit left / right -> %c : ", *left);
+		}
+		if (isdigit(*right)) {
 			b2 = true;
+			if (DEBUG) printf("%c\n", *right);
+		}
 	}
 
 	/*
@@ -474,8 +480,6 @@ static char* jumptotab(char *c, int ntab)
 
 	return NULL;
 }
-
-
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Sort maps and comparisons.
@@ -584,7 +588,8 @@ static int firstcmp(char *s1, char *s2, int ntab)
 	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
 		return 1;
 	else if (isdigit(*s1) && isdigit(*s2))
-		return 1;
+		if (*s1 != *s2)
+			return 1;
 	return 0;
 }
 
