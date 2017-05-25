@@ -20,8 +20,8 @@
 typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 typedef short int bool;
 
-static int readlines(char *lineptr[], size_t maxlines, bool emptylines);
-static int getline(char *, size_t);
+static size_t readlines(char *lineptr[], size_t maxlines, bool emptylines);
+static size_t getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
 static size_t addspaces(char *lineptr[], size_t maxlines, size_t nlines);
@@ -55,7 +55,7 @@ static bool reverse = 	false;			/* reverse search order */
  */
 int main(int argc, char *argv[])
 {
-	int nlines;		/* number of input lines to read */
+	size_t nlines;		/* number of input lines to read */
 	int func = alpha;
 	int c;
 	bool emptylines = true;
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
  * Copy the new line into the allocated space and fill lineptr array with
  * pointers to the new lines gathered.
  */
-static int readlines(char *lineptr[], size_t maxlines, bool emptylines)
+static size_t readlines(char *lineptr[], size_t maxlines, bool emptylines)
 {
 	size_t len, nlines;
 	char *p, line[MAXLEN];
@@ -156,7 +156,7 @@ static int readlines(char *lineptr[], size_t maxlines, bool emptylines)
 /*
  * Input from stdin line by line.
  */
-static int getline(char *s, size_t lim)
+static size_t getline(char *s, size_t lim)
 {
 	char *s_in;
 	int c;
@@ -172,7 +172,7 @@ static int getline(char *s, size_t lim)
 }
 
 /*
- * Add empty line to char* array, after given index value.
+ * Add empty line to char* array, place after the given index position.
  */
 static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t nlines)
 {
@@ -239,7 +239,7 @@ static char *alloc(size_t n)	/* return pointer to  characters */
 static void swap(void *v[], size_t i, size_t j);
 static int nsort(char *left, char *right, comp fn);
 static int numcmp(char *s1, char *s2);
-static char* remchar(char *c);
+static char* jumptochar(char *c);
 
 /*
  * Sort v[left]...v[right] into increasing order.
@@ -285,8 +285,8 @@ static int nsort(char *left, char *right, comp fn)
 	/*
 	 * Remove redundant char.
 	 */
-	left = remchar(left);
-	right = remchar(right);
+	left = jumptochar(left);
+	right = jumptochar(right);
 
 	if (numeric) {
 		if (isdigit(*left))
@@ -326,7 +326,7 @@ static void swap(void *v[], size_t i, size_t j)
 /*
  * Skip over all spaces and non alphanumeric char from the start of the string.
  */
-static char* remchar(char *c)
+static char* jumptochar(char *c)
 {
 	while (!isalnum(*c) && *c != '\0')
 		c++;
@@ -403,8 +403,8 @@ static int numcmp(char *s1, char *s2)
  */
 static int firstcmp(char *s1, char *s2)
 {
-	s1 = remchar(s1);
-	s2 = remchar(s2);
+	s1 = jumptochar(s1);
+	s2 = jumptochar(s2);
 	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
 		return 1;
 	return 0;
