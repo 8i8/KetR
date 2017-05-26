@@ -68,7 +68,7 @@ enum boolean { false, true };
 #define DEBUG		false
 static bool numeric = 	false;			/* use numeric sort in qsort */
 static bool reverse = 	false;			/* reverse search order */
-static bool remempty =	true;
+static bool remempty =	false;
 static bool directory =	false;
 static bool resort = 	false;
 static int func = alpha;
@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
 		if (resort)
 			sortsection(lineptr, 0, nlines-1, func, i-1);
 
-		//sortsection(lineptr, 46, 54, func, i-1);
 		sortdivide(lineptr, func, nlines, i-1);
 
 		/*
@@ -133,6 +132,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/*
+ * Set state before running qsort.
+ */
 static void settings(int argc, char*argv[])
 {
 	int c;
@@ -141,7 +143,7 @@ static void settings(int argc, char*argv[])
 
 	numeric = 	false;
 	reverse = 	false;
-	remempty =	true;
+	remempty =	false;
 	directory =	false;
 	resort = 	false;
 
@@ -183,14 +185,31 @@ static void settings(int argc, char*argv[])
 }
 
 /*
- * Set system tab width.
+ * Switch, selects the sort function for qsort.
  */
-static void settabs(char n[])
+static void sortsection(char *lineptr[], int left, int right, int func, int ntab)
 {
-	char tabs[10] = { "tabs " };
-	strcat(tabs, n);
-	system(tabs);
+	switch (func) {
+		case simple:
+			_qsort((void **) lineptr, left, right, strsimp, ntab);
+			break;
+		case alpha:
+			_qsort((void **) lineptr, left, right, stnsort, ntab);
+			break;
+		case fold:
+			_qsort((void **) lineptr, left, right, strfold, ntab);
+			break;
+		case nosort:
+			break;
+		default:
+			break;
+	}
 }
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  io
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
 
 /*
  * Read input lines, check available space for new line, return line count.
@@ -276,29 +295,17 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 }
 
 /*
- * Switch, selects the sort function for qsort.
+ * Set system tab width.
  */
-static void sortsection(char *lineptr[], int left, int right, int func, int ntab)
+static void settabs(char n[])
 {
-	switch (func) {
-		case simple:
-			_qsort((void **) lineptr, left, right, strsimp, ntab);
-			break;
-		case alpha:
-			_qsort((void **) lineptr, left, right, stnsort, ntab);
-			break;
-		case fold:
-			_qsort((void **) lineptr, left, right, strfold, ntab);
-			break;
-		case nosort:
-			break;
-		default:
-			break;
-	}
+	char tabs[10] = { "tabs " };
+	strcat(tabs, n);
+	system(tabs);
 }
 
 /*
- * Write output lines.
+ * Write output.
  */
 static void writelines(char *lineptr[], size_t nlines)
 {
@@ -307,7 +314,7 @@ static void writelines(char *lineptr[], size_t nlines)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Compare and sort.
+ *  Sort.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -406,15 +413,48 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 }
 
 /*
- * Interchange v[i] and v[j]
+ * Compare the first char of each line, return 0 if there is an alphabetical
+ * match and 1 if there is a difference. Essentially to select the input scope
+ * of qsort, left and right. Also used when adding empty spacer lines.
  */
-static void swap(void *v[], size_t i, size_t j)
+static int firstcmp(char *s1, char *s2, int ntab)
 {
-	void *temp;
+	bool p1, p2;
+	char *s1_pt, *s2_pt;
+	p1 = p2 = false;
+	s1_pt = s1, s2_pt = s2;
 
-	temp = v[i];
-	v[i] = v[j];
-	v[j] = temp;
+	/*
+	 * Jump to specified tab if it exists in both strings, else return 0;
+	 */
+	if (ntab) {
+		if ((s1 = jumptotab(s1, ntab)) == NULL)
+			s1 = s1_pt, p1 = true;
+		if ((s2 = jumptotab(s2, ntab)) == NULL)
+			s2 = s2_pt, p2 = true;
+		/*
+		 * If either pointers return null the tab does not exist,
+		 * return 1, values are not the same.
+		 */
+		if (p1 == true || p2 == true)
+			return 1;
+	}
+
+	/*
+	 * Jump to the first relevant character.
+	 */
+	s1 = jumptochar(s1);
+	s2 = jumptochar(s2);
+
+	/*
+	 * If the char differ return 0, else return 1 should they be the same.
+	 */
+	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
+		return 0;
+	else if (isdigit(*s1) && isdigit(*s2))
+		if (*s1 != *s2)
+			return 0;
+	return 1;
 }
 
 /*
@@ -435,7 +475,7 @@ static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 			j = i-1;
 			/*
 			 * Whilst the first char of the prior tab stop are the
-			 * same; Keep counting.
+			 * same; Keep on counting.
 			 */
 			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], 0))
 				i++;
@@ -464,6 +504,23 @@ static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int nta
 	return nlines;
 }
 
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Sort maps and tools.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/*
+ * Interchange v[i] and v[j]
+ */
+static void swap(void *v[], size_t i, size_t j)
+{
+	void *temp;
+
+	temp = v[i];
+	v[i] = v[j];
+	v[j] = temp;
+}
+
 /*
  * Skip over all spaces and non alphanumeric char from the start of the string.
  */
@@ -485,11 +542,6 @@ static char* jumptotab(char *c, int ntab)
 
 	return NULL;
 }
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Sort maps and comparisons.
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
 
 /*
  * Conversion used for sortAlphaCase.
@@ -545,50 +597,5 @@ static int numcmp(char *s1, char *s2)
 	else if (v1 > v2)
 		return 1;
 	return 0;
-}
-
-/*
- * Compare the first char of each line, return 0 if there is an alphabetical
- * match and 1 if there is a difference. Essentially to select the input scope
- * of qsort, left and right. Also used when adding empty spacer lines.
- */
-static int firstcmp(char *s1, char *s2, int ntab)
-{
-	bool p1, p2;
-	char *s1_pt, *s2_pt;
-	p1 = p2 = false;
-	s1_pt = s1, s2_pt = s2;
-
-	/*
-	 * Jump to specified tab if it exists in both strings, else return 0;
-	 */
-	if (ntab) {
-		if ((s1 = jumptotab(s1, ntab)) == NULL)
-			s1 = s1_pt, p1 = true;
-		if ((s2 = jumptotab(s2, ntab)) == NULL)
-			s2 = s2_pt, p2 = true;
-		/*
-		 * If either pointers return null the tab does not exist,
-		 * return 1, values are not the same.
-		 */
-		if (p1 == true || p2 == true)
-			return 1;
-	}
-
-	/*
-	 * Jump to the first relevant character.
-	 */
-	s1 = jumptochar(s1);
-	s2 = jumptochar(s2);
-
-	/*
-	 * If the char differ return 0, else return 1 should they be the same.
-	 */
-	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
-		return 0;
-	else if (isdigit(*s1) && isdigit(*s2))
-		if (*s1 != *s2)
-			return 0;
-	return 1;
 }
 
