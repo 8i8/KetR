@@ -277,7 +277,6 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 
 /*
  * Switch, selects the sort function for qsort.
- * TODO 03 A simple switch to apply the requested sort function.
  */
 static void sortsection(char *lineptr[], int left, int right, int func, int ntab)
 {
@@ -322,10 +321,6 @@ static char* jumptotab(char *c, int ntab);
 
 /*
  * Sort v[left]...v[right] into increasing order.
- *
- * TODO 04 It seems that there is a problem visible here, when the sort loop
- * breaks, the values fed into swap() on line 351 are always identical when in
- * the sorting part of the sortdivide() function run on line 453.
  */
 static void _qsort(void *v[], int left, int right, comp fn, int ntab)
 {
@@ -358,9 +353,6 @@ static void _qsort(void *v[], int left, int right, comp fn, int ntab)
  * Prepare string for sort function, filter numbers and letters, recursive call
  * to sort function; By separating this section of the function from the body
  * of qsort, enabling shorter reverse '-r' code in qsort.
- *
- * TODO 05 Though this function appears to work, it is suspect for returning
- * the values to qsort that are then identical in the swap() function call.
  */
 static int nsort(char *left, char *right, comp fn, int ntab)
 {
@@ -429,13 +421,8 @@ static void swap(void *v[], size_t i, size_t j)
 
 /*
  * Search over the array looking for lines that are grouped together
- * alphabetically or as blocks of number, select the start and end index of each
- * group and then sort by the next argv input on the next tab field.
- *
- * TODO 01 this function is not working correctly. Either here or later on in
- * qsort the function is not swapping the lines correctly, the initial
- * arguments work fine, but the second argv which is supposed to sort the first
- * tab indentation does not work correctly..
+ * alphabetically or as blocks of numbers, select the start and end index of
+ * each group and then sort by the next argv input using the given tab field.
  */
 static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 {
@@ -452,14 +439,13 @@ static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 			 * Whilst the first char of the prior tab stop are the
 			 * same; Keep counting.
 			 */
-			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], ntab-1))
+			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], 0))
 				i++;
 			/*
 			 * Perform sort between this current change of letter
 			 * and the last stored index j; then store i as j.
 			 */
-			sortsection(lineptr, j, i, func, ntab);
-			printf("### index after sort -> %lu : %lu\n", i, j);
+			sortsection(lineptr, j, i-1, func, ntab);
 		}
 
 	return nlines;
@@ -550,10 +536,6 @@ static int sortAlphaCase(char *s1, char *s2)
 
 /*
  * Compare s1 and s2 numerically.
- *
- * TODO 06 This is a convenient place to stop the code to see the numerical
- * swapping, though the problem is not likely here as the same occurs when the
- * -a flag is used instead of -n.
  */
 static int numcmp(char *s1, char *s2)
 {
@@ -571,11 +553,6 @@ static int numcmp(char *s1, char *s2)
  * Compare the first char of each line, return 0 if there is an alphabetical
  * match and 1 if there is a difference. Essentially to select the input scope
  * of qsort, left and right. Also used when adding empty spacer lines.
- *
- * TODO 02 This function returns true or false dependant upon the first
- * character that it reads, this is used to group sections for the qsort
- * algorithm which is then applied to the requested tab indentation. This
- * function appears to be working correctly.
  */
 static int firstcmp(char *s1, char *s2, int ntab)
 {
