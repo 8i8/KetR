@@ -33,19 +33,20 @@
 typedef int (*comp)(void *, void *);		/* Sort functions for qsort */
 typedef short int bool;
 
+/* Main */
 static void settings(int argc, char*argv[]);
-static void settabs(char n[]);
+static void sortsection(char *lineptr[], int left, int right, int func, int ntab);
+/* i/o */
 static size_t readlines(char *lineptr[], size_t maxlines);
 static size_t getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
-/* */
-static void sortsection(char *lineptr[], int left, int right, int func, int ntab);
-static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab);
-/* */
+static void settabs(char n[]);
+
+/* Sort */
 static void _qsort(void *lineptr[], int left, int right, comp fn, int ntab);
+static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab);
 static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab);
-static int firstcmp(char *s1, char *s2, int ntab);
 
 /* Sort functions */
 static int sortAlpha(char *s1, char *s2);
@@ -71,7 +72,7 @@ static bool reverse = 	false;			/* reverse search order */
 static bool remempty =	false;
 static bool directory =	false;
 static bool resort = 	false;
-static int func = alpha;
+static int  func = alpha;
 
 /*
  * Sort input lines.
@@ -100,6 +101,7 @@ int main(int argc, char *argv[])
 	/* Sort input */
 	sortsection(lineptr, 0, nlines-1, func, 0);
 	
+	/* If required add line spacers. */
 	if (directory)
 		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
 
@@ -207,7 +209,7 @@ static void sortsection(char *lineptr[], int left, int right, int func, int ntab
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  io
+ *  i/o
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
@@ -318,11 +320,12 @@ static void writelines(char *lineptr[], size_t nlines)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-static void swap(void *v[], size_t i, size_t j);
 static int nsort(char *left, char *right, comp fn, int ntab);
-static int numcmp(char *s1, char *s2);
+static int firstcmp(char *s1, char *s2, int ntab);
+static void swap(void *v[], size_t i, size_t j);
 static char* jumptochar(char *c);
 static char* jumptotab(char *c, int ntab);
+static int numcmp(char *s1, char *s2);
 
 /*
  * Sort v[left]...v[right] into increasing order.
