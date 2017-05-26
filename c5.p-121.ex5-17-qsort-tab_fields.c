@@ -65,7 +65,7 @@ enum function { simple, alpha, fold, number, nosort };
 enum boolean { false, true };
 
 /* Global flags */
-#define DEBUG		true
+#define DEBUG		false
 static bool numeric = 	false;			/* use numeric sort in qsort */
 static bool reverse = 	false;			/* reverse search order */
 static bool remempty =	true;
@@ -302,10 +302,8 @@ static void sortsection(char *lineptr[], int left, int right, int func, int ntab
  */
 static void writelines(char *lineptr[], size_t nlines)
 {
-	int i = 0;
-
 	while (nlines-- > 0)
-		printf("%2d: %s\n", i++, *lineptr++);
+		printf("%s\n", *lineptr++);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
