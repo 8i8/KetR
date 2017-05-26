@@ -40,7 +40,7 @@ static size_t getline(char *, size_t);
 static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
 /* */
-static void sortsection(char *lineptr[],int func, int left, int right, int ntab);
+static void sortsection(char *lineptr[], int left, int right, int func, int ntab);
 static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab);
 /* */
 static void _qsort(void *lineptr[], int left, int right, comp fn, int ntab);
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	}
 	
 	/* Sort input */
-	sortsection(lineptr, func, 0, nlines-1, 0);
+	sortsection(lineptr, 0, nlines-1, func, 0);
 	
 	if (directory)
 		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
@@ -109,8 +109,9 @@ int main(int argc, char *argv[])
 
 		/* Sort input */
 		if (resort)
-			sortsection(lineptr, func, 0, nlines-1, i-1);
+			sortsection(lineptr, 0, nlines-1, func, i-1);
 
+		//sortsection(lineptr, 46, 54, func, i-1);
 		sortdivide(lineptr, func, nlines, i-1);
 
 		/*
@@ -275,24 +276,10 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 }
 
 /*
- * Add empty 'spacer' line.
+ * Switch, selects the sort function for qsort.
+ * TODO 03 A simple switch to apply the requested sort function.
  */
-static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
-{
-	size_t i = 0;
-
-	while (++i < nlines)
-		if (firstcmp(lineptr[i-1], lineptr[i], ntab) && 
-				(!isdigit(*lineptr[i-1]) || !isdigit(*lineptr[i])))
-			nlines = insertline(lineptr, maxlines, i++, nlines);
-
-	return nlines;
-}
-
-/*
- * Switch the sortfunction for qsort.
- */
-static void sortsection(char *lineptr[],int func, int left, int right, int ntab)
+static void sortsection(char *lineptr[], int left, int right, int func, int ntab)
 {
 	switch (func) {
 		case simple:
@@ -312,31 +299,14 @@ static void sortsection(char *lineptr[],int func, int left, int right, int ntab)
 }
 
 /*
- * TODO this function is not working correctly.
- */
-static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
-{
-	size_t i, j;
-	i = j = 0;
-
-	while (++i < nlines)
-		if (!firstcmp(lineptr[i-1], lineptr[i], ntab)) {
-			/* perform sort between this curent change of letter
-			 * and the last stored index j; then store i as j */
-			sortsection(lineptr, func, j, i, ntab);
-			j = i+1;
-		}
-
-	return nlines;
-}
-
-/*
  * Write output lines.
  */
 static void writelines(char *lineptr[], size_t nlines)
 {
+	int i = 0;
+
 	while (nlines-- > 0)
-		printf("%s\n", *lineptr++);
+		printf("%2d: %s\n", i++, *lineptr++);
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -352,6 +322,10 @@ static char* jumptotab(char *c, int ntab);
 
 /*
  * Sort v[left]...v[right] into increasing order.
+ *
+ * TODO 04 It seems that there is a problem visible here, when the sort loop
+ * breaks, the values fed into swap() on line 351 are always identical when in
+ * the sorting part of the sortdivide() function run on line 453.
  */
 static void _qsort(void *v[], int left, int right, comp fn, int ntab)
 {
@@ -383,7 +357,10 @@ static void _qsort(void *v[], int left, int right, comp fn, int ntab)
 /*
  * Prepare string for sort function, filter numbers and letters, recursive call
  * to sort function; By separating this section of the function from the body
- * of qsort, enabeling shorter reverse '-r' code in qsort.
+ * of qsort, enabling shorter reverse '-r' code in qsort.
+ *
+ * TODO 05 Though this function appears to work, it is suspect for returning
+ * the values to qsort that are then identical in the swap() function call.
  */
 static int nsort(char *left, char *right, comp fn, int ntab)
 {
@@ -401,17 +378,12 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 			left = l_pt, p1 = true;
 		if ((right = jumptotab(right, ntab)) == NULL)
 			right = r_pt, p2 = true;
-		/* If both pointers return null, return 0 */
-		if (p1 == true && p2 == true)
+		/*
+		 * If either pointers returns null, return 0, the values are
+		 * not to be swapped.
+		 */
+		if (p1 == true || p2 == true)
 			return 0;
-		/* left is tab pointer and right a null pointer */
-		if (p1 == false && p2 == true)
-			return 0;
-		/* right is tab pointer and left a null pointer */
-		if (p1 == true && p2 == false)
-			return 0;
-		if (p1 == false && p2 == false)
-			printf("numeric = %s\n", numeric ? "true" : "false");
 	}
 
 	/*
@@ -421,14 +393,10 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 	right = jumptochar(right);
 
 	if (numeric) {
-		if (isdigit(*left)) {
+		if (isdigit(*left))
 			b1 = true;
-			if (DEBUG) printf("digit left / right -> %c : ", *left);
-		}
-		if (isdigit(*right)) {
+		if (isdigit(*right))
 			b2 = true;
-			if (DEBUG) printf("%c\n", *right);
-		}
 	}
 
 	/*
@@ -457,6 +425,59 @@ static void swap(void *v[], size_t i, size_t j)
 	temp = v[i];
 	v[i] = v[j];
 	v[j] = temp;
+}
+
+/*
+ * Search over the array looking for lines that are grouped together
+ * alphabetically or as blocks of number, select the start and end index of each
+ * group and then sort by the next argv input on the next tab field.
+ *
+ * TODO 01 this function is not working correctly. Either here or later on in
+ * qsort the function is not swapping the lines correctly, the initial
+ * arguments work fine, but the second argv which is supposed to sort the first
+ * tab indentation does not work correctly..
+ */
+static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
+{
+	size_t i, j;
+	i = j = 0;
+
+	while (++i < nlines)
+		/*
+		 * If the first char of both lines differ, start the count.
+		 */
+		if (!firstcmp(lineptr[i-1], lineptr[i], ntab)) {
+			j = i-1;
+			/*
+			 * Whilst the first char of the prior tab stop are the
+			 * same; Keep counting.
+			 */
+			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], ntab-1))
+				i++;
+			/*
+			 * Perform sort between this current change of letter
+			 * and the last stored index j; then store i as j.
+			 */
+			sortsection(lineptr, j, i, func, ntab);
+			printf("### index after sort -> %lu : %lu\n", i, j);
+		}
+
+	return nlines;
+}
+
+/*
+ * Add empty 'spacer' line.
+ */
+static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
+{
+	size_t i = 0;
+
+	while (++i < nlines)
+		if (!firstcmp(lineptr[i-1], lineptr[i], ntab) && 
+				(!isdigit(*lineptr[i-1]) || !isdigit(*lineptr[i])))
+			nlines = insertline(lineptr, maxlines, i++, nlines);
+
+	return nlines;
 }
 
 /*
@@ -529,6 +550,10 @@ static int sortAlphaCase(char *s1, char *s2)
 
 /*
  * Compare s1 and s2 numerically.
+ *
+ * TODO 06 This is a convenient place to stop the code to see the numerical
+ * swapping, though the problem is not likely here as the same occurs when the
+ * -a flag is used instead of -n.
  */
 static int numcmp(char *s1, char *s2)
 {
@@ -544,10 +569,13 @@ static int numcmp(char *s1, char *s2)
 
 /*
  * Compare the first char of each line, return 0 if there is an alphabetical
- * match and 1 if there is a differance.
+ * match and 1 if there is a difference. Essentially to select the input scope
+ * of qsort, left and right. Also used when adding empty spacer lines.
  *
- * TODO something is stopping the sort order from working across the different
- * tab zones, for example -d does not work other than in columns one and two.
+ * TODO 02 This function returns true or false dependant upon the first
+ * character that it reads, this is used to group sections for the qsort
+ * algorithm which is then applied to the requested tab indentation. This
+ * function appears to be working correctly.
  */
 static int firstcmp(char *s1, char *s2, int ntab)
 {
@@ -564,15 +592,12 @@ static int firstcmp(char *s1, char *s2, int ntab)
 			s1 = s1_pt, p1 = true;
 		if ((s2 = jumptotab(s2, ntab)) == NULL)
 			s2 = s2_pt, p2 = true;
-		/* If both pointers return null, return 0 */
-		if (p1 == true && p2 == true)
-			return 0;
-		/* left is tab pointer and right a null pointer */
-		if (p1 == false && p2 == true)
-			return 0;
-		/* right is tab pointer and left a null pointer */
-		if (p1 == true && p2 == false)
-			return 0;
+		/*
+		 * If either pointers return null the tab does not exist,
+		 * return 1, values are not the same.
+		 */
+		if (p1 == true || p2 == true)
+			return 1;
 	}
 
 	/*
@@ -582,14 +607,13 @@ static int firstcmp(char *s1, char *s2, int ntab)
 	s2 = jumptochar(s2);
 
 	/*
-	 * If the compared characters are not the same and one of the two is a
-	 * letter, then add a line space.
+	 * If the char differ return 0, else return 1 should they be the same.
 	 */
 	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
-		return 1;
+		return 0;
 	else if (isdigit(*s1) && isdigit(*s2))
 		if (*s1 != *s2)
-			return 1;
-	return 0;
+			return 0;
+	return 1;
 }
 
