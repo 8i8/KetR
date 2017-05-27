@@ -9,6 +9,7 @@
  * 	-d, directory sort
  * 	-e, remove blank lines
  *	-f, fold lower case to upper case characters
+ *	-i, compile for inex
  *	-n, numerical sort
  *	-p, no sort
  *	-r, reverse sort
@@ -36,11 +37,12 @@ typedef short int bool;
 /* Main */
 static void settings(int argc, char*argv[]);
 static void sortsection(char *lineptr[], int left, int right, int func, int ntab);
+static void globalreset(void);
+
 /* i/o */
 static size_t readlines(char *lineptr[], size_t maxlines);
-static size_t getline(char *, size_t);
-static char *alloc(size_t);
 static void writelines(char *lineptr[], size_t nlines);
+static size_t deleteline(char *lineptr[], int line, size_t nlines);
 static void settabs(char n[]);
 
 /* Sort */
@@ -62,7 +64,7 @@ static char *lineptr[MAXLINES];			/* Pointer to text lines */
 static char allocbuf[ALLOCSIZE];		/* Storage for alloc */
 static char *allocp = allocbuf;			/* Next free position */
 
-enum function { simple, alpha, fold, number, nosort };
+enum function { simple, alpha, fold, nosort };
 enum boolean { false, true };
 
 /* Global flags */
@@ -72,8 +74,11 @@ static bool reverse = 	false;			/* reverse search order */
 static bool remempty =	false;
 static bool directory =	false;
 static bool resort = 	false;
+static bool index =	false;
+static bool linenum =	false;
 static int  func = alpha;
 
+static size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t index, size_t nlines);
 /*
  * Sort input lines.
  */
@@ -113,7 +118,7 @@ int main(int argc, char *argv[])
 		if (resort)
 			sortsection(lineptr, 0, nlines-1, func, i-1);
 
-		sortdivide(lineptr, func, nlines, i-1);
+		nlines = sortdivide(lineptr, func, nlines, i-1);
 
 		/*
 		 * If directory setting is used, add a blank line break
@@ -122,6 +127,10 @@ int main(int argc, char *argv[])
 		if (directory)
 			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
 	}
+
+	//nlines = deleteline(lineptr, 28, nlines);
+	//nlines = deleteline(lineptr, 28, nlines);
+	//nlines = insertline(lineptr, "######## new line ########", MAXLINES, 33, nlines);
 
 	/*
 	 * Output to terminal.
@@ -140,14 +149,9 @@ int main(int argc, char *argv[])
 static void settings(int argc, char*argv[])
 {
 	int c;
+	globalreset();
 
 	if (DEBUG) printf("argc %d argv --> -", argc);
-
-	numeric = 	false;
-	reverse = 	false;
-	remempty =	false;
-	directory =	false;
-	resort = 	false;
 
 	if (*argv[argc] == '-')
 		while ((c = *++argv[argc])) {
@@ -165,8 +169,14 @@ static void settings(int argc, char*argv[])
 				case 'f':
 					func = fold;
 					break;
+				case 'i':
+					index = true;
+					break;
 				case 'n':
 					numeric = true;
+					break;
+				case 'N':
+					linenum = true;
 					break;
 				case 'p':
 					func = nosort;
@@ -208,10 +218,29 @@ static void sortsection(char *lineptr[], int left, int right, int func, int ntab
 	}
 }
 
+/*
+ * Values that are reset between argv strings.
+ */
+static void globalreset(void)
+{
+	numeric = 	false;
+	reverse = 	false;
+	remempty =	false;
+	directory =	false;
+	resort = 	false;
+	index =		false;
+}
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  i/o
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+
+static size_t getline(char *, size_t);
+static char *alloc(size_t);
+static size_t compfields(char *lineptr[], int left, int right, size_t nlines, int ntab);
+static char* jumptochar(char *c);
+static char* jumptotab(char *c, int ntab);
 
 /*
  * Read input lines, check available space for new line, return line count.
@@ -257,29 +286,18 @@ static size_t getline(char *s, size_t lim)
 }
 
 /*
- * Count memory use for the sort operation.
+ * Add new line to char* array, after given index value.
  */
-static char *alloc(size_t n)	/* return pointer to  characters */
+static size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t index, size_t nlines)
 {
-	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
-		allocp += n;
-		return allocp - n;	/* old p */
-	} else		/* not enough room */
-		return 0;
-}
-
-/*
- * Add newly created empty line to char* array, after given index value.
- */
-static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t nlines)
-{
-	char line[1] = { '\0' };
 	char *p;
 	size_t i = 0;
 
 	/* If there is room in alloc buffer ... */
-	if (nlines >= maxlines || (p = alloc(1)) == NULL)
-		return -1;
+	if (nlines >= maxlines || (p = alloc(strlen(line)+1)) == NULL) {
+		printf("Error alloc: insuficiant place in allocbuf[]\n");
+		return 0;
+	}
 
 	/* Copy the above line to p */
 	strcpy(p, line);
@@ -291,7 +309,74 @@ static size_t insertline(char *lineptr[], size_t maxlines, size_t index, size_t 
 		lineptr[i] = lineptr[i-1];
  
 	 /* Add p to the newly created index space. */
-	lineptr[i] = p; 
+	lineptr[index] = p; 
+
+	return nlines;
+}
+
+/*
+ * Count memory use for assigning input, first check that the requested length
+ * is available, if it is return a pointer to the array place, if not return 0.
+ */
+static char *alloc(size_t n)	/* return pointer to  characters */
+{
+	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
+		allocp += n;
+		return allocp - n;	/* old p */
+	} else		/* not enough room */
+		return 0;
+}
+
+/*
+ * Remove line from allocbuf.
+ */
+static int freealloc(char *allocbuf)
+{
+	int len;
+	char* line;
+	line = allocbuf;
+
+	len = strlen(line)+1;
+
+	if (len) {
+		if (DEBUG) printf("before -> %s\n", allocbuf);
+		allocp -= len;
+		while (line < allocp) {
+			*line = *(line+len);
+			line++;
+		}
+		if (DEBUG) printf("after -> %s\n", allocbuf);
+		return len;
+	} else
+		printf("Error freealloc: no string provided\n");
+
+	return 1;
+}
+
+/*
+ * Delete line.
+ */
+static size_t deleteline(char *lineptr[], int line, size_t nlines)
+{
+	size_t i = 0;
+	int len;
+	char *m;
+
+	m = lineptr[line];
+
+	if ((len = freealloc(lineptr[line]))) {
+		while (line < nlines) {
+			lineptr[line] = lineptr[line+1];
+			line++;
+		}
+		while (i < nlines) {
+			if (lineptr[i] > m)
+				lineptr[i] -= len;
+			i++;
+		}
+		return --nlines;
+	} else
+		printf("Error deleteline: freealloc failed\n");
 
 	return nlines;
 }
@@ -311,8 +396,57 @@ static void settabs(char n[])
  */
 static void writelines(char *lineptr[], size_t nlines)
 {
+	size_t i = 0;
+
 	while (nlines-- > 0)
-		printf("%s\n", *lineptr++);
+		if (linenum)
+			printf("%3lu: %s\n", i++, *lineptr++);
+		else
+			printf("%s\n", *lineptr++);
+}
+
+/*
+ * group together identical lines and make a list from their corresponding
+ * numbers.
+ */
+static size_t compfields(char *lineptr[], int left, int right, size_t nlines, int ntab)
+{
+	char line[MAXLEN];
+	char *c;
+	int insert = left;
+
+	/* Copy the line base for concatination. */
+	strcpy(line, lineptr[left]);
+
+	while (left <= right)
+	{
+		//c = lineptr[left];
+
+		//if (ntab)
+		//	if ((c = jumptotab(c, ntab)) == NULL) {
+		//		printf("jumped -> %s\n", lineptr[left]);
+		//		left++;
+		//		continue;
+		//	}
+
+		//c = jumptochar(c);
+
+		//strcat(line, ", ");
+		//strcat(line, c);
+
+		//if (DEBUG) {
+		//	printf("test %d -> ", left);;
+		//	while (*c != '\t' && c != '\0')
+		//		printf("%c", *c++);
+		//	printf("\n");
+		//}
+
+		nlines = deleteline(lineptr, left++, nlines);
+	}
+
+	nlines = insertline(lineptr, line, MAXLINES, insert, nlines);
+
+	return nlines;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -323,8 +457,6 @@ static void writelines(char *lineptr[], size_t nlines)
 static int nsort(char *left, char *right, comp fn, int ntab);
 static int firstcmp(char *s1, char *s2, int ntab);
 static void swap(void *v[], size_t i, size_t j);
-static char* jumptochar(char *c);
-static char* jumptotab(char *c, int ntab);
 static int numcmp(char *s1, char *s2);
 
 /*
@@ -480,13 +612,19 @@ static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 			 * Whilst the first char of the prior tab stop are the
 			 * same; Keep on counting.
 			 */
-			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], 0))
+			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], ntab-1))
 				i++;
 			/*
 			 * Perform sort between this current change of letter
 			 * and the last stored index j; then store i as j.
+			 * If directory mode is set, run the compfields()
+			 * function.
 			 */
-			sortsection(lineptr, j, i-1, func, ntab);
+			if (index) {
+				sortsection(lineptr, j, i-1, func, ntab);
+				nlines = compfields(lineptr, j, i-1, nlines, ntab);
+			} else
+				sortsection(lineptr, j, i-1, func, ntab);
 		}
 
 	return nlines;
@@ -502,7 +640,7 @@ static size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int nta
 	while (++i < nlines)
 		if (!firstcmp(lineptr[i-1], lineptr[i], ntab) && 
 				(!isdigit(*lineptr[i-1]) || !isdigit(*lineptr[i])))
-			nlines = insertline(lineptr, maxlines, i++, nlines);
+			nlines = insertline(lineptr, "\0", maxlines, i++, nlines);
 
 	return nlines;
 }
