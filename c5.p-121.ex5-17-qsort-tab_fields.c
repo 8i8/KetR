@@ -68,7 +68,7 @@ enum function { simple, alpha, fold, nosort };
 enum boolean { false, true };
 
 /* Global flags */
-#define DEBUG		true
+#define DEBUG		false
 static bool numeric = 	false;			/* use numeric sort in qsort */
 static bool reverse = 	false;			/* reverse search order */
 static bool remempty =	false;
@@ -127,10 +127,6 @@ int main(int argc, char *argv[])
 		if (directory)
 			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
 	}
-
-	//nlines = deleteline(lineptr, 28, nlines);
-	//nlines = deleteline(lineptr, 28, nlines);
-	//nlines = insertline(lineptr, "######## new line ########", MAXLINES, 33, nlines);
 
 	/*
 	 * Output to terminal.
@@ -423,6 +419,7 @@ static int firstcmp(char *s1, char *s2, int ntab);
 static int tabcmp(char *s1, char *s2, int ntab);
 static void swap(void *v[], size_t i, size_t j);
 static int numcmp(char *s1, char *s2);
+static int strtcmp(char *s, char *t);
 
 /*
  * Sort v[left]...v[right] into increasing order.
@@ -501,11 +498,11 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 	 */
 	if (b1 && b2) {
 		res = numcmp(left, right);
-		if (!res && (*left != '\0' || *left != '\t' || *right != '\0' || *right != '\t'))
+		if (!res && (*left != '\0' || *left != '\t'))
 			res = nsort(++left, ++right, fn, ntab);
 	} else {
 		res = (*fn)(left, right);
-		if (!res && (*left != '\0' || *left != '\t' || *right != '\0' || *right != '\t'))
+		if (!res && (*left != '\0' || *left != '\t'))
 			res = nsort(++left, ++right, fn, ntab);
 	}
 
@@ -515,7 +512,6 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 /*
  * group together identical lines and make a list from their corresponding
  * numbers.
- * TODO 02
  */
 static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlines, int ntab)
 {
@@ -525,15 +521,19 @@ static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlin
 	size_t orig, mark;
         orig = mark = left;
 
-	/* Copy the line base for concatenation, and as a temporary comparator. */
+	/*
+	 * Copy the first line as a base for concatenation, and again as a
+	 * temporary comparator, delete the original.
+	 */
 	strcpy(comp, lineptr[left]);
 	strcpy(line, lineptr[left]);
+	nlines = deleteline(lineptr, left++, nlines);
 
 	if (DEBUG >= 1) printf("compfields: %lu -> %lu\n", left, right);
 
 	while (left <= right)
 	{
-		if (!tabcmp(comp, lineptr[mark], ntab)) { 
+		if (!tabcmp(comp, lineptr[mark], ntab-1)) { 
 			c = lineptr[mark];
 
 			if ((c = jumptotab(c, ntab)) == NULL) {
@@ -543,7 +543,6 @@ static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlin
 			}
 
 			c = jumptochar(c);
-
 			strcat(line, ", ");
 			strcat(line, c);
 
@@ -614,72 +613,53 @@ static int firstcmp(char *s1, char *s2, int ntab)
 
 /*
  * Test if the contents of the given tab fields are identicle.
- * TODO 03
  */
 static int tabcmp(char *s1, char *s2, int ntab)
 {
-	//bool p1, p2;
-	//char *s1_pt, *s2_pt;
-	//int res;
-	//p1 = p2 = false;
-	//s1_pt = s1, s2_pt = s2;
-	//res = 0;
+	bool p1, p2;
+	char *s1_pt, *s2_pt;
+	int res;
+	p1 = p2 = false;
+	s1_pt = s1, s2_pt = s2;
+	res = 0;
 
-	///*
-	// * Jump to specified tab if it exists in both strings, else return 0;
-	// */
-	////if (ntab) {
-	////	if ((s1 = jumptotab(s1, ntab)) == NULL)
-	////		s1 = s1_pt, p1 = true;
-	////	if ((s2 = jumptotab(s2, ntab)) == NULL)
-	////		s2 = s2_pt, p2 = true;
-	////	/*
-	////	 * If either pointers return null the tab does not exist,
-	////	 * return 1, values are not the same.
-	////	 */
-	////	if (p1 == true || p2 == true)
-	////		return 1;
-	////}
+	/*
+	 * Jump to specified tab if it exists in both strings, else return 0;
+	 */
+	if (ntab) {
+		if ((s1 = jumptotab(s1, ntab)) == NULL)
+			s1 = s1_pt, p1 = true;
+		if ((s2 = jumptotab(s2, ntab)) == NULL)
+			s2 = s2_pt, p2 = true;
+		/*
+		 * If either pointers return null the tab does not exist,
+		 * return 1, values are not the same.
+		 */
+		if (p1 == true || p2 == true)
+			return 1;
+	}
 
-	///*
-	// * Jump to the first relevant character.
-	// */
-	//s1 = jumptochar(s1);
-	//s2 = jumptochar(s2);
+	/*
+	 * Jump to the first relevant character.
+	 */
+	s1 = jumptochar(s1);
+	s2 = jumptochar(s2);
 
-	///*
-	// * If the char differ return 0, else return 1 should they be the same.
-	// */
-	//res = sortAlphaCase(s1, s2);
-	//if (!res) {
-	//	if (*s1 != '\t' && *s1 != '\0')
-	//		s1++;
-	//	if (*s2 != '\t' && *s2 != '\0')
-	//		s2++;
-	//	if (*s1 == '\t' && *s2 == '\t')
-	//		return 0;
-	//	res = tabcmp(s1, s2, ntab);
-	//}
+	/*
+	 * If the strings are identical up untill the tab, return 0.
+	 */
+	res = strtcmp(s1, s2);
 
-	return 0;
+	if (!res)
+		return 0;
 
-	///*
-	// * If the char differ return 0, else return 1 should they be the same.
-	// */
-	//if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
-	//	return 0;
-	//else if (isdigit(*s1) && isdigit(*s2))
-	//	if (*s1 != *s2)
-	//		return 0;
-
-	//return 1;
+	return 1;
 }
 
 /*
  * Search over the array looking for lines that are grouped together
  * alphabetically or as blocks of numbers, select the start and end index of
  * each group and then sort by the next argv input using the given tab field.
- * TODO 01
  */
 static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 {
@@ -696,7 +676,7 @@ static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 			 * same; Keep on counting.
 			 */
 			j = i-1;
-			while (i < nlines && firstcmp(lineptr[i-1], lineptr[i], ntab-1))
+			while (i < nlines && !strtcmp(lineptr[i-1], lineptr[i]))
 				i++;
 
 			/*
@@ -826,3 +806,10 @@ static int numcmp(char *s1, char *s2)
 	return 0;
 }
 
+static int strtcmp(char *s, char *t)
+{
+        for ( ; *s == *t; s++, t++)
+                if (*s == '\0' || *s == '\t')
+                        return 0;
+        return *s - *t;
+}
