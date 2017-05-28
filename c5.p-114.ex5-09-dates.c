@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define DEBUG	0
-
 /*
  * Array of days in the month with boolean value for leap year status.
  * The third array are the correction for each month for the day.
@@ -91,39 +89,31 @@ static char *day_name(		register int_fast16_t year,
 	register uint_fast8_t value; /* Used to store the running calculation value */
 
 	/*
-	 * Add the Day and the value for the Month (from the Month-Table). If
-	 * the resulting number is greater than 6, subtract the highest
-	 * multiple of 7 in it. Hold this number till step 3. 
+	 * 1) Add the Day and the value of the Month from daytab[][]. If the
+	 * resulting number is greater than 6, subtract the highest multiple of
+	 * 7 in it.  Hold this number till step 3. 
 	 */
-	if(DEBUG) printf("%lu + %d mod 7 = ", day, daytab[2][month]);
 	day = (day + daytab[2][month]) % 7;
-	if(DEBUG) printf("%lu\n", day);
 
 	/*
-	 * Subtract from the (last two digits of the) Year the highest multiple
-	 * of 28 in it. Add to the resulting number the number you get when you
-	 * divide it by 4 and round down (i.e., drop the decimal). Now add the
-	 * value for the Century from the Century Table. If the Month is Jan.
-	 * or Feb. and the Year is a leap year, subtract 1. 
+	 * 2) Subtract from the (last two digits of the) Year, the greatest
+	 * multiple of 28 within it. Add to the resulting number, the number
+	 * that you get when you divide it by 4 and round down droping the
+	 * decimal (floor). Now add the value for the Century from the Century
+	 * Table. If the Month is Jan. or Feb. and the Year is a leap year,
+	 * subtract 1. 
 	 */
 	value = year%100;
-
-	/* Mystery constant to make it work for 0. */
-	if (value == 0)
-		value = 101;
-
-	if(DEBUG) printf("%d%%28 + %d/4 = %d + %d\n", value, value, value%28, value/4);
 	value = value%28 + value/4;
-	if(DEBUG) printf("add cent %d + %d\n",value, century(year/100));
 	value += century(year/100);
-	if(DEBUG) printf("%d\n", value);
 	if (month < 3)
 		value -= leap(year);
 
 	/*
-	 * Add together the results from steps 1 and 2. If the resulting number
-	 * is greater than 6, subtract the highest multiple of 7 in it. Using
-	 * the resulting number, look up the Day-of-week in the Weekday-Table.
+	 * 3) Add together the results from steps 1 and 2. If the resulting
+	 * number is greater than 6, subtract the highest multiple of 7 in it.
+	 * Using the resulting number, look up the Day-of-week in the
+	 * Weekday-Table.
 	 */
 	return the_day((value + day) % 7);
 }
@@ -205,8 +195,11 @@ static int input_date(int year, int month, int day)
 	p_day_name = day_name(year, month, day);
 	p_month_name = month_name(month);
 
-	printf("%d %d %s\t %d %s\n", day_number, pday, p_month_name, year, p_day_name);
-	if (DEBUG) puts("");
+	/*
+	 * Print out the day out of 365/6, the number of the day in the month
+	 * and the month. Followed by the yeat and the name of the day.
+	 */
+	printf("%d %s %d\t-> %s day %d.\n", pday, p_month_name, year, p_day_name, day_number);
 
 	return 0;
 }
