@@ -157,6 +157,7 @@ static void settings(int argc, char*argv[])
 					func = alpha;
 					break;
 				case 'd':
+					index = true;
 					directory = true;
 					break;
 				case 'e':
@@ -166,10 +167,10 @@ static void settings(int argc, char*argv[])
 					func = fold;
 					break;
 				case 'i':
-					numeric = true;
 					index = true;
 					break;
 				case 'n':
+					index = true;
 					numeric = true;
 					break;
 				case 'N':
