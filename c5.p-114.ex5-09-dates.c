@@ -1,8 +1,6 @@
 /*
  * Exercise 5-9. Rewrite the routines day_of_year and month_day with pointers
  * instead of indexing.
- *
- * http://www.wikihow.com/Calculate-the-Day-of-the-Week
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -104,6 +102,10 @@ static char *day_name(		register int_fast16_t year,
 	 * subtract 1. 
 	 */
 	value = year%100;
+
+	if (value == 0)
+		value = 101;
+
 	value = value%28 + value/4;
 	value += century(year/100);
 	if (month < 3)
