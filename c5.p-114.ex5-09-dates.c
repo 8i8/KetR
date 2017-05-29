@@ -42,10 +42,11 @@ static int check_day(		const int_fast16_t year,
 static int century(int cent)
 {
 	static int correction[2][9] = {
-		{ 16, 17, 18, 19, 20, 21, 22, 23, 24 },
-		{  0,  5,  3,  1,  0,  5,  3,  1,  0 }
+		{  0,  1,  2,  3 },
+		{  0,  5,  3,  1 }
 	};
-	return correction[1][cent-16];
+
+	return correction[1][cent%4];
 }
 
 /*
@@ -217,6 +218,7 @@ static void run_tests(void)
 	input_date(2160, 3, 17);
 	input_date(2200, 2, 28);
 	input_date(2400, 2, 29);
+	input_date(2800, 2, 29);
 }
 
 int main(int argc, char* argv[])
