@@ -104,6 +104,11 @@ static char *day_name(		register int_fast16_t year,
 	 */
 	value = year%100;
 
+	/*
+	 * Troll tuesday constant: see 29th feb 2400, 2800, 3200 both with and
+	 * without the constant for details; I love that this code, with the
+	 * constant, equates to 42.
+	 */
 	if (value == 0)
 		value = 101;
 
@@ -215,15 +220,30 @@ static void run_tests(void)
 	input_date(2000, 2, 29);
 	input_date(2003, 2, 28);
 	input_date(2004, 2, 29);
+	input_date(2100, 2, 29);
 	input_date(2160, 3, 17);
 	input_date(2200, 2, 28);
 	input_date(2400, 2, 29);
 	input_date(2800, 2, 29);
+	input_date(3200, 2, 29);
 }
 
 int main(int argc, char* argv[])
 {
-	run_tests();
+	int year = 2100;
+	int month = 2;
+	int day = 21;
+
+	//run_tests();
+
+	for (int i = 0; i < 20; i++)
+	{
+		if (day == 31)
+			month = 3, day = 1;
+		input_date(year, month, day++);
+	}
+
+
 		
 	return 0;
 }
