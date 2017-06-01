@@ -85,7 +85,7 @@ static char *day_name(		register int_fast16_t year,
 				register uint_fast8_t month,
 				register uint_fast16_t day)
 {
-	register uint_fast8_t value; /* Used to store the running calculation value */
+	register uint_fast8_t cent; /* Used to store the running calculation. */
 
 	/*
 	 * 1) Add the Day and the value of the Month from daytab[][]. If the
@@ -102,20 +102,20 @@ static char *day_name(		register int_fast16_t year,
 	 * Table. If the Month is Jan. or Feb. and the Year is a leap year,
 	 * subtract 1. 
 	 */
-	value = year%100;
+	cent = year%100;
 
 	/*
 	 * Troll tuesday constant: see 29th feb 2400, 2800, 3200 both with and
 	 * without the constant for details; I love that this code, with the
 	 * constant, equates to 42.
 	 */
-	if (value == 0)
-		value = 101;
+	if (cent == 0)
+		cent = 101;
 
-	value = value%28 + value/4;
-	value += century(year/100);
+	cent = cent%28 + cent/4;
+	cent += century(year/100);
 	if (month < 3)
-		value -= leap(year);
+		cent -= leap(year);
 
 	/*
 	 * 3) Add together the results from steps 1 and 2. If the resulting
@@ -123,7 +123,7 @@ static char *day_name(		register int_fast16_t year,
 	 * Using the resulting number, look up the Day-of-week in the
 	 * Weekday-Table.
 	 */
-	return the_day((value + day) % 7);
+	return the_day((cent + day) % 7);
 }
 
 /*
