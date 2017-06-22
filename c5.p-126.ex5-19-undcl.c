@@ -1,6 +1,8 @@
 /*
  * Exercise 5-19. Modify undcl so that it does not add redundant parentheses to
  * declarations.
+ *
+ * TODO This question is not yet finished.
  */
 #include <stdio.h>
 #include <string.h>
