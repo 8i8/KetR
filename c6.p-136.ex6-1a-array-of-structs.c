@@ -15,6 +15,7 @@ enum boolean { false, true };
 
 struct status {
 	bool strlit;
+	bool charlit;
 	bool comment;
 	bool prepros;
 	bool skip;
@@ -31,10 +32,11 @@ static struct key {
 	{ "const",	0, },
 	{ "continue",	0, },
 	{ "default",	0, },
+	{ "return",	0, },
 	{ "unsigned",	0, },
 	{ "void",	0, },
 	{ "volatile",	0, },
-	{ "while",	0  }
+	{ "while",	0, }
 };
 
 static int binsearch(char *, struct key tab[], int);
@@ -94,23 +96,27 @@ static int getword(char *word, int lim, struct status *state)
 
 	while (isspace(c = getch())) {
 		/* Escape all keywords during preprocessor commands */
-		if (c == '\n' && state->prepros && !state->skip) {
+		if (c == '\n' && state->prepros && !state->skip)
 			state->prepros = false;
-		} else if (c == '\n' && state->prepros && state->skip) {
+		else if (c == '\n' && state->prepros && state->skip)
 			state->skip = false;
-		}
 	}
 
 	if (c != EOF)
 		*w++ = c;
 
-	if (c == '"') {
-		if (!state->strlit)		/* Set state in string */
+	if (c == '\'') {
+		if (!state->strlit)				/* Set state in string */
+			state->charlit = true;
+		else
+			state->charlit = false;
+	} else if (c == '"') {
+		if (!state->strlit && !state->charlit)		/* Set state in string */
 			state->strlit = true;
 		else
 			state->strlit = false;
 	} else if (c == '/' && !state->comment) {
-		if ((c = getch()) == '*')	/* Set state in comment */
+		if ((c = getch()) == '*')			/* Set state in comment */
 			state->comment = true;
 		else
 			ungetch(c);
@@ -120,7 +126,7 @@ static int getword(char *word, int lim, struct status *state)
 		else
 			ungetch(c);
 	} else if (c == '#') {
-		if ((c = getch()) == 'd')	/* Set state in preprocessor */
+		if ((c = getch()) == 'd')			/* Set state in preprocessor */
 			state->prepros = true;
 		else
 			ungetch(c);
