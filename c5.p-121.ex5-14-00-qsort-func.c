@@ -24,7 +24,7 @@ static void swap(void *v[], size_t i, size_t j);
 static int numcmp(char *s1, char *s2);
 
 static char *lineptr[MAXLINES];			/* Pointer to text lines */
-static char allocbuf[ALLOCSIZE];			/* storage for alloc */
+static char allocbuf[ALLOCSIZE];		/* storage for alloc */
 static char *allocp = allocbuf;			/* next free position */
 
 /*

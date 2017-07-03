@@ -55,6 +55,7 @@ int main(void)
 		if (isalpha(word[0]))
 			if ((p = binsearch(word, keytab, NKEYS)) != NULL)
 				p->count++;
+
 	for (p = keytab; p < keytab + NKEYS; p++)
 		if (p->count > 0)
 			printf("%4d %s\n", p->count, p->word);
