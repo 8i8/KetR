@@ -8,7 +8,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#define MAXWORD	100
+#define MAXWORD		100
 #define SKIP	(sizeof(skiplist)/sizeof(char *))
 
 struct nnode {
@@ -28,13 +28,14 @@ struct tnode {
 
 static char *skiplist[] = {
 	"a", "an", "and", "are", "be", "can", "has", "have", "he", "i", "in",
-	"is", "it", "of", "so", "that", "then", "this", "to", "which", "will",
-	"the"
+	"is", "it", "of", "so", "that", "the", "then", "this", "to", "which",
+	"will"
 };
 
 static int getword(char* word, int len);
 static struct tnode *addtree(struct tnode *p, char *w, int ln);
 static void treeprint(struct tnode *p);
+static int checklist(char* w, char* list[], size_t len);
 
 int main(void)
 {
@@ -44,10 +45,30 @@ int main(void)
 
 	root = NULL;
 	while ((line = getword(word, MAXWORD)) != EOF)
-		if (isalpha(word[0]))
+		if (isalpha(word[0]) && !checklist(word, skiplist, SKIP))
 			root = addtree(root, word, line);
 
 	treeprint(root);
+	return 0;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Check list
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+static int checklist(char* w, char* list[], size_t len)
+{
+	size_t i, j;
+	j = strlen(w);
+	char t[j];
+
+	for (i = 0; i < j; i++)
+		t[i] = tolower(w[i]);
+	t[i] = '\0';
+
+	for (i = 0; i < len; i++)
+		if (strcmp(list[i], t) == 0)
+			return 1;
 	return 0;
 }
 
@@ -121,10 +142,13 @@ static void treeprint(struct tnode *p)
 			putchar('\t');
 		if (strlen(p->word) < 11)
 			putchar('\t');
-		if (strlen(p->word) < 19)
-			putchar('\t');
-		for (i = 0; i < p->count; i++)
-			printf("%2d, ", p->ln->linenum[i]);
+		for (i = 0; i < p->count; i++) {
+			printf("%3d, ", p->ln->linenum[i]);
+			if (((i+1)%12 == 0) && i != 0) {
+				putchar('\n');
+				printf("\t\t\t");
+			}
+		}
 		putchar('\n');
 		treeprint(p->right);
 	}
@@ -201,7 +225,7 @@ static void ungetch(int c);
 
 static int getword(char* word, int lim)
 {
-	static int line = 0;
+	static int line = 1;
 	int c;
 	char *w = word;
 
