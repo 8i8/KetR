@@ -11,35 +11,57 @@
 #define MAXWORD	100
 #define SKIP	(sizeof(skiplist)/sizeof(char *))
 
+typedef short int bool;
+enum boolean { false, true };
+enum counter { VALUE, COUNT };
+enum searchb { UPPER, LOWER };
+
 struct nnode {
 	int *linenum;
-	int count;
+	size_t count;
 	struct nnode *left;
 	struct nnode *right;
 };
 
 struct tnode {
 	char *word;
-	int count;
+	size_t count;
 	struct nnode *ln;
 	struct tnode *left;
 	struct tnode *right;
 };
 
 static char *skiplist[] = {
-	"a", "an", "and", "are", "be", "can", "has", "have", "he", "i", "in",
-	"is", "it", "of", "so", "that", "the", "then", "this", "to", "which",
-	"will"
+	"a", "an", "and", "are", "be", "can", "has", "have", "he", "i", "if", "in",
+	"is", "it", "of", "so", "that", "the", "then", "this", "to", "which", "will"
 };
 
-static int getword(char* word, int len);
+static int compcount (const void *a, const void *b)
+{
+	struct tnode *tnodeA = *(struct tnode **)a;
+	struct tnode *tnodeB = *(struct tnode **)b;
+	return tnodeA->count - tnodeB->count;
+}
+
+static int compword (const void *a, const void *b)
+{
+	struct tnode *tnodeA = *(struct tnode **)a;
+	struct tnode *tnodeB = *(struct tnode **)b;
+
+	return strcmp(tnodeB->word, tnodeA->word);
+}
+
+static size_t getword(char* word, size_t lim);
 static struct tnode *addtree(struct tnode *p, char *w, int ln);
-static void treeprint(struct tnode *p);
 static int checklist(char* w, char* list[], size_t len);
+static int nodeCount(bool aug);
+static void treearray(struct tnode *p, struct tnode *array[]);
+static void sortarray(struct tnode *p[], size_t len);
+static void printarray(struct tnode *p[], size_t len);
 
 int main(void)
 {
-	int line = 0;
+	size_t line = 0;
 	struct tnode *root;
 	char word[MAXWORD];
 
@@ -48,7 +70,14 @@ int main(void)
 		if (isalpha(word[0]) && !checklist(word, skiplist, SKIP))
 			root = addtree(root, word, line);
 
-	treeprint(root);
+	size_t len;
+	len = nodeCount(VALUE);
+	struct tnode *tnodearray[len];
+
+	treearray(root, tnodearray);
+	sortarray(tnodearray, len);
+	printarray(tnodearray, len);
+
 	return 0;
 }
 
@@ -97,6 +126,7 @@ static struct tnode *addtree(struct tnode *p, char *w, int ln)
 		p->count = 1;
 		p->left = p->right = NULL;
 		p->ln = addnum(root, ln);
+		nodeCount(COUNT);
 	} else if ((cond = strcmp(w, p->word)) == 0) {
 		p->count++;	/* repeated word */
 		p->ln->linenum = _arydup(p->ln->linenum, ln, p->count);
@@ -127,31 +157,6 @@ static struct nnode *addnum(struct nnode *n, int ln)
 	else
 		n->right = addnum(n->right, ln);
 	return n;
-}
-
-/*
- * treeprint:	print the entire tree in order
- */
-static void treeprint(struct tnode *p)
-{
-	size_t i;
-	if (p != NULL) {
-		treeprint(p->left);
-		printf("%4d %s\t", p->count, p->word);
-		if (strlen(p->word) < 3)
-			putchar('\t');
-		if (strlen(p->word) < 11)
-			putchar('\t');
-		for (i = 0; i < p->count; i++) {
-			printf("%3d, ", p->ln->linenum[i]);
-			if (((i+1)%12 == 0) && i != 0) {
-				putchar('\n');
-				printf("\t\t\t");
-			}
-		}
-		putchar('\n');
-		treeprint(p->right);
-	}
 }
 
 /*
@@ -216,6 +221,88 @@ static int *_arydup(int *a, int ln, int len)
 	return p;
 }
 
+/*
+ * nodeCount:	Keep count of how many tnodes are made
+ */
+static int nodeCount(bool aug)
+{
+	static size_t count = 0;
+
+	if (aug)
+		return ++count;
+	else
+		return count;
+}
+
+/*
+ * treearray:	Fill an array of structs for sorting
+ */
+static void treearray(struct tnode *p, struct tnode *array[])
+{
+	static size_t count = 0;
+
+	if (p != NULL) {
+		treearray(p->left, array);
+		array[count++] = p;
+		treearray(p->right, array);
+	}
+}
+
+/*
+ * binarysearch:	Returns the index of the upper and lower instances of a
+ * 			number in an array
+ */
+static int binarysearch(struct tnode *p[], size_t len, size_t x, bool searchFirst)
+{
+	ssize_t low = 0, high = len-1, result = -1;
+
+	while (low <= high)
+	{
+		ssize_t mid = low+((high-low)/2);
+		if (p[mid]->count == x)
+		{
+			result = mid;
+			if (searchFirst)
+				high = mid-1;
+			else
+				low = mid+1;
+
+		}
+		else if (x < p[mid]->count)
+			high = mid-1;
+		else low = mid+1;
+	}
+	return result;
+}
+
+/*
+ * sortarray:	Sort the array by word frequency descending and then by word
+ * 		alphabeticaly assending
+ */
+static void sortarray(struct tnode *p[], size_t len)
+{
+	qsort(p, len, sizeof(struct tnode *), compcount);
+
+	size_t lower, upper = 0;
+
+	do {
+		lower = upper;
+		lower = binarysearch(p, len, p[lower]->count, LOWER);
+		upper = binarysearch(p, len, p[lower]->count, UPPER);
+		upper++;
+		qsort(p+lower, upper-lower, sizeof(struct tnode *), compword);
+	} while(p[upper]->count < len);
+}
+
+/*
+ * printarray:	Print array to terminal
+ */
+static void printarray(struct tnode *p[], size_t len)
+{
+	while (len--)
+		printf("%4lu: %s\n", p[len]->count, p[len]->word);
+}
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  input ~ getword
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,9 +310,9 @@ static int *_arydup(int *a, int ln, int len)
 static int getch(void);
 static void ungetch(int c);
 
-static int getword(char* word, int lim)
+static size_t getword(char* word, size_t lim)
 {
-	static int line = 1;
+	static size_t line = 1;
 	int c;
 	char *w = word;
 
@@ -257,7 +344,6 @@ static int getword(char* word, int lim)
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 #define BUFSIZE 100
-
 static char buf[BUFSIZE];
 static int p_buf = 0;
 
