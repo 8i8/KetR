@@ -47,7 +47,6 @@ static int compword (const void *a, const void *b)
 {
 	struct tnode *tnodeA = *(struct tnode **)a;
 	struct tnode *tnodeB = *(struct tnode **)b;
-
 	return strcmp(tnodeB->word, tnodeA->word);
 }
 
