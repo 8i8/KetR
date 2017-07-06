@@ -41,20 +41,6 @@ int main(void)
 	return 0;
 }
 
-static int undef(char *def)
-{
-	struct nlist *np;
-
-	np = lookup(def);
-
-	if (np != NULL) {
-		free(np->name);
-		free(np->defn);
-		return 1;
-	} else
-		return 0;
-}
-
 /*
  * hash:	form hash value for string s 
  */
@@ -100,5 +86,23 @@ static struct nlist *install(char *name, char *defn)
 	if ((np->defn = strdup(defn)) == NULL)
 		return NULL;
 	return np;
+}
+
+/*
+ * undef:	free up and remove entry
+ */
+static int undef(char *def)
+{
+	struct nlist *np;
+
+	np = lookup(def);
+
+	if (np != NULL) {
+		free(np->name);
+		free(np->defn);
+		hashtab[hash(def)] = NULL;
+		return 1;
+	} else
+		return 0;
 }
 
