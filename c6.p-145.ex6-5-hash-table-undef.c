@@ -22,21 +22,21 @@ int main(void)
 {
 	char name[] = "TEST";
 	char defn[] = "101";
+	char name2[] = "HELLO";
+	char defn2[] = "102";
 	struct nlist *np;
 
 	install(name, defn);
+	install(name2, defn2);
 
 	np = lookup("TEST");
-	printf("%s\n", np->defn);
+	printf("%s %s\n", np->name, np->defn);
+
+	np = lookup("HELLO");
+	printf("%s %s\n", np->name, np->defn);
 
 	undef("TEST");
-
-	np = lookup("TEST");
-
-	if (np != NULL)
-		printf("%s\n", np->defn);
-	else
-		printf("Value not defined in table.\n");
+	undef("HELLO");
 
 	return 0;
 }
@@ -100,7 +100,7 @@ static int undef(char *def)
 	if (np != NULL) {
 		free(np->name);
 		free(np->defn);
-		hashtab[hash(def)] = NULL;
+		free(hashtab[hash(def)]);
 		return 1;
 	} else
 		return 0;
