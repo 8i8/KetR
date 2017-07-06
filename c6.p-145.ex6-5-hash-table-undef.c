@@ -8,7 +8,6 @@
 
 struct nlist {				/* table entry */
 	struct nlist *next;		/* next entry in chain */
-	struct nlist *prev;		/* next entry in chain */
 	char *name;
 	char *defn;
 };
