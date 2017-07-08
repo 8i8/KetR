@@ -14,6 +14,7 @@ typedef short int bool;
 enum boolean { false, true };
 enum pre { HASH = 2, STATMENT = 3 , NAME = 4, VALUE = 5 };
 
+/* States for parser operation */
 typedef struct {
 	bool strlit;
 	bool charlit;
@@ -23,6 +24,7 @@ typedef struct {
 	bool read;
 } status;
 
+/* hash table targts */
 struct nlist {
 	struct nlist *next;
 	char *name;
@@ -47,11 +49,6 @@ int main(void)
 		printf("%s", word);
 	}
 
-	if ((test = lookup("MAX_WORD")) != NULL)
-		printf("Test result -> %s %s\n", test->name, test->defn);
-	else
-		printf("Not yet!\n");
-
 	undef("define");
 
 	return 0;
@@ -65,8 +62,7 @@ static int getch(void);
 static void ungetch(int c);
 
 /*
- * gettoken:	read untill a space or nonalpha numeric character is read
- *		allow '_'
+ * gettoken:	Input, write to the string word, stop at non alpha numeric
  */
 static char* gettoken(char *word, char *w, size_t lim, status *state)
 {
@@ -104,11 +100,17 @@ static char* readtoken(char *word, char *w, size_t lim, status *state)
 	return w;
 }
 
+/*
+ * getword:	Sort the input stream
+ */
 static size_t getword(char* word, size_t lim, status *state)
 {
 	char c;
 	char *w = word;
 
+	/*
+	 * State of preprosessor, reset on newline or keep the state.
+	 */
 	if ((c = getch()) == '\n' && state->prepros && !state->skip)
 		state->prepros = false;
 	else if (c == '\n' && state->prepros && state->skip)
@@ -117,6 +119,9 @@ static size_t getword(char* word, size_t lim, status *state)
 	if (c != EOF)
 		*w++ = c;
 
+	/*
+	 * States for comments strings char and #.
+	 */
 	if (c == '\'') {
 		if (!state->charlit)
 		       state->charlit = true;
@@ -151,16 +156,20 @@ static size_t getword(char* word, size_t lim, status *state)
 	} else if (c == '\\' && state->prepros)
 		state->skip = true;
 
+	/*
+	 * Back out for comments and strings.
+	 */
 	if (state->comment) {
 		*--w = '\0';
 		return c;
-	}
-
-	if (state->strlit || (!isalnum(c) && c != '_')) {
+	} else if (state->strlit || (!isalnum(c) && c != '_')) {
 		*w = '\0';
 		return c;
 	}
 	
+	/*
+	 * States for reading #define.
+	 */
 	if (state->prepros == HASH) {
 		state->prepros = STATMENT;
 	} else if (state->prepros == STATMENT) {
@@ -169,6 +178,9 @@ static size_t getword(char* word, size_t lim, status *state)
 		state->prepros = VALUE;
 	}
 
+	/*
+	 * Get a word and then read it.
+	 */
 	w = gettoken(word, w, lim, state);
 	w = readtoken(word, w, lim, state);
 
