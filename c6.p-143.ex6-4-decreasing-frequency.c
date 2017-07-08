@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <string.h>
+#include <string.h>\\
 
 #define MAXWORD	100
 #define SKIP	(sizeof(skiplist)/sizeof(char *))
@@ -83,6 +83,9 @@ int main(void)
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Check list
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+/*
+ * checklist:	check against list of words to ignore
  */
 static int checklist(char* w, char* list[], size_t len)
 {

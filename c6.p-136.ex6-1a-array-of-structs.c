@@ -144,7 +144,7 @@ static int getword(char *word, int lim, struct status *state)
 			break;
 		}
 	*w = '\0';
-	return word[0];
+	return *w;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,7 +157,7 @@ static char buf[BUFSIZE];	/* buffer for ungetch */
 static size_t bufp = 0;		/* next free position in buf */
 
 /*
- * getch:	get the next char.
+ * getch:	Get the next char, from the buffer if full, else by getchar()
  */
 static int getch(void)
 {
@@ -165,7 +165,7 @@ static int getch(void)
 }
 
 /*
- * ungetch:	Get a (possibly pushed back) character.
+ * ungetch:	Push back the most recent char into the buffer
  */
 static void ungetch(int c)
 {

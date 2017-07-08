@@ -31,7 +31,6 @@ int main(void)
 
 	np = lookup("TEST");
 	printf("%s %s\n", np->name, np->defn);
-
 	np = lookup("HELLO");
 	printf("%s %s\n", np->name, np->defn);
 
