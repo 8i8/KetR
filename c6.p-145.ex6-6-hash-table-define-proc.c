@@ -80,29 +80,6 @@ static char* gettoken(char *word, char *w, size_t lim, status *state)
 	return w;
 }
 
-static char* hashtoken(char *word, char *w, size_t lim, status *state)
-{
-	char name[MAX_WORD];
-	char defn[MAX_WORD];
-	int c;
-
-	while (isspace(c = getch())) {
-		*w++ = c;
-	}
-	w = gettoken(word, w, lim, state);
-	*w = '\0';
-	strcpy(name, w);
-	while (isspace(c = getch())) {
-		*w++ = c;
-	}
-	w = gettoken(word, w, lim, state);
-	*w = '\0';
-	strcpy(defn, w);
-	install(name, defn);
-
-	return w;
-}
-
 /*
  * readtoken:	read and compaire tokens
  */
@@ -160,6 +137,8 @@ static size_t getword(char* word, size_t lim, status *state)
 	} else if (c == '*' && state->comment) {
 		if ((c = getch()) == '/') {
 			state->comment = false;
+			while (isspace(getch()))
+				;
 			*--w = '\0';
 			return *w;
 		} else {
