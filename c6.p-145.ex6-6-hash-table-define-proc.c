@@ -137,8 +137,9 @@ static size_t getword(char* word, size_t lim, status *state)
 	} else if (c == '*' && state->comment) {
 		if ((c = getch()) == '/') {
 			state->comment = false;
-			while (isspace(getch()))
+			while (isspace(c = getch()))
 				;
+			ungetch(c);
 			*--w = '\0';
 			return *w;
 		} else {
