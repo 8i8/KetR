@@ -10,6 +10,7 @@
 
 #define MAX_WORD	100
 #define HASHSIZE	101
+#define COLLISIONS	100
 
 typedef short int bool;
 enum boolean { false, true, HASH, STATMENT, NAME, VALUE };
@@ -37,7 +38,7 @@ static struct nlist *lookup(char *s);
 static struct nlist *install(char *name, char*defn);
 static void freeall(struct nlist **nl, size_t len);
 /* */
-static struct nlist *hashtab[HASHSIZE];
+static struct nlist *hashtab[HASHSIZE] = { NULL };
 
 int main(void)
 {
@@ -266,17 +267,23 @@ static struct nlist *install(char *name, char *defn)
  */
 static void freeall(struct nlist **nl, size_t len)
 {
-	size_t i;
+	size_t i, j;
 	struct nlist *p;
+	struct nlist *list[COLLISIONS];
 	p = *nl;
 
+	printf("Erased from heap memory:\n");
 	for (i = 0; i < len; i++) {
-		if((p = nl[i]) != NULL) {
-			printf("%s %s\n", p->name, p->defn);
+		for (p = nl[i], j = 0; p != NULL; p = p->next, ++j) {
+			printf("%s %s\t~ ", p->name, p->defn);
 			free(p->name);
 			free(p->defn);
-			free(p);
+			list[j] = p;
 		}
+		if (nl[i] != NULL)
+			putchar('\n');
+		while (j--)
+			free(list[j]);
 	}
 }
 
