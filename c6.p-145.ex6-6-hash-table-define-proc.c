@@ -151,9 +151,9 @@ static int getword(char* word, size_t lim, status *state)
 			*--w = '\0';
 			return *w;
 		}
-	} else if (c == '#' && (!state->comment && !state->strlit && !state->prepros)) {
+	} else if (c == '#' && (!state->comment && !state->strlit && !state->prepros))
 		state->prepros = true;
-	} else if (c == '\\' && state->prepros)
+	else if (c == '\\' && state->prepros)
 		state->skip = true;
 	else if (c == '\\' && state->charlit)
 		state->escape = true;
@@ -253,7 +253,9 @@ static struct nlist *install(char *name, char *defn)
 		if (np == NULL || (np->name = strdup(name)) == NULL)
 			return NULL;
 		hashval = hash(name);
+		/* Move existing struct link, if value present, to next */
 		np->next = hashtab[hashval];
+		/* Put new struct into hash bucket first position */
 		hashtab[hashval] = np;
 	} else
 		free((void *) np->defn);
@@ -275,7 +277,9 @@ static void freeall(struct nlist **nl, size_t len)
 	printf("Erased from heap memory:\n");
 	for (i = 0; i < len; i++) {
 		for (p = nl[i], j = 0; p != NULL; p = p->next, ++j) {
-			printf("%s %s\t~ ", p->name, p->defn);
+			printf("%s %s\t~\t", p->name, p->defn);
+			if (p->next == NULL)
+				printf("NULL");
 			free(p->name);
 			free(p->defn);
 			list[j] = p;
