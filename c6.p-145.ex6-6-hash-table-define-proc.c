@@ -32,38 +32,27 @@ struct nlist {
 	char *defn;
 };
 
-
 static int getword(char* word, size_t lim, status *state);
-static int undef(char *def);
 static struct nlist *lookup(char *s);
 static struct nlist *install(char *name, char*defn);
-//static void freeall(struct nlist **np, size_t len);
+static void freeall(struct nlist **nl, size_t len);
 /* */
 static struct nlist *hashtab[HASHSIZE];
-
-static void printstate(status *state)
-{
-//	printf("strlit -> %d, charlit -> %d, comment -> %d, prepros -> %d, skip -> %d, read -> %d.\n",
-//		state->strlit, state->charlit, state->comment, state->prepros, state->skip, state->read);
-}
 
 int main(void)
 {
 	char word[MAX_WORD];
 	status state;
 
-	state.strlit = state.charlit = state.comment = state.prepros = state.skip = state.read = 0;
+	state.strlit = state.charlit = state.comment = state.prepros =
+		state.skip = state.read = state.escape = 0;
 
 	install("define", "one");
 
-	while ((getword(word, MAX_WORD, &state)) != EOF) {
+	while ((getword(word, MAX_WORD, &state)) != EOF)
 		printf("%s", word);
-		if (!strcmp(word, "\n"))
-			printstate(&state);
-	}
 
-	undef("define");
-	//freeall(hashtab, HASHSIZE);
+	freeall(hashtab, HASHSIZE);
 
 	return 0;
 }
@@ -97,7 +86,7 @@ static void readtoken(char *word, status *state)
 	struct nlist *s;
 
 	if ((s = lookup(word)) != NULL) {
-		if (!strcmp(s->name, "define"))
+		if (!strcmp(s->defn, "one"))
 			state->read = STATMENT;
 		else
 			strcpy(word, s->defn);
@@ -238,25 +227,6 @@ static unsigned hash(char *s)
 }
 
 /*
- * undef:	free up and remove entry
- */
-static int undef(char *def)
-{
-	struct nlist *np;
-
-	np = lookup(def);
-
-	if (np != NULL) {
-		free(np->name);
-		free(np->defn);
-		free(np->next);
-		free(hashtab[hash(def)]);
-		return 1;
-	} else
-		return 0;
-}
-
-/*
  * lookup:	Look for s in hashtab
  */
 static struct nlist *lookup(char *s)
@@ -270,7 +240,7 @@ static struct nlist *lookup(char *s)
 }
 
 /*
- * install:	put (name, defn) in hashtab
+ * install:	put (name, defn) into hashtab bucket
  */
 static struct nlist *install(char *name, char *defn)
 {
@@ -294,24 +264,19 @@ static struct nlist *install(char *name, char *defn)
 /*
  * freeall:	free all memory from hashtab
  */
-//static void freeall(struct nlist **nl, size_t len)
-//{
-//	size_t i, j;
-//	struct nlist *np;
-//	struct nlist *last[HASHSIZE];
-//
-//	for (i = 0; i < len; i++) {
-//		if(nl[i] != NULL) {
-//			for (j = 0, np = nl[i]; np != NULL; np = np->next, ++j) {
-//				printf("test %d\n", nl[i]);
-//				printf("%s %s\n", np->name, np->defn);
-//				last[j] = np;
-//			}
-//			while (j--) {
-//				printf("j --> %d\n", last[j]);
-//				//free(&last[j]);
-//			}
-//		}
-//	}
-//}
+static void freeall(struct nlist **nl, size_t len)
+{
+	size_t i;
+	struct nlist *p;
+	p = *nl;
+
+	for (i = 0; i < len; i++) {
+		if((p = nl[i]) != NULL) {
+			printf("%s %s\n", p->name, p->defn);
+			free(p->name);
+			free(p->defn);
+			free(p);
+		}
+	}
+}
 
