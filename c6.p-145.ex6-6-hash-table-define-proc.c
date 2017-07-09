@@ -9,10 +9,10 @@
 #include <stdlib.h>
 
 #define MAX_WORD	100
+#define HASHSIZE	101
 
 typedef short int bool;
-enum boolean { false, true };
-enum pre { HASH = 2, STATMENT = 3 , NAME = 4, VALUE = 5 };
+enum boolean { false, true, HASH, STATMENT, NAME, VALUE };
 
 /* States for parser operation */
 typedef struct {
@@ -22,6 +22,7 @@ typedef struct {
 	bool prepros;
 	bool skip;
 	bool read;
+	bool escape;
 } status;
 
 /* hash table targts */
@@ -31,25 +32,38 @@ struct nlist {
 	char *defn;
 };
 
-static size_t getword(char* word, size_t lim, status *state);
+
+static int getword(char* word, size_t lim, status *state);
 static int undef(char *def);
 static struct nlist *lookup(char *s);
 static struct nlist *install(char *name, char*defn);
+//static void freeall(struct nlist **np, size_t len);
+/* */
+static struct nlist *hashtab[HASHSIZE];
+
+static void printstate(status *state)
+{
+//	printf("strlit -> %d, charlit -> %d, comment -> %d, prepros -> %d, skip -> %d, read -> %d.\n",
+//		state->strlit, state->charlit, state->comment, state->prepros, state->skip, state->read);
+}
 
 int main(void)
 {
-	struct nlist *test;
 	char word[MAX_WORD];
 	status state;
 
+	state.strlit = state.charlit = state.comment = state.prepros = state.skip = state.read = 0;
+
 	install("define", "one");
 
-	while ((getword(word, MAX_WORD, &state)) != EOF)
-	{
+	while ((getword(word, MAX_WORD, &state)) != EOF) {
 		printf("%s", word);
+		if (!strcmp(word, "\n"))
+			printstate(&state);
 	}
 
 	undef("define");
+	//freeall(hashtab, HASHSIZE);
 
 	return 0;
 }
@@ -64,7 +78,7 @@ static void ungetch(int c);
 /*
  * gettoken:	Input, write to the string word, stop at non alpha numeric
  */
-static char* gettoken(char *word, char *w, size_t lim, status *state)
+static void gettoken(char *w, size_t lim)
 {
 	for ( ; --lim > 0; w++)
 		if (!isalnum(*w = getch()) && *w != '_') {
@@ -72,14 +86,12 @@ static char* gettoken(char *word, char *w, size_t lim, status *state)
 			*w = '\0';
 			break;
 		}
-
-	return w;
 }
 
 /*
  * readtoken:	read and compaire tokens
  */
-static char* readtoken(char *word, char *w, size_t lim, status *state)
+static void readtoken(char *word, status *state)
 {
 	static char store[MAX_WORD];
 	struct nlist *s;
@@ -94,16 +106,14 @@ static char* readtoken(char *word, char *w, size_t lim, status *state)
 		state->read = NAME;
 	} else if (state->read == NAME) {
 		install(store, word);
-		state->read = true;
+		state->read = false;
 	}
-
-	return w;
 }
 
 /*
  * getword:	Sort the input stream
  */
-static size_t getword(char* word, size_t lim, status *state)
+static int getword(char* word, size_t lim, status *state)
 {
 	char c;
 	char *w = word;
@@ -120,10 +130,10 @@ static size_t getword(char* word, size_t lim, status *state)
 		*w++ = c;
 
 	/*
-	 * States for comments strings char and #.
+	 * States for comments, strings, char, escaped char and #.
 	 */
 	if (c == '\'') {
-		if (!state->charlit)
+		if (!state->charlit && !state->escape)
 		       state->charlit = true;
 		else
 			state->charlit = false;
@@ -152,9 +162,13 @@ static size_t getword(char* word, size_t lim, status *state)
 			return *w;
 		}
 	} else if (c == '#' && (!state->comment && !state->strlit && !state->prepros)) {
-		state->prepros = HASH;
+		state->prepros = true;
 	} else if (c == '\\' && state->prepros)
 		state->skip = true;
+	else if (c == '\\' && state->charlit)
+		state->escape = true;
+	else if (state->escape)
+		state->escape = false;
 
 	/*
 	 * Back out for comments and strings.
@@ -168,21 +182,14 @@ static size_t getword(char* word, size_t lim, status *state)
 	}
 	
 	/*
-	 * States for reading #define.
+	 * Go get a token.
 	 */
-	if (state->prepros == HASH) {
-		state->prepros = STATMENT;
-	} else if (state->prepros == STATMENT) {
-		state->prepros = NAME;
-	} else if (state->prepros == NAME) {
-		state->prepros = VALUE;
-	}
+	gettoken(w, lim);
 
 	/*
-	 * Get a word and then read it.
+	 * Read and treat the token.
 	 */
-	w = gettoken(word, w, lim, state);
-	w = readtoken(word, w, lim, state);
+	readtoken(word, state);
 
 	return *w;
 }
@@ -218,8 +225,6 @@ static void ungetch(int c)
  *  Hash table
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-#define HASHSIZE	101
-static struct nlist *hashtab[HASHSIZE];
 /*
  * hash:	form hash value for string s
  */
@@ -244,6 +249,7 @@ static int undef(char *def)
 	if (np != NULL) {
 		free(np->name);
 		free(np->defn);
+		free(np->next);
 		free(hashtab[hash(def)]);
 		return 1;
 	} else
@@ -284,4 +290,28 @@ static struct nlist *install(char *name, char *defn)
 		return NULL;
 	return np;
 }
+
+/*
+ * freeall:	free all memory from hashtab
+ */
+//static void freeall(struct nlist **nl, size_t len)
+//{
+//	size_t i, j;
+//	struct nlist *np;
+//	struct nlist *last[HASHSIZE];
+//
+//	for (i = 0; i < len; i++) {
+//		if(nl[i] != NULL) {
+//			for (j = 0, np = nl[i]; np != NULL; np = np->next, ++j) {
+//				printf("test %d\n", nl[i]);
+//				printf("%s %s\n", np->name, np->defn);
+//				last[j] = np;
+//			}
+//			while (j--) {
+//				printf("j --> %d\n", last[j]);
+//				//free(&last[j]);
+//			}
+//		}
+//	}
+//}
 
