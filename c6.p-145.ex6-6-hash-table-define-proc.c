@@ -38,7 +38,7 @@ static struct nlist *lookup(char *s);
 static struct nlist *install(char *name, char*defn);
 static void freeall(struct nlist **nl, size_t len);
 /* */
-static struct nlist *hashtab[HASHSIZE] = { NULL };
+static struct nlist *hashtab[HASHSIZE];
 
 int main(void)
 {
@@ -266,6 +266,10 @@ static struct nlist *install(char *name, char *defn)
 
 /*
  * freeall:	free all memory from hashtab
+ *
+ * TODO this function should make use of a search algorithm rather than
+ * iteration over an entire array, for this a list of buckets used would be
+ * required.
  */
 static void freeall(struct nlist **nl, size_t len)
 {
