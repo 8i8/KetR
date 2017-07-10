@@ -11,6 +11,8 @@
 #define MAX_WORD	100
 #define HASHSIZE	101
 #define COLLISIONS	100
+#define HELLO		hi
+#define HELLOJ		low
 
 typedef short int bool;
 enum boolean { false, true, HASH, STATMENT, NAME, VALUE };
@@ -267,9 +269,7 @@ static struct nlist *install(char *name, char *defn)
 /*
  * freeall:	free all memory from hashtab
  *
- * TODO this function should make use of a search algorithm rather than
- * iteration over an entire array, for this a list of buckets used would be
- * required.
+ * TODO I think this can be further optimised
  */
 static void freeall(struct nlist **nl, size_t len)
 {
