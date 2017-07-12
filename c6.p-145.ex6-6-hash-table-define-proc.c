@@ -11,6 +11,8 @@
 #define MAX_WORD	100
 #define HASHSIZE	101
 #define COLLISIONS	100
+
+/* Test values to create a hash collision when file parses its self */
 #define HELLO		hi
 #define HELLOJ		low
 
