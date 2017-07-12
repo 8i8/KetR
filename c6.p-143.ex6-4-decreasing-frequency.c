@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <string.h>\\
+#include <string.h>
 
 #define MAXWORD	100
 #define SKIP	(sizeof(skiplist)/sizeof(char *))
@@ -60,7 +60,7 @@ static void printarray(struct tnode *p[], size_t len);
 
 int main(void)
 {
-	size_t line = 0;
+	long line = 0;
 	struct tnode *root;
 	char word[MAXWORD];
 
@@ -180,7 +180,7 @@ static struct nnode *nalloc(void)
 /*
  * makeary:	make an array
  */
-static int *makeary(int *a, int len)
+static int *makeary(int len)
 {
 	return (int *) malloc(sizeof(int)*len);
 }
@@ -204,7 +204,7 @@ static char *_strdup(char *s)
 static int *_arydup(int *a, int ln, int len)
 {
 	if (a == NULL) {
-		a = makeary(a, len-1);
+		a = makeary(len-1);
 		*a = ln;
 		return a;
 	}
@@ -212,7 +212,7 @@ static int *_arydup(int *a, int ln, int len)
 	int i, *p;
 	p = NULL;
 
-	p = makeary(p, len);
+	p = makeary(len);
 
 	for (i = 0; i < len-1; i++)
 		p[i] = a[i];
