@@ -270,8 +270,6 @@ static struct nlist *install(char *name, char *defn)
 
 /*
  * freeall:	free all memory from hashtab
- *
- * TODO I think this can be further optimised
  */
 static void freeall(struct nlist **nl, size_t len)
 {
