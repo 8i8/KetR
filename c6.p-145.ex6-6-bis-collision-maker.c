@@ -36,7 +36,7 @@ static unsigned hash(char *s)
 	unsigned long hashval;
 
 	for (hashval = 0; *s != '\0'; s++)
-		hashval = *s + P12 * hashval;
+		hashval = *s + P3 * hashval;
 	return hashval % P8;
 }
 
@@ -188,8 +188,8 @@ static int unitcount(unsigned h1, char *s, size_t ofs, size_t nel, size_t pos, s
 static char* iterate(unsigned h1, char *s, size_t ofs, size_t nel, size_t len)
 {
 	size_t pos;
-	short e, m;
-	pos = e = m = 0;
+	short e;
+	pos = e = 0;
 
 	e = unitcount(h1, s, ofs, nel, pos, len);
 
@@ -228,7 +228,7 @@ static char* iterate(unsigned h1, char *s, size_t ofs, size_t nel, size_t len)
 static void __reverse(char s1[]);
 
 /*
- * Transform a value of the int type into a string.
+ * Transform a value of the unsigned int type into a string.
  */ 
 static void utoa(size_t n, char s[])
 {
