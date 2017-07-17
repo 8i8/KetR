@@ -5,15 +5,9 @@
  * walking through all possible binary numbers, this code will do the same for
  * n elements, though not yet for binary.
  *
- * TODO The current implementation will not work with only two elements, this
- * need to be rectified to work with binary.
- *
  * TODO The recursive function that walks the string of elements augmenting
  * when required, can likely be made much more efficient using pointer
  * arithmetic.
- *
- * TODO The required string length is currently 2 more char than the number of
- * characters required to solve the hash, this can most likley be bettered.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -35,7 +29,8 @@ struct D {
 	size_t ofs;		/* char offset */
 	size_t nel;		/* number  of elements */
 	size_t pos;		/* current position on the array */
-	size_t len;		/* array length */
+	size_t p_ofs;		/* istart position offste on the array */
+	size_t len_out;		/* array length */
 	short e;		/* status */
 	struct D *link;		/* the other one */
 };
@@ -46,7 +41,8 @@ static void utoa(unsigned long n, char s[]);
 static Data placecount(Data data, size_t pos);
 static Data unitcount(Data data);
 static Data findhash(Data data);
-static void print(Data pr, short clear);
+static void print(Data data, char *s, short clear);
+static char* __getline(char *s, size_t lim);
 
 #define P1 	317			/* prime smaller than s^16/200
 					   (unlikely to use more than 200 elements) */
@@ -74,31 +70,52 @@ static unsigned long hash(char *s, short show)
 	return hashval % P2;
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
-	Data input = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, 0, 0 };
-	Data comp = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, 0, 0 };
+	Data input = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, MAX_OUT, 0, 0 };
+	Data comp = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, MAX_OUT, 0, 0 };
+
+	char c;
+	/* The printable charater set */
+	comp.ofs = 33;
+	comp.nel = 94;
+
+	while (--argc > 0 && (*++argv)[0] == '-')
+		while ((c = *++argv[0]))
+			switch (c) {
+				case 'b':
+					/* Binary */
+					comp.ofs = 48;
+					comp.nel = 2;
+					break;
+				case 'a':
+					/* Letters */
+					comp.ofs = 97;
+					comp.nel = 27;
+					break;
+				case 'p':
+					/* The printable charater set */
+					comp.ofs = 33;
+					comp.nel = 94;
+					break;
+				case 't':
+					strcpy(input.s, "Find a string with a similar hash to that of this sentence ...");
+					strcpy(comp.s, "Another line just to test ... ");
+					comp.p_ofs = comp.pos = strlen(comp.s);
+					break;
+				case 'n':
+					/* Numbers */
+					comp.ofs = 48;
+					comp.nel = 10;
+				default:
+					break;
+			}
 
 	input.link = &comp;
 	comp.link = &input;
 
-	strcpy(input.s, "Find a string with a similar hash to that of this sentence ...");
-	//strcpy(input.s, "Another line just to test ...");
-
-	/* Numbers */
-	//comp.ofs = 48;
-	//comp.nel = 10;
-
-	/* The printable charater set */
-	//comp.ofs = 33;
-	//comp.nel = 94;
-
-	/* Binary */
-	comp.ofs = 48;
-	comp.nel = 2;
-
-	input.len = MAX_OUT;
-	comp.len = MAX_OUT;
+	if (!strlen(input.s))
+		__getline(input.s, MAX_OUT);
 
 	input.hash = hash(input.s, SHOW);
 	utoa(input.hash, input.sr);
@@ -109,8 +126,8 @@ int main(void)
 	utoa(comp.hash, comp.sr);
 
 	if(comp.e == FIN) {
-		print(input, 0);
-		print(comp, 0);
+		print(input,"Input", 0);
+		print(comp, "Output", 0);
 	}
 
 	return 0;
@@ -131,7 +148,7 @@ static Data placecount(Data data, size_t pos)
 	/*
 	 * len-1 as this check is always performed on the second column never the units.
 	 */
-	if (pos > data.len)
+	if (pos > data.len_out)
 		data.e = ERR, write(1, "error:	data overflow; Increase max data.length.\n", 51);
 	/*
 	 * If the character is not the upper most, augment pos.
@@ -141,15 +158,15 @@ static Data placecount(Data data, size_t pos)
 	/*
 	 * It is time to move to next data value.
 	 */
-	else if (pos > 0) {
+	else if (pos > data.p_ofs) {
 		data.s[pos+1] = data.ofs;
 		data.s[pos] = data.ofs;
 		data = placecount(data, --pos);
 	/*
 	 * The data value has reached the current maximum, time to add a column or to end.
 	 */
-	} else if (pos == 0) {
-		if ((strlen(data.s) < data.len)) {
+	} else if (pos == data.p_ofs) {
+		if ((strlen(data.s) < data.len_out)) {
 			data.s[pos] = data.ofs+1;
 			data.s[pos+1] = data.ofs;
 			data.e = AUG;
@@ -168,7 +185,7 @@ static Data unitcount(Data data)
 	size_t i;
 	data.e = RUN;
 
-	if (data.pos >= data.len) {
+	if (data.pos+data.p_ofs >= data.len_out) {
 		write(1, "error:	overflow in unitcount()\n", 33);
 		data.e = ERR;
 		return data;
@@ -177,8 +194,8 @@ static Data unitcount(Data data)
 	/*
 	 * Iterate through all numbers.
 	 */
-	for (i = 0; i < data.nel && data.pos < data.len; i++) {
-		data.s[data.pos] = data.ofs + i;
+	for (i = 0; i < data.nel && data.pos+data.p_ofs < data.len_out; i++) {
+		data.s[data.pos+data.p_ofs] = data.ofs + i;
 		/*
 		 * Test for match.
 		 */
@@ -191,7 +208,7 @@ static Data unitcount(Data data)
 			return data;
 		}
 		if (DEBUG)
-			print(data, 1);
+			print(data,"Debug", 1);
 	}
 
 	return data;
@@ -203,14 +220,14 @@ static Data unitcount(Data data)
  */
 static Data findhash(Data data)
 {
-	data.pos = data.e = RUN;
+	data.e = RUN;
 
 	data = unitcount(data);
 
-	if (data.len > 1)
+	if (data.len_out > 1)
 		data.s[data.pos++] = data.ofs+1;
 
-	while (data.pos < data.len && data.e < FIN) {
+	while (data.pos+data.p_ofs < data.len_out && data.e < FIN) {
 		data = unitcount(data);
 		if(data.e < FIN)
 			data = placecount(data, data.pos-1);
@@ -264,22 +281,37 @@ static void __reverse(char s1[])
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  Print
+ *  I/O
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 /*
  * print:	Print the struct provided, 'clear' specifies whether or not to
  *  		refresh the screen.
  */
-static void print(Data data, short clear)
+static void print(Data data, char *s, short clear)
 {
 		if (clear)
 			puts("\033[H\033[J");
-		write(1, "match -> ", 9); 
+		write(1, s, strlen(s)); 
+		write(1, " -> ", 4); 
 		write(1, "`", 1);
 		write(1, data.s, strlen(data.s));
 		write(1, "`", 1);
 		write(1, " :~ ", 4);
 		write(1, data.sr, strlen(data.sr));
 		write(1, "\n", 1);
+}
+
+static char* __getline(char *s, size_t lim)
+{
+	char c;
+	char *pt;
+	pt = s;
+
+	while(lim-- > 0 && ((c = getchar()) != EOF))
+			if (c != '\n')
+				*s++ = c;
+	*s = '\0';
+
+	return pt;
 }
