@@ -1,3 +1,20 @@
+/*
+ * This program has been written as a tool for testing hash algorithms. Though
+ * the primary motivation has been to understand the kind of recursive function
+ * that can be used to solve the towers of Hanoi type problem, effectively
+ * walking through all possible binary numbers, this code will do the same for
+ * n elements, though not yet for binary.
+ *
+ * TODO The current implementation will not work with only two elements, this
+ * need to be rectified to work with binary.
+ *
+ * TODO The recursive function that walks the string of elements augmenting
+ * when required, can likely be made much more efficient using pointer
+ * arithmetic.
+ *
+ * TODO The required string length is currently 2 more char than the number of
+ * characters required to solve the hash, this can most likley be bettered.
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -7,7 +24,7 @@
 #define DEBUG		0
 #define SHOW		0
 #define MAX_IN		1000
-#define MAX_OUT		10	
+#define MAX_OUT		100
 
 enum state { RUN, AUG, FIN, ERR }; 
 
@@ -26,15 +43,15 @@ struct D {
 typedef struct D Data;
 
 static void utoa(unsigned long n, char s[]);
-static Data placecount(Data place, size_t pos);
-static Data unitcount(Data unit);
-static Data findhash(Data iter);
+static Data placecount(Data data, size_t pos);
+static Data unitcount(Data data);
+static Data findhash(Data data);
 static void print(Data pr, short clear);
 
-#define P1 	317			/* prime just smaller than s^16/200
+#define P1 	317			/* prime smaller than s^16/200
 					   (unlikely to use more than 200 elements) */
-#define P2 	65521			/* prime just smaller than 2^16 */
-#define P3	281539415969051		/* prime just smaller than 2^64 / 65521 */
+#define P2 	65521			/* prime smaller than 2^16 */
+#define P3	281539415969051		/* prime smaller than 2^64 / 65521 */
 
 /*
  * hash:	form hash value for string s
@@ -50,7 +67,7 @@ static unsigned long hash(char *s, short show)
 		 * likely to form a patten if it is not prime. */
 		hashval %= P3;
 		if (show) {
-			printf(" -> %lu\t", hashval);
+			printf("-> %lu\t", hashval);
 			printf("-> %lu\n", hashval % P2);
 		}
 	}
@@ -59,8 +76,8 @@ static unsigned long hash(char *s, short show)
 
 int main(void)
 {
-	Data input;
-	Data comp;
+	Data input = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, 0, 0 };
+	Data comp = { {'\0'}, {'\0'}, 0, 0, 0, 0, 0, 0, 0 };
 
 	input.link = &comp;
 	comp.link = &input;
@@ -68,13 +85,17 @@ int main(void)
 	strcpy(input.s, "Find a string with a similar hash to that of this sentence ...");
 	//strcpy(input.s, "Another line just to test ...");
 
-	/* Numbers only */
+	/* Numbers */
 	//comp.ofs = 48;
 	//comp.nel = 10;
 
-	/* The entire alphabet */
-	comp.ofs = 33;
-	comp.nel = 94;
+	/* The printable charater set */
+	//comp.ofs = 33;
+	//comp.nel = 94;
+
+	/* Binary */
+	comp.ofs = 48;
+	comp.nel = 2;
 
 	input.len = MAX_OUT;
 	comp.len = MAX_OUT;
@@ -104,98 +125,102 @@ int main(void)
  * counter:	count with given radix, radix = nel+1. 
  * 		ofs being the offset to display which ever charter is desired.
  */
-static Data placecount(Data place, size_t pos)
+static Data placecount(Data data, size_t pos)
 {
-	place.e = RUN;
+	data.e = RUN;
 	/*
 	 * len-1 as this check is always performed on the second column never the units.
 	 */
-	if (pos >= place.len-1)
-		place.e = ERR, write(1, "error:	place overflow; Increase max place.length.\n", 51);
+	if (pos > data.len)
+		data.e = ERR, write(1, "error:	data overflow; Increase max data.length.\n", 51);
 	/*
 	 * If the character is not the upper most, augment pos.
 	 */
-	else if (place.s[pos] < (int)(place.nel + place.ofs-1))   
-		place.s[pos]++;
+	else if (data.s[pos] < (int)(data.nel + data.ofs-1))   
+		data.s[pos]++;
 	/*
-	 * It is time to move to next place value.
+	 * It is time to move to next data value.
 	 */
 	else if (pos > 0) {
-		place.s[pos+1] = place.ofs;
-		place.s[pos] = place.ofs;
-		place = placecount(place, --pos);
+		data.s[pos+1] = data.ofs;
+		data.s[pos] = data.ofs;
+		data = placecount(data, --pos);
 	/*
-	 * The place value has reached the current maximum, time to add a column or to end.
+	 * The data value has reached the current maximum, time to add a column or to end.
 	 */
 	} else if (pos == 0) {
-		if (!(strlen(place.s) == place.len))
-			place.s[pos] = place.ofs+1, place.s[pos+1] = place.ofs, place.e = AUG;
-		else
-			place.e = ERR, write(1, "error:	place overflow; Increase max place.length.\n", 51);
+		if ((strlen(data.s) < data.len)) {
+			data.s[pos] = data.ofs+1;
+			data.s[pos+1] = data.ofs;
+			data.e = AUG;
+		} else
+			data.e = ERR, write(1, "error:	data overflow; Increase max data.length.\n", 51);
 	}
 
-	return place;
+	return data;
 }
 
 /*
- * unitcounter:	Iterate through nel units incrementally.
+ * unitcount:	Iterate through nel units incrementally.
  */
-static Data unitcount(Data unit)
+static Data unitcount(Data data)
 {
 	size_t i;
-	unit.e = RUN;
+	data.e = RUN;
 
-	if (unit.pos >= unit.len) {
+	if (data.pos >= data.len) {
 		write(1, "error:	overflow in unitcount()\n", 33);
-		unit.e = ERR;
-		return unit;
+		data.e = ERR;
+		return data;
 	} 
 
 	/*
 	 * Iterate through all numbers.
 	 */
-	for (i = 0; i < unit.nel && unit.pos < unit.len; i++) {
-		unit.s[unit.pos] = unit.ofs + i;
+	for (i = 0; i < data.nel && data.pos < data.len; i++) {
+		data.s[data.pos] = data.ofs + i;
 		/*
 		 * Test for match.
 		 */
-		if ((unit.hash = hash(unit.s, 0) == unit.link->hash)) {
-			unit.e = FIN;
+		if (((data.hash = hash(data.s, 0)) == data.link->hash)) {
+			data.e = FIN;
 			if (SHOW) {
-				printf("in loop input -> %lu\n", unit.link->hash);
-				printf("in loop comp -> %lu\n", unit.hash);
+				printf("in loop input -> %lu\n", data.link->hash);
+				printf("in loop comp -> %lu\n", data.hash);
 			}
-			return unit;
+			return data;
 		}
 		if (DEBUG)
-			print(unit, 1);
+			print(data, 1);
 	}
 
-	return unit;
+	return data;
 }
 
 /*
  * findhash:    Combine the two function unitcount and placecount(), to findhash
  *              through all possible combinations of the units provided.
  */
-static Data findhash(Data ite)
+static Data findhash(Data data)
 {
-	ite.pos = ite.e = RUN;
+	data.pos = data.e = RUN;
 
-	ite = unitcount(ite);
+	data = unitcount(data);
 
-	if (ite.len > 1)
-		ite.s[ite.pos++] = ite.ofs+1;
+	if (data.len > 1)
+		data.s[data.pos++] = data.ofs+1;
 
-	while (ite.pos < ite.len && ite.e < FIN) {
-		ite = unitcount(ite);
-		if(ite.e < FIN)
-			ite = placecount(ite, ite.pos-1);
-		if (ite.e == AUG)
-			ite.pos++;
+	while (data.pos < data.len && data.e < FIN) {
+		data = unitcount(data);
+		if(data.e < FIN)
+			data = placecount(data, data.pos-1);
+		if (data.e == AUG) {
+			data.pos++;
+			data.s[data.pos+1] = '\0';
+		}
 	}
 
-	return  ite;
+	return  data;
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,18 +268,18 @@ static void __reverse(char s1[])
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 /*
- * print:	Print the struct provided, 'clear' specifies wheter or not to
+ * print:	Print the struct provided, 'clear' specifies whether or not to
  *  		refresh the screen.
  */
-static void print(Data pr, short clear)
+static void print(Data data, short clear)
 {
 		if (clear)
 			puts("\033[H\033[J");
 		write(1, "match -> ", 9); 
-		write(1, "`", 2);
-		write(1, pr.s, strlen(pr.s)+1);
-		write(1, "`", 2);
-		write(1, " :~ ", 5);
-		write(1, pr.sr, strlen(pr.sr)+1);
-		write(1, "\n", 2);
+		write(1, "`", 1);
+		write(1, data.s, strlen(data.s));
+		write(1, "`", 1);
+		write(1, " :~ ", 4);
+		write(1, data.sr, strlen(data.sr));
+		write(1, "\n", 1);
 }
