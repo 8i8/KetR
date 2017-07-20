@@ -26,11 +26,11 @@ struct D {
 	char s[MAX_IN];		/* string to be examined */
 	char sr[MAX_OUT];	/* output for hash as text */
 	unsigned long hash;	/* hash value */
-	size_t ofs;		/* char offset */
 	size_t nel;		/* number  of elements */
+	size_t ofs;		/* char offset */
 	size_t pos;		/* current position on the array */
 	size_t p_ofs;		/* istart position offste on the array */
-	size_t len_out;		/* array length */
+	size_t len;		/* array length */
 	short e;		/* status */
 	struct D *link;		/* the other one */
 };
@@ -148,7 +148,7 @@ static Data placecount(Data data, size_t pos)
 	/*
 	 * len-1 as this check is always performed on the second column never the units.
 	 */
-	if (pos > data.len_out)
+	if (pos > data.len)
 		data.e = ERR, write(1, "error:	data overflow; Increase max data.length.\n", 51);
 	/*
 	 * If the character is not the upper most, augment pos.
@@ -166,7 +166,7 @@ static Data placecount(Data data, size_t pos)
 	 * The data value has reached the current maximum, time to add a column or to end.
 	 */
 	} else if (pos == data.p_ofs) {
-		if ((strlen(data.s) < data.len_out)) {
+		if ((strlen(data.s) < data.len)) {
 			data.s[pos] = data.ofs+1;
 			data.s[pos+1] = data.ofs;
 			data.e = AUG;
@@ -185,7 +185,7 @@ static Data unitcount(Data data)
 	size_t i;
 	data.e = RUN;
 
-	if (data.pos+data.p_ofs >= data.len_out) {
+	if (data.pos+data.p_ofs >= data.len) {
 		write(1, "error:	overflow in unitcount()\n", 33);
 		data.e = ERR;
 		return data;
@@ -194,7 +194,7 @@ static Data unitcount(Data data)
 	/*
 	 * Iterate through all numbers.
 	 */
-	for (i = 0; i < data.nel && data.pos+data.p_ofs < data.len_out; i++) {
+	for (i = 0; i < data.nel && data.pos+data.p_ofs < data.len; i++) {
 		data.s[data.pos+data.p_ofs] = data.ofs + i;
 		/*
 		 * Test for match.
@@ -224,10 +224,10 @@ static Data findhash(Data data)
 
 	data = unitcount(data);
 
-	if (data.len_out > 1)
+	if (data.len > 1)
 		data.s[data.pos++] = data.ofs+1;
 
-	while (data.pos+data.p_ofs < data.len_out && data.e < FIN) {
+	while (data.pos+data.p_ofs < data.len && data.e < FIN) {
 		data = unitcount(data);
 		if(data.e < FIN)
 			data = placecount(data, data.pos-1);
@@ -302,6 +302,9 @@ static void print(Data data, char *s, short clear)
 		write(1, "\n", 1);
 }
 
+/*
+ * getline:	input text
+ */
 static char* __getline(char *s, size_t lim)
 {
 	char c;
@@ -315,3 +318,4 @@ static char* __getline(char *s, size_t lim)
 
 	return pt;
 }
+
