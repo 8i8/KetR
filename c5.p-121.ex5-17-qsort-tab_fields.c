@@ -318,7 +318,7 @@ static size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t in
  */
 static char *alloc(size_t n)	/* return pointer to  characters */
 {
-	if (allocbuf + ALLOCSIZE - allocp >= n) { /* if 'n' fits */
+	if (allocbuf + ALLOCSIZE - allocp >= (int)n) { /* if 'n' fits */
 		allocp += n;
 		return allocp - n;	/* old p */
 	} else		/* not enough room */
@@ -366,7 +366,7 @@ static size_t deleteline(char *lineptr[], int line, size_t nlines)
 		/*
 		 * Displace all pointers after the removed by one place.
 		 */
-		while (line < nlines) {
+		while (line < (int)nlines) {
 			lineptr[line] = lineptr[line+1];
 			line++;
 		}
@@ -439,11 +439,11 @@ static void _qsort(void *v[], int left, int right, comp fn, int ntab)
 	 * Perform sort in either the direct or the reverse order.
 	 */
 	if (!reverse) {
-		for (i = left+1; i <= right; i++)
+		for (i = left+1; (int)i <= right; i++)
 			if (nsort(v[i], v[left], fn, ntab) < 0)
 				swap(v, ++last, i);
 	} else
-		for (i = left+1; i <= right; i++)
+		for (i = left+1; (int)i <= right; i++)
 			if (nsort(v[i], v[left], fn, ntab) > 0)
 				swap(v, ++last, i);
 
