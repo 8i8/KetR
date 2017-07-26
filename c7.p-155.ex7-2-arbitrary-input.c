@@ -1,7 +1,9 @@
 /*
  * Exercise 7-2. Write a program that will print arbitrary input in a sensible
- * way. As a minimum, it should print non-graphic intacters in octal or
+ * way. As a minimum, it should print non-graphic characters in octal or
  * hexadecimal according to local custom, and break long text lines.
+ *
+ * TODO This question has not yet been compleeted.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +18,7 @@ typedef struct pagearrary {
 	size_t pt;
 } Page;
 
+static int _getline(char *s, size_t len);
 static Page storeline(Page page, char *s);
 static void printpage(Page page);
 static void freepage(Page page);
@@ -25,7 +28,7 @@ static void ungetch(char c);
 int main(void)
 {
 	Page page = { 0 };
-	char s[MAXLEN] = { '\0' };
+	char s[MAXLEN] = {'\0'};
 
 	while ((_getline(s, MAXLEN)) != EOF)
 		page = storeline(page, s);
@@ -36,14 +39,29 @@ int main(void)
 	return 0;
 }
 
+//static int mprintf(char *s, size_t len)
+//{
+//	size_t i = 0;
+//
+//	for (i = 0; i < len; i++) {
+//	}
+//	return 0;
+//}
+
 static int _getline(char *s, size_t len)
 {
+	int c;
 	size_t i = 0;
 
-	for (i = 0; i < len; i++) {
-	}
+	for(i = 0; i < len && (c = getch()) != EOF; i++)
+		*s++ = c;
+
+	return EOF;
 }
 
+/*
+ * storeline:	add line to page array
+ */
 static Page storeline(Page page, char *s)
 {
 	char *line;
@@ -56,6 +74,9 @@ static Page storeline(Page page, char *s)
 	return page;
 }
 
+/*
+ * printpage:	print entire page array
+ */
 static void printpage(Page page)
 {
 	size_t i;
@@ -63,6 +84,9 @@ static void printpage(Page page)
 		printf("%s", page.p[i]);
 }
 
+/*
+ * freepage:	free all memory 
+ */
 static void freepage(Page page)
 {
 	size_t i;

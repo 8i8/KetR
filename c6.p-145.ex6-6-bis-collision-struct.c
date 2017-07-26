@@ -1,9 +1,7 @@
 /*
  * This program has been written as a tool for testing hash algorithms. Though
  * the primary motivation has been to understand the kind of recursive function
- * that can be used to solve the towers of Hanoi type problem, effectively
- * walking through all possible binary numbers, this code will do the same for
- * n elements, though not yet for binary.
+ * that can be used to solve the towers of Hanoi type problem.
  *
  * TODO The recursive function that walks the string of elements augmenting
  * when required, can likely be made much more efficient using pointer
@@ -115,7 +113,7 @@ int main(int argc, char* argv[])
 	comp.link = &input;
 
 	if (!strlen(input.s))
-		__getline(input.s, MAX_OUT);
+		__getline(input.s, MAX_IN);
 
 	input.hash = hash(input.s, SHOW);
 	utoa(input.hash, input.sr);

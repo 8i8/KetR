@@ -1,7 +1,6 @@
 /*
- * Exercise 4-6. Add commands for handling variables. (It's easy to provide
- * twenty-six variables with single-letter names.) Add a variable for the most
- * recently printed value.
+ * Exercise 4-8. Suppose that there will never be more than one character of
+ * pushback. Modify getch and ungetch accordingly.
  */
 
 #include <stdio.h>
