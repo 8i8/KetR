@@ -18,7 +18,7 @@ typedef struct FileComp {
 /*
  * printErr:	Output, if file open error occurs.
  */
-static void printErr(char *s1, char *s2)
+static void printErr(const char *s1, const char *s2)
 {
 	printf("%s: error, failed to open %s\n", s1, s2);
 }
@@ -26,7 +26,7 @@ static void printErr(char *s1, char *s2)
 /*
  * printRes:	Output, file comparison results.
  */
-static void printRes(Files comp)
+static void printRes(const Files comp)
 {
 	if (comp.line_n == 0)
 		printf("Files \"%s\" and \"%s\" are identical.\n",
@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
 					return 1;
 				}
 			}
+
 		/* Store file names */
 		comp.file1 = argv[1];
 		comp.file2 = argv[2];
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
 		printRes(comp);
 
 	} else {
-		/* Wrong input */
+		/* Error, wrong input */
 		printf("usage:	%s <file1> <file2>\n", *argv);
 		return 1;
 	}
