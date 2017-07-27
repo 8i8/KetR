@@ -68,7 +68,6 @@ enum function { simple, alpha, fold, nosort };
 enum boolean { false, true };
 
 /* Global flags */
-#define DEBUG		false
 static bool numeric = 	false;			/* use numeric sort in qsort */
 static bool reverse = 	false;			/* reverse search order */
 static bool remempty =	false;
@@ -76,7 +75,7 @@ static bool directory =	false;
 static bool resort = 	false;
 static bool index =	false;
 static bool linenum =	false;
-static int  func = alpha;
+static int  func = alpha;			/* Define which function to use */
 
 static size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t index, size_t nlines);
 /*
@@ -147,11 +146,8 @@ static void settings(int argc, char*argv[])
 	int c;
 	globalreset();
 
-	if (DEBUG >= 2) printf("argc %d argv --> -", argc);
-
 	if (*argv[argc] == '-')
 		while ((c = *++argv[argc])) {
-			if (DEBUG >= 2) printf("%c", *argv[argc]);
 			switch (c) {
 				case 'a':
 					func = alpha;
@@ -191,7 +187,6 @@ static void settings(int argc, char*argv[])
 					break;
 			}
 		}
-	if (DEBUG >= 2) putchar('\n');
 }
 
 /*
@@ -337,13 +332,11 @@ static int freealloc(char *allocbuf)
 	len = strlen(line)+1;
 
 	if (len) {
-		if (DEBUG >= 2) printf("before -> %s\n", allocbuf);
 		allocp -= len;
 		while (line < allocp) {
 			*line = *(line+len);
 			line++;
 		}
-		if (DEBUG >= 2) printf("after -> %s\n", allocbuf);
 		return len;
 	} else
 		printf("Error freealloc: no string provided\n");
@@ -530,15 +523,12 @@ static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlin
 	strcpy(line, lineptr[left]);
 	nlines = deleteline(lineptr, left++, nlines);
 
-	if (DEBUG >= 1) printf("compfields: %lu -> %lu\n", left, right);
-
 	while (left <= right)
 	{
 		if (!tabcmp(comp, lineptr[mark], ntab-1)) { 
 			c = lineptr[mark];
 
 			if ((c = jumptotab(c, ntab)) == NULL) {
-				if (DEBUG >= 2) printf("jumped -> %s\n", lineptr[mark]);
 				mark++, left++;
 				continue;
 			}
@@ -547,14 +537,6 @@ static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlin
 			strcat(line, ", ");
 			strcat(line, c);
 
-			if (DEBUG >= 2) {
-				printf("test %lu -> ", left);;
-				while (*c != '\t' && c != '\0')
-					printf("%c", *c++);
-				printf("\n");
-			}
-
-			if (DEBUG >= 1) printf("Delete: line %lu\n", left);
 			nlines = deleteline(lineptr, mark, nlines);
 		} else
 			mark++;
@@ -691,7 +673,6 @@ static size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 				nlines = compfields(lineptr, j, i-1, nlines, ntab);
 			} else
 				sortsection(lineptr, j, i-1, func, ntab);
-			if (DEBUG >= 1) printf("sortdivide: %lu -> %lu\n", j, i-1);
 		}
 
 	return nlines;
@@ -814,3 +795,4 @@ static int strtcmp(char *s, char *t)
                         return 0;
         return *s - *t;
 }
+
