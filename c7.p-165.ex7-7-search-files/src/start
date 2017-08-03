@@ -1,0 +1,3 @@
+#!/bin/bash
+
+vim main.c sort.c sort-func.c io.c init.c

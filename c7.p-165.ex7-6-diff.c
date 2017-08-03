@@ -15,6 +15,52 @@ typedef struct FileComp {
 	size_t line_n;
 } Files;
 
+static void printErr(const char *s1, const char *s2);
+static void printRes(const Files comp);
+static Files scanFiles(Files comp);
+
+/*
+ * main:	Program to return the first two dissimilar lines between two
+ * 		files.
+ */
+int main(int argc, char* argv[])
+{
+	Files comp;
+	char *s;
+
+	if (argc > 2)
+	{
+		/* File pointers retreived from argv[] */
+		while (argc-- > 1 && (s = argv[argc]))
+			if (argc == 2) {
+				if ((comp.fp2 = fopen(s, "r")) == NULL) {
+					printErr(argv[0], argv[2]);
+					return 1;
+				}
+			} else if (argc == 1) {
+				if ((comp.fp1 = fopen(s, "r")) == NULL) {
+					printErr(argv[0], argv[1]);
+					return 1;
+				}
+			}
+
+		/* Store file names */
+		comp.file1 = argv[1];
+		comp.file2 = argv[2];
+		/* Essential program routine starts here */
+		comp = scanFiles(comp);
+		/* output */
+		printRes(comp);
+
+	} else {
+		/* Error, wrong input */
+		printf("usage:	%s <file1> <file2>\n", *argv);
+		return 1;
+	}
+
+	return 0;
+}
+
 /*
  * printErr:	Output, if file open error occurs.
  */
@@ -69,47 +115,5 @@ static Files scanFiles(Files comp)
 		}
 	}
 	return comp;
-}
-
-/*
- * main:	Program to return the first two dissimilar lines between two
- * 		files.
- */
-int main(int argc, char* argv[])
-{
-	Files comp;
-	char *s;
-
-	if (argc > 2)
-	{
-		/* File pointers retreived from argv[] */
-		while (argc-- > 1 && (s = argv[argc]))
-			if (argc == 2) {
-				if ((comp.fp2 = fopen(s, "r")) == NULL) {
-					printErr(argv[0], argv[2]);
-					return 1;
-				}
-			} else if (argc == 1) {
-				if ((comp.fp1 = fopen(s, "r")) == NULL) {
-					printErr(argv[0], argv[1]);
-					return 1;
-				}
-			}
-
-		/* Store file names */
-		comp.file1 = argv[1];
-		comp.file2 = argv[2];
-		/* Essential program routine starts here */
-		comp = scanFiles(comp);
-		/* output */
-		printRes(comp);
-
-	} else {
-		/* Error, wrong input */
-		printf("usage:	%s <file1> <file2>\n", *argv);
-		return 1;
-	}
-
-	return 0;
 }
 
