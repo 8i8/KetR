@@ -1,3 +1,0 @@
-#!/bin/bash
-
-vim main.c io.c sort.c init.c search-files.h makefile
