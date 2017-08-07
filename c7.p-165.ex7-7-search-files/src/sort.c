@@ -1,18 +1,34 @@
-#include "search-files.h"
-
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *  Sort.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
+#include "search-files.h"
+#include <ctype.h>
+#include <string.h>
 
-static int nsort(char *left, char *right, comp fn, int ntab);
+/* _qsort */
+static int nsort(char *left, char *right, compar fn, int ntab);
 static int firstcmp(char *s1, char *s2, int ntab);
 static int tabcmp(char *s1, char *s2, int ntab);
 
+/* Sort functions */
+static void swap(void *v[], size_t i, size_t j);
+static char* jumptochar(char *c);
+static char* jumptotab(char *c, int ntab);
+static int sortalpha(char *s1, char *s2);
+static int sortfolded(char *s1, char *s2);
+static int numcmp(char *s1, char *s2);
+static int strtcmp(char *s, char *t);
+
+/* Function pointers */
+compar strsimp = (int (*)(void*, void*)) strcmp;
+compar stnsort = (int (*)(void*, void*)) sortalpha;
+compar strfold = (int (*)(void*, void*)) sortfolded;
+
 /*
- * Sort v[left]...v[right] into increasing order.
+ * _qsort:	Sort v[left]...v[right] into increasing order.
  */
-void _qsort(void *v[], int left, int right, comp fn, int ntab)
+void _qsort(void *v[], int left, int right, compar fn, int ntab)
 {
 	size_t i, last;
 
@@ -40,11 +56,11 @@ void _qsort(void *v[], int left, int right, comp fn, int ntab)
 }
 
 /*
- * Prepare string for sort function, filter numbers and letters, recursive call
- * to sort function; Separating this section of the function from the body of
- * qsort, has enabled shorter reverse '-r' code in qsort.
+ * nsort:	Prepare string for sort function, filter numbers and letters,
+ * recursive call to sort function; Separating this section of the function
+ * from the body of qsort, has enabled shorter reverse '-r' code in qsort.
  */
-static int nsort(char *left, char *right, comp fn, int ntab)
+static int nsort(char *left, char *right, compar fn, int ntab)
 {
 	char *l_pt, *r_pt;
 	int res = 0;
@@ -98,8 +114,8 @@ static int nsort(char *left, char *right, comp fn, int ntab)
 }
 
 /*
- * group together identical lines and make a list from their corresponding
- * numbers.
+ * compfileds:	group together identical lines and make a list from their
+ * corresponding numbers.
  */
 static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlines, int ntab)
 {
@@ -143,9 +159,9 @@ static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlin
 }
 
 /*
- * Compare the first char of each line, return 0 if there is an alphabetical
- * match and 1 if there is a difference. Essentially to select the input scope
- * of qsort, left and right. Also used when adding empty spacer lines.
+ * firstcmp:	Compare the first char of each line, return 0 if there is an
+ * alphabetical match and 1 if there is not. Essentially, to select the input
+ * width for qsort, left and right. Also used when adding empty spacer lines.
  */
 static int firstcmp(char *s1, char *s2, int ntab)
 {
@@ -179,7 +195,7 @@ static int firstcmp(char *s1, char *s2, int ntab)
 	/*
 	 * If the char differ return 0, else return 1 should they be the same.
 	 */
-	if (sortAlphaCase(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
+	if (sortfolded(s1, s2) && (isalpha(*s1) || isalpha(*s2)))
 		return 0;
 	else if (isdigit(*s1) && isdigit(*s2))
 		if (*s1 != *s2)
@@ -189,7 +205,7 @@ static int firstcmp(char *s1, char *s2, int ntab)
 }
 
 /*
- * Test if the contents of the given tab fields are identicle.
+ * Test if the contents of the given tab fields are identical.
  */
 static int tabcmp(char *s1, char *s2, int ntab)
 {
@@ -223,7 +239,7 @@ static int tabcmp(char *s1, char *s2, int ntab)
 	s2 = jumptochar(s2);
 
 	/*
-	 * If the strings are identical up untill the tab, return 0.
+	 * If the strings are identical up until the tab, return 0.
 	 */
 	res = strtcmp(s1, s2);
 
@@ -234,9 +250,10 @@ static int tabcmp(char *s1, char *s2, int ntab)
 }
 
 /*
- * Search over the array looking for lines that are grouped together
- * alphabetically or as blocks of numbers, select the start and end index of
- * each group and then sort by the next argv input using the given tab field.
+ * sortdivide:	Search over the array looking for lines that are grouped
+ * together alphabetically or as blocks of numbers, select the start and end
+ * index of each group and then sort by the next argv input using the given tab
+ * field.
  */
 size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 {
@@ -273,7 +290,7 @@ size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)
 }
 
 /*
- * Add empty 'spacer' line.
+ * addspacer:	Add empty 'spacer' line.
  */
 size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
 {
@@ -285,5 +302,109 @@ size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)
 			nlines = insertline(lineptr, "\0", maxlines, i++, nlines);
 
 	return nlines;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  Sort functions and char maps.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+/*
+ * swap:	Interchange v[i] and v[j]
+ */
+static void swap(void *v[], size_t i, size_t j)
+{
+	void *temp;
+
+	temp = v[i];
+	v[i] = v[j];
+	v[j] = temp;
+}
+
+/*
+ * jumptochar:	Skip over all spaces and non alphanumeric char from the start
+ * of the string.
+ */
+static char* jumptochar(char *c)
+{
+	while (!isalnum(*c) && *c != '\0' && *c != '\t')
+		c++;
+	return c;
+}
+
+/*
+ * jumptotab:	Skip to the n'th tab.
+ */
+static char* jumptotab(char *c, int ntab)
+{
+	while (*c != '\0')
+		if (*c++ == '\t' && --ntab == 0)
+			return c;
+
+	return NULL;
+}
+
+/*
+ * sortascii:	Conversion used for sortfolded.
+ */
+static int sortascii(int *c, bool fold)
+{
+	if (isupper(*c))
+		if (fold)
+			return *c = tolower(*c);
+		else
+			return *c += 57;
+	else if (islower(*c))
+		return *c;
+	else if (isdigit(*c))
+		return *c += 118;
+	return 0;
+}
+
+/*
+ * sortalpha:	Sorting character maps.
+ */
+static int sortalpha(char *s1, char *s2)
+{
+	int c1, c2;
+	c1 = *s1, c2 = *s2;
+	c1 = sortascii(&c1, false);
+	c2 = sortascii(&c2, false);
+	return c1 - c2;
+}
+
+/*
+ * sortfolded:	Sort string with Upper case folded in.
+ */
+static int sortfolded(char *s1, char *s2)
+{
+	int c1, c2;
+	c1 = *s1, c2 = *s2;
+	c1 = sortascii(&c1, true);
+	c2 = sortascii(&c2, true);
+	return c1 - c2;
+}
+
+/*
+ * Compare s1 and s2 numerically.
+ */
+static int numcmp(char *s1, char *s2)
+{
+	double v1, v2;
+	v1 = atof(s1);
+	v2 = atof(s2);
+	if (v1 < v2)
+		return -1;
+	else if (v1 > v2)
+		return 1;
+	return 0;
+}
+
+static int strtcmp(char *s, char *t)
+{
+        for ( ; *s == *t; s++, t++)
+                if (*s == '\0' || *s == '\t')
+                        return 0;
+        return *s - *t;
 }
 

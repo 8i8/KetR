@@ -4,64 +4,115 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-ALLOCSIZE	search-files.h	20;"	d
-MAXLEN	search-files.h	18;"	d
-MAXLINES	search-files.h	19;"	d
-MAXTOKEN	search-files.h	21;"	d
-State	search-files.h	/^} State;$/;"	t	typeref:struct:__anon1
-TOKENSIZE	search-files.h	22;"	d
+ALLOCSIZE	search-files.h	18;"	d
+File	min.c	/^} File;$/;"	t	typeref:struct:__anon3	file:
+File	min2.c	/^} File;$/;"	t	typeref:struct:__anon1	file:
+File	search-files.h	/^} File;$/;"	t	typeref:struct:__anon7
+Folio	min.c	/^} Folio;$/;"	t	typeref:struct:__anon4	file:
+Folio	min2.c	/^} Folio;$/;"	t	typeref:struct:__anon2	file:
+Folio	search-files.h	/^} Folio;$/;"	t	typeref:struct:__anon8
+Line	search-files.h	/^} Line;$/;"	t	typeref:struct:__anon6
+MAXFILES	min.c	4;"	d	file:
+MAXFILES	min2.c	4;"	d	file:
+MAXFILES	search-files.h	15;"	d
+MAXLEN	search-files.h	16;"	d
+MAXLINES	search-files.h	17;"	d
+MAXTOKEN	search-files.h	19;"	d
+State	search-files.h	/^} State;$/;"	t	typeref:struct:__anon5
+TOKENSIZE	search-files.h	20;"	d
 _POSIX_C_SOURCE	search-files.h	10;"	d
-_POSIX_C_SOURCE	search-files.h	11;"	d
-_qsort	sort.c	/^void _qsort(void *v[], int left, int right, comp fn, int ntab)$/;"	f
+_POSIX_C_SOURCE	search-files.h	9;"	d
+_qsort	sort.c	/^void _qsort(void *v[], int left, int right, compar fn, int ntab)$/;"	f
 addspacer	sort.c	/^size_t addspacer(char *lineptr[], size_t maxlines, size_t nlines, int ntab)$/;"	f
 alloc	io.c	/^static char *alloc(size_t n)	\/* return pointer to  characters *\/$/;"	f	file:
-allocbuf	init.c	/^char allocbuf[ALLOCSIZE];		\/* Storage for alloc *\/$/;"	v
-allocp	init.c	/^char *allocp = allocbuf;		\/* Next free position *\/$/;"	v
+allocbuf	io.c	/^static char allocbuf[ALLOCSIZE];		\/* Storage for alloc *\/$/;"	v	file:
+allocp	io.c	/^static char *allocp = allocbuf;		\/* Next free position *\/$/;"	v	file:
 alpha	search-files.h	/^enum function { simple, alpha, fold, nosort };$/;"	e	enum:function
 bool	search-files.h	/^typedef short int bool;$/;"	t
 boolean	search-files.h	/^enum boolean { false, true };$/;"	g
-comp	search-files.h	/^typedef int (*comp)(void *, void *);		\/* Sort functions for qsort *\/$/;"	t
-compfields	sort.c	/^size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlines, int ntab)$/;"	f
+compar	search-files.h	/^typedef int (*compar)(void *, void *);		\/* Sort functions for qsort *\/$/;"	t
+compfields	sort.c	/^static size_t compfields(char *lineptr[], size_t left, size_t right, size_t nlines, int ntab)$/;"	f	file:
+count	min.c	/^	size_t count;$/;"	m	struct:__anon4	file:
+count	min2.c	/^	size_t count;$/;"	m	struct:__anon2	file:
+count	search-files.h	/^	size_t count;$/;"	m	struct:__anon8
 deleteline	io.c	/^size_t deleteline(char *lineptr[], int line, size_t nlines)$/;"	f
-directory	search-files.h	/^	bool directory;$/;"	m	struct:__anon1
+directory	search-files.h	/^	bool directory;$/;"	m	struct:__anon5
+f_pt	min.c	/^	char *f_pt;$/;"	m	struct:__anon3	file:
+f_pt	min2.c	/^	char *f_pt;$/;"	m	struct:__anon1	file:
+f_pt	search-files.h	/^	char *f_pt;$/;"	m	struct:__anon7
 false	search-files.h	/^enum boolean { false, true };$/;"	e	enum:boolean
+files	min.c	/^	File files[MAXFILES];$/;"	m	struct:__anon4	file:
+files	min2.c	/^	File files[MAXFILES];$/;"	m	struct:__anon2	file:
+files	search-files.h	/^	File files[MAXFILES];$/;"	m	struct:__anon8
+filesize	io.c	/^size_t filesize(FILE *fp)$/;"	f
+filesize	min.c	/^size_t filesize(FILE *fp)$/;"	f
 firstcmp	sort.c	/^static int firstcmp(char *s1, char *s2, int ntab)$/;"	f	file:
 fold	search-files.h	/^enum function { simple, alpha, fold, nosort };$/;"	e	enum:function
+folio	init.c	/^Folio folio = { { {$/;"	v
+folio	min.c	/^static Folio folio = { { {$/;"	v	file:
+fp	min.c	/^	FILE *fp;$/;"	m	struct:__anon3	file:
+fp	min2.c	/^	FILE *fp;$/;"	m	struct:__anon1	file:
+fp	search-files.h	/^	FILE *fp;$/;"	m	struct:__anon7
 freealloc	io.c	/^static int freealloc(char *allocbuf)$/;"	f	file:
-func	search-files.h	/^	int  func;				\/* Define which function to use *\/$/;"	m	struct:__anon1
+func	search-files.h	/^	int  func;				\/* Define which function to use *\/$/;"	m	struct:__anon5
 function	search-files.h	/^enum function { simple, alpha, fold, nosort };$/;"	g
+getflags	io.c	/^void getflags(int argc, char*argv[])$/;"	f
+getinput	io.c	/^void getinput(char* argument, size_t file)$/;"	f
+getinput	min.c	/^void getinput(char* argument, size_t file)$/;"	f
 getline	io.c	/^static size_t getline(char *s, size_t lim)$/;"	f	file:
-globalreset	init.c	/^void globalreset(void)$/;"	f
-indx	search-files.h	/^	bool indx;$/;"	m	struct:__anon1
+indx	search-files.h	/^	bool indx;$/;"	m	struct:__anon5
 insertline	io.c	/^size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t index, size_t nlines)$/;"	f
-jumptochar	sort-func.c	/^char* jumptochar(char *c)$/;"	f
-jumptotab	sort-func.c	/^char* jumptotab(char *c, int ntab)$/;"	f
-linenum	search-files.h	/^	bool linenum;$/;"	m	struct:__anon1
-lineptr	init.c	/^char *lineptr[MAXLINES];		\/* Pointer to text lines *\/$/;"	v
+jumptochar	sort.c	/^static char* jumptochar(char *c)$/;"	f	file:
+jumptotab	sort.c	/^static char* jumptotab(char *c, int ntab)$/;"	f	file:
+len	min.c	/^	size_t len;$/;"	m	struct:__anon3	file:
+len	min.c	/^	size_t len;$/;"	m	struct:__anon4	file:
+len	min2.c	/^	size_t len;$/;"	m	struct:__anon1	file:
+len	min2.c	/^	size_t len;$/;"	m	struct:__anon2	file:
+len	search-files.h	/^	size_t len;$/;"	m	struct:__anon6
+len	search-files.h	/^	size_t len;$/;"	m	struct:__anon7
+len	search-files.h	/^	size_t len;$/;"	m	struct:__anon8
+linenum	search-files.h	/^	bool linenum;$/;"	m	struct:__anon5
+lineptr	io.c	/^char *lineptr[MAXLINES];		\/* Pointer to text lines *\/$/;"	v
+lines	min.c	/^	char **lines;$/;"	m	struct:__anon3	file:
+lines	min2.c	/^	char **lines;$/;"	m	struct:__anon1	file:
+lines	search-files.h	/^	char **lines;$/;"	m	struct:__anon7
+ln	search-files.h	/^	char *ln;$/;"	m	struct:__anon6
 main	main.c	/^int main(int argc, char *argv[])$/;"	f
+main	min.c	/^int main(int argc, char* argv[])$/;"	f
+main	min2.c	/^int main(int argc, char *argv[])$/;"	f
+main	scratch.c	/^int main(int argc, char *argv[])$/;"	f
+memory	init.c	/^char *memory;$/;"	v
+memory	min.c	/^static char *memory;$/;"	v	file:
+name	min.c	/^	char *name;$/;"	m	struct:__anon3	file:
+name	min2.c	/^	char *name;$/;"	m	struct:__anon1	file:
+name	search-files.h	/^	char *name;$/;"	m	struct:__anon7
 nosort	search-files.h	/^enum function { simple, alpha, fold, nosort };$/;"	e	enum:function
-nsort	sort.c	/^static int nsort(char *left, char *right, comp fn, int ntab)$/;"	f	file:
-numcmp	sort-func.c	/^int numcmp(char *s1, char *s2)$/;"	f
-numeric	search-files.h	/^	bool numeric;			\/* use numeric sort in qsort *\/$/;"	m	struct:__anon1
+nsort	sort.c	/^static int nsort(char *left, char *right, compar fn, int ntab)$/;"	f	file:
+numcmp	sort.c	/^static int numcmp(char *s1, char *s2)$/;"	f	file:
+numeric	search-files.h	/^	bool numeric;			\/* use numeric sort in qsort *\/$/;"	m	struct:__anon5
+printtest	io.c	/^void printtest(Folio folio)$/;"	f
+readfolio	io.c	/^Folio readfolio(Folio folio)$/;"	f
+readfolio	min.c	/^Folio readfolio(Folio folio)$/;"	f
 readlines	io.c	/^size_t readlines(char *lineptr[], size_t maxlines)$/;"	f
-remempty	search-files.h	/^	bool remempty;$/;"	m	struct:__anon1
-resort	search-files.h	/^	bool resort;$/;"	m	struct:__anon1
-reverse	search-files.h	/^	bool reverse;			\/* reverse search order *\/$/;"	m	struct:__anon1
+remempty	search-files.h	/^	bool remempty;$/;"	m	struct:__anon5
+resetglobals	init.c	/^void resetglobals(void)$/;"	f
+reverse	search-files.h	/^	bool reverse;			\/* reverse search order *\/$/;"	m	struct:__anon5
+rsort	search-files.h	/^	bool rsort;$/;"	m	struct:__anon5
 settabs	io.c	/^void settabs(char n[])$/;"	f
-settings	main.c	/^void settings(int argc, char*argv[])$/;"	f
+settings	main.c	/^size_t settings(int argc, char*argv[])$/;"	f
+settings	min.c	/^size_t settings(int argc, char*argv[])$/;"	f
 simple	search-files.h	/^enum function { simple, alpha, fold, nosort };$/;"	e	enum:function
-sortAlpha	sort-func.c	/^int sortAlpha(char *s1, char *s2)$/;"	f
-sortAlphaCase	sort-func.c	/^int sortAlphaCase(char *s1, char *s2)$/;"	f
-sortascii	sort-func.c	/^static int sortascii(int *c, bool fold)$/;"	f	file:
+sortalpha	sort.c	/^static int sortalpha(char *s1, char *s2)$/;"	f	file:
+sortascii	sort.c	/^static int sortascii(int *c, bool fold)$/;"	f	file:
 sortdivide	sort.c	/^size_t sortdivide(char *lineptr[], int func, size_t nlines, int ntab)$/;"	f
+sortfolded	sort.c	/^static int sortfolded(char *s1, char *s2)$/;"	f	file:
 sortsection	main.c	/^void sortsection(char *lineptr[], int left, int right, int func, int ntab)$/;"	f
 state	init.c	/^State state = {$/;"	v
-state	state.c	/^State state = {$/;"	v
-stnsort	init.c	/^comp stnsort = (int (*)(void*, void*)) sortAlpha;$/;"	v
-strfold	init.c	/^comp strfold = (int (*)(void*, void*)) sortAlphaCase;$/;"	v
-strsimp	init.c	/^comp strsimp = (int (*)(void*, void*)) strcmp;$/;"	v
-strtcmp	sort-func.c	/^int strtcmp(char *s, char *t)$/;"	f
-swap	sort-func.c	/^void swap(void *v[], size_t i, size_t j)$/;"	f
+stnsort	sort.c	/^compar stnsort = (int (*)(void*, void*)) sortalpha;$/;"	v
+strfold	sort.c	/^compar strfold = (int (*)(void*, void*)) sortfolded;$/;"	v
+strsimp	sort.c	/^compar strsimp = (int (*)(void*, void*)) strcmp;$/;"	v
+strtcmp	sort.c	/^static int strtcmp(char *s, char *t)$/;"	f	file:
+swap	sort.c	/^static void swap(void *v[], size_t i, size_t j)$/;"	f	file:
 tabcmp	sort.c	/^static int tabcmp(char *s1, char *s2, int ntab)$/;"	f	file:
 true	search-files.h	/^enum boolean { false, true };$/;"	e	enum:boolean
 writelines	io.c	/^void writelines(char *lineptr[], size_t nlines)$/;"	f

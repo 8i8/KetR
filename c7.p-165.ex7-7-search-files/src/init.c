@@ -4,15 +4,19 @@
  */
 #include "search-files.h"
 
-char *lineptr[MAXLINES];		/* Pointer to text lines */
-char allocbuf[ALLOCSIZE];		/* Storage for alloc */
-char *allocp = allocbuf;		/* Next free position */
+/* main:	portfolio of file input */
+Folio folio = { { {
+		NULL,
+		NULL,
+		NULL,
+		0,
+		0
+	} },
+	0,
+	0
+};
 
-/* Function pointers */
-comp strsimp = (int (*)(void*, void*)) strcmp;
-comp stnsort = (int (*)(void*, void*)) sortAlpha;
-comp strfold = (int (*)(void*, void*)) sortAlphaCase;
-
+/* main:	state for program functions */
 State state = {
 	false,
 	false,
@@ -24,22 +28,18 @@ State state = {
 	alpha
 };
 
-File folio[MAXFILES] = { {
-	NULL,
-	NULL,
-	NULL
-} };
-
 /*
  * Values that are reset between argv strings.
  */
-void globalreset(void)
+void resetglobals(void)
 {
 	state.numeric = 	false;
 	state.reverse = 	false;
 	state.remempty =	false;
 	state.directory =	false;
-	state.resort = 		false;
+	state.rsort = 		false;
 	state.indx =		false;
 }
+
+char *memory;
 

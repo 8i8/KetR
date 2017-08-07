@@ -11,122 +11,71 @@
  */
 int main(int argc, char *argv[])
 {
-	size_t nlines;		/* number of input lines to read */
-	int i;
-
-
-	/* If there are arguments entered, read argv[1] */
-	i = 1;
-	if (argc > i)
+	if (argc > 1)
 		settings(argc, argv);
 
-	/*
-	 * Fill lineptr array from stdin.
-	 */
-	if (!(nlines = readlines(lineptr, MAXLINES))) {
-		printf("Error: input to big to sort\n");
-		return 1;
-	}
+	/* If no files are supplied, fill lineptr array from stdin. */
+	if (folio.count)
+		folio = readfolio(folio);
+	else
+		printf("usage:	%s <file1> <file2>\n", *argv);
 	
-	/* Sort input */
-	sortsection(lineptr, 0, nlines-1, state.func, 0);
-	
-	/* If required add line spacers. */
-	if (state.directory)
-		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
+	printtest(folio);
 
-	/* Sort using argv */
-	while (++i < argc) {
-		settings(i, argv);
-
-		/* Sort input */
-		if (state.resort)
-			sortsection(lineptr, 0, nlines-1, state.func, i-1);
-
-		nlines = sortdivide(lineptr, state.func, nlines, i-1);
-
-		/*
-		 * If directory setting is used, add a blank line break
-		 * after each new starting letter.
-		 */
-		if (state.directory)
-			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
-	}
-
-	/*
-	 * Output to terminal.
-	 */
-	writelines(lineptr, nlines);
+//	/* Sort input */
+//	sortsection(lineptr, 0, nlines-1, state.func, 0);
+//	
+//	/* If required add line spacers. */
+//	if (state.directory)
+//		nlines = addspacer(lineptr, MAXLINES, nlines, 0);
+//
+//	/* Sort using argv */
+//	while (++i < (unsigned int)argc) {
+//		settings(i, argv);
+//
+//		/* Sort input */
+//		if (state.rsort)
+//			sortsection(lineptr, 0, nlines-1, state.func, i-1);
+//
+//		nlines = sortdivide(lineptr, state.func, nlines, i-1);
+//
+//		/*
+//		 * If directory setting is used, add a blank line break
+//		 * after each new starting letter.
+//		 */
+//		if (state.directory)
+//			nlines = addspacer(lineptr, MAXLINES, nlines, i-1);
+//	}
+//
+//	/*
+//	 * Output to terminal.
+//	 */
+//	writelines(lineptr, nlines);
 
 	return 0;
 }
 
 /*
- * Set state before running qsort.
+ * settings:	If the argument is preceded by '-' it is a flag else it is a
+ * string, in which case it is sent to getinput() to be oped or recorded.
  */
-void settings(int argc, char*argv[])
+size_t settings(int argc, char*argv[])
 {
-	FILE *fp;
-	int c, i, file;
-	file = i = 0;
-	globalreset();
+	size_t file;
+	file = 0;
+
+	resetglobals();
 
 	while (--argc > 0)
-	{
 		if (*argv[argc] == '-')
-		{
-			while ((c = *++argv[argc])) {
-				switch (c) {
-					case 'a':
-						state.func = alpha;
-						break;
-					case 'd':
-						state.indx = true;
-						state.directory = true;
-						break;
-					case 'e':
-						state.remempty = true;
-						break;
-					case 'f':
-						state.func = fold;
-						break;
-					case 'i':
-						state.indx = true;
-						break;
-					case 'n':
-						state.indx = true;
-						state.numeric = true;
-						break;
-					case 'N':
-						state.linenum = true;
-						break;
-					case 'p':
-						state.func = nosort;
-						break;
-					case 'r':
-						state.reverse = true;
-						break;
-					case 's':
-						state.func = simple;
-						break;
-					case 'R':
-						state.resort = true;
-					default:
-						break;
-				}
-			}
-		}
-		/* Input files if address given */
-		else if ((fp = fopen(argv[i], "r")) != NULL)
-			folio[file].fp = fp, folio[file].name = argv[argc];
+			getflags(argc, argv);
 		else
-			folio[file].fp = NULL, folio[file].name = argv[argc];
-		i++, file++;
-	}
+			getinput(argv[argc], ++file);
+	return file;
 }
 
 /*
- * Switch, selects the sort function for qsort.
+ * sortsection:	Switch, selects the sort function for qsort.
  */
 void sortsection(char *lineptr[], int left, int right, int func, int ntab)
 {
