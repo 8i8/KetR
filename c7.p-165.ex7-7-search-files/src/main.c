@@ -22,9 +22,9 @@ int main(int argc, char *argv[])
 	
 	printtest(folio);
 
-//	/* Sort input */
-//	sortsection(lineptr, 0, nlines-1, state.func, 0);
-//	
+	/* Sort input */
+	//sortsection(lineptr, 0, nlines-1, state.func, 0);
+	
 //	/* If required add line spacers. */
 //	if (state.directory)
 //		nlines = addspacer(lineptr, MAXLINES, nlines, 0);

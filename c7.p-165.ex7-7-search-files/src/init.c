@@ -6,9 +6,12 @@
 
 /* main:	portfolio of file input */
 Folio folio = { { {
+		{
+			NULL,
+		},
 		NULL,
 		NULL,
-		NULL,
+		0,
 		0,
 		0
 	} },

@@ -43,13 +43,16 @@ typedef struct {
 } State;
 
 /* Global data struct, to store each file */
-
 typedef struct {
-	FILE *fp;
+	union input {
+		FILE* fp;
+		char* str;
+	} in;
 	char *name;
 	char **lines;
-	char *f_pt;
+	size_t count;
 	size_t len;
+	short file;
 } File;
 
 typedef struct {
