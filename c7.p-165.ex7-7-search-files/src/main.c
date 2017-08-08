@@ -61,16 +61,16 @@ int main(int argc, char *argv[])
  */
 size_t settings(int argc, char*argv[])
 {
-	size_t file;
-	file = 0;
+	size_t file, i;
+	file = i = 0;
 
 	resetglobals();
 
-	while (--argc > 0)
-		if (*argv[argc] == '-')
-			getflags(argc, argv);
+	for (i = 1; i < (unsigned)argc; i++)
+		if (*argv[i] == '-')
+			getflags(i, argv);
 		else
-			getinput(argv[argc], ++file);
+			getinput(argv[i], ++file);
 	return file;
 }
 
