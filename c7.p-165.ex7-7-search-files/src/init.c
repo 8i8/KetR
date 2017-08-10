@@ -3,21 +3,6 @@
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include "search-files.h"
 
-/* main:	portfolio of file input */
-Folio folio = { { {
-		{
-			NULL,
-		},
-		NULL,
-		NULL,
-		0,
-		0,
-		0
-	} },
-	0,
-	0
-};
-
 /* main:	state for program functions */
 State state = {
 	false,
@@ -28,6 +13,21 @@ State state = {
 	false,
 	false,
 	alpha
+};
+
+/* main:	portfolio of file input */
+Folio folio = { { { {
+			NULL,
+		},
+		NULL,
+		NULL,
+		0,
+		0,
+		0
+	} },
+	NULL,
+	0,
+	0,
 };
 
 /*
@@ -42,6 +42,4 @@ void resetglobals(void)
 	state.rsort = 		false;
 	state.indx =		false;
 }
-
-char *memory;
 

@@ -15,7 +15,7 @@
 #define MAXFILES	10
 #define MAXLEN		1000			/* Max length of input line */
 #define MAXLINES	5000			/* Lines to be sorted */
-#define ALLOCSIZE	5000000		/* Size of available space */
+#define ALLOCSIZE	50000			/* Size of available space */
 #define MAXTOKEN	6			/* Maximum number of tokens */
 #define TOKENSIZE	24			/* Size of space for input tokens */
 
@@ -32,8 +32,8 @@ typedef short int bool;
 
 /* Global flags */
 typedef struct {
-	bool numeric;			/* use numeric sort in qsort */
-	bool reverse;			/* reverse search order */
+	bool numeric;				/* use numeric sort in qsort */
+	bool reverse;				/* reverse search order */
 	bool remempty;
 	bool directory;
 	bool rsort;
@@ -44,12 +44,17 @@ typedef struct {
 
 /* Global data struct, to store each file */
 typedef struct {
+	char *line;
+	size_t len;
+} Line;
+
+typedef struct {
 	union input {
 		FILE* fp;
 		char* str;
 	} in;
+	Line *lines;
 	char *name;
-	char **lines;
 	size_t count;
 	size_t len;
 	short file;
@@ -57,6 +62,7 @@ typedef struct {
 
 typedef struct {
 	File files[MAXFILES];
+	char *memory;
 	size_t count;
 	size_t len;
 } Folio;
@@ -64,7 +70,6 @@ typedef struct {
 extern State state;
 extern Folio folio;
 extern char *lineptr[];
-extern char *memory;
 
 /* Main */
 size_t settings(int argc, char*argv[]);

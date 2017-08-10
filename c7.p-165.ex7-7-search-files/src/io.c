@@ -80,7 +80,7 @@ void getinput(char* argument, size_t file)
 /*
  * filesize:	returns the files size
  */
-size_t filesize(FILE *fp)
+static size_t filesize(FILE *fp)
 {
 	size_t len;
 
@@ -92,13 +92,26 @@ size_t filesize(FILE *fp)
 }
 
 /*
+ * transcribe:	Transfer input form string/file to memory, count end of line
+ *		charecters whilst doing so.
+ */
+static char* transcribe(Folio *folio, char* mem, const char c, const size_t i)
+{
+	if (c == '\n')
+		(folio->files[i].count)++;
+	*mem++ = c;
+
+	return mem;
+}
+
+/*
  * readfolio:	For given folio struct create memory for and read in the file
  * contents, or the string, into an array of pointers; Use one string for each
  * line.
  */
 Folio readfolio(Folio folio)
 {
-	size_t i, j;
+	size_t i, j, k;
 	char c;
 	char *mem, *mark;
 
@@ -110,48 +123,53 @@ Folio readfolio(Folio folio)
 			folio.len += folio.files[i].len = strlen(folio.files[i].in.str)+1;
 
 	/* Request required memory */
-	if ((memory = malloc(folio.len*sizeof(char))) == NULL)
+	if ((folio.memory = malloc(folio.len*sizeof(char))) == NULL)
 		printf("error:	malloc failed to assign memory in readfolio(), memory\n");
 
-	/* set pointer to memory */
-	mem = memory;
+	/* set pointer to start of memory block */
+	mem = folio.memory;
 
 	/* Copy each file onto allocated memory, set each entry point and count
 	 * new line char */
-	for (i = 0; i < folio.count; i++) {
-		folio.files[i].count = 1;
+	for (i = 0; i < folio.count; i++)
+	{
+		/* Count \n's and transcribe form source to memory. */
 		if (folio.files[i].file)
-			for (j = 0; (c = getc(folio.files[i].in.fp)) != EOF; j++) {
-				if (c == '\n')
-					(folio.files[i].count)++;
-				*mem++ = c;
-			}
+			for (j = 0; (c = getc(folio.files[i].in.fp)) != EOF; j++)
+				mem = transcribe(&folio, mem, c, i);
 		else
-			for (j = 0; (c = *(folio.files[i].in.str+j)) != '\0'; j++) {
-				if (c == '\n')
-					(folio.files[i].count)++;
-				*mem++ = c;
-			}
+			for (j = 0; (c = *(folio.files[i].in.str+j)) != '\0'; j++)
+				mem = transcribe(&folio, mem, c, i);
 
-		*mem++ = '\0';
 		if (folio.files[i].file)
 			rewind(folio.files[i].in.fp);
-		mark = mem;
-		mem = memory;
 
-		/* allocate an array of pointers one for each line of text then
-		 * iterate through the file replacing end of line markers with
-		 * the NUL terminator */
-		if ((folio.files[i].lines = malloc(folio.files[i].count*sizeof(char*))) == NULL)
+		/* If there is no new line char in the previous place, then
+		 * the the line has not been counted, count it */
+		if(*(mem-1) != '\n')
+			(folio.files[i].count)++, *mem++ = '\0';
+
+		/* Mark the end of the input and then reset to start. */
+		mark = mem;
+		mem = folio.memory;
+
+		/* allocate an array of pointers to structs, one for each line
+		 * of text; Iterate through the file replacing each end of line
+		 * marker with the NUL terminator */
+		if ((folio.files[i].lines = (Line*)malloc(folio.files[i].count*sizeof(Line))) == NULL)
 			printf("error:	malloc failed to assign memory in readfolio(), lines\n");
 
-		*(folio.files[i].lines) = mem;
+		/* Set the first structs string to current memory position. */
+		folio.files[i].lines[0].line = mem;
 
-		if (folio.files[i].count > 1)
-			for (j = 0; (c = *mem++) != '\0'; )
-				if (c == '\n')
-					*(mem-1) = '\0', folio.files[i].lines[++j] = mem;
-		mem = memory = mark;
+		for (j = 0, k = 0; (c = *mem++) != '\0'; k++)
+			if (c == '\n') {
+				folio.files[i].lines[j].len = k;
+				folio.files[i].lines[++j].line = mem, *(mem-1) = '\0';
+				k = 0;
+			}
+
+		mem = folio.memory = mark;
 	}
 
 	return folio;
@@ -333,9 +351,9 @@ void printtest(Folio folio)
 {
 	size_t i, j;
 
-	for (i = 0, j = 0; i < folio.count; i++)
+	for (i = 0; i < folio.count; i++)
 		for (j = 0; j < folio.files[i].count; j++)
 			printf("%s:%3lu: %s\n", folio.files[i].name, j+1,
-					folio.files[i].lines[j]);
+					folio.files[i].lines[j].line);
 }
 
