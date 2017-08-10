@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
 	/* If no files are supplied, fill lineptr array from stdin. */
 	if (folio.count)
-		folio = readfolio(folio);
+		folio = loadfolio(folio);
 	else
 		printf("usage:	%s <file1> <file2>\n", *argv);
 	

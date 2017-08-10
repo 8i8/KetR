@@ -80,7 +80,7 @@ void resetglobals(void);
 /* i/o */
 void getflags(int argc, char*argv[]);
 void getinput(char* argument, size_t file);
-Folio readfolio(Folio folio);
+Folio loadfolio(Folio folio);
 size_t readlines(char *lineptr[], size_t maxlines);
 void writelines(char *lineptr[], size_t nlines);
 size_t deleteline(char *lineptr[], int line, size_t nlines);

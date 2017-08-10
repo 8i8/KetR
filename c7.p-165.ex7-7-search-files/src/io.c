@@ -105,11 +105,23 @@ static char* transcribe(Folio *folio, char* mem, const char c, const size_t i)
 }
 
 /*
- * readfolio:	For given folio struct create memory for and read in the file
+ * remove_n:	Exchange all instances of \n for \0.
+ */
+static void remove_n(Folio *folio, char* mem, const char c, const size_t i, size_t *j, size_t *k)
+{
+	if (c == '\n') {
+		folio->files[i].lines[*j].len = *k;
+		folio->files[i].lines[++(*j)].line = mem, *(mem-1) = '\0';
+		*k = 0;
+	}
+}
+
+/*
+ * loadfolio:	For given folio struct create memory for and read in the file
  * contents, or the string, into an array of pointers; Use one string for each
  * line.
  */
-Folio readfolio(Folio folio)
+Folio loadfolio(Folio folio)
 {
 	size_t i, j, k;
 	char c;
@@ -124,7 +136,7 @@ Folio readfolio(Folio folio)
 
 	/* Request required memory */
 	if ((folio.memory = malloc(folio.len*sizeof(char))) == NULL)
-		printf("error:	malloc failed to assign memory in readfolio(), memory\n");
+		printf("error:	malloc failed to assign memory in loadfolio(), memory\n");
 
 	/* set pointer to start of memory block */
 	mem = folio.memory;
@@ -157,17 +169,14 @@ Folio readfolio(Folio folio)
 		 * of text; Iterate through the file replacing each end of line
 		 * marker with the NUL terminator */
 		if ((folio.files[i].lines = (Line*)malloc(folio.files[i].count*sizeof(Line))) == NULL)
-			printf("error:	malloc failed to assign memory in readfolio(), lines\n");
+			printf("error:	malloc failed to assign memory in loadfolio(), lines\n");
 
 		/* Set the first structs string to current memory position. */
 		folio.files[i].lines[0].line = mem;
 
+		/* Exchange all instances of '\n' for '\0' */
 		for (j = 0, k = 0; (c = *mem++) != '\0'; k++)
-			if (c == '\n') {
-				folio.files[i].lines[j].len = k;
-				folio.files[i].lines[++j].line = mem, *(mem-1) = '\0';
-				k = 0;
-			}
+			remove_n(&folio, mem, c, i, &j, &k);
 
 		mem = folio.memory = mark;
 	}
