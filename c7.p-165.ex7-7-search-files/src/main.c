@@ -20,7 +20,9 @@ int main(int argc, char *argv[])
 	else
 		printf("usage:	%s <file1> <file2>\n", *argv);
 	
+	hashtable(folio);
 	printtest(folio);
+	
 
 	/* Sort input */
 	//sortsection(lineptr, 0, folio.len, state.func, 0);

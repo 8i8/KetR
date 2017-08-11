@@ -362,7 +362,8 @@ void printtest(Folio folio)
 
 	for (i = 0; i < folio.count; i++)
 		for (j = 0; j < folio.files[i].count; j++)
-			printf("%s:%3lu: %s\n", folio.files[i].name, j+1,
-					folio.files[i].lines[j].line);
+			if (folio.files[i].lines[j].isTrue)
+				printf("%s:%3lu: %s\n", folio.files[i].name, j+1,
+						folio.files[i].lines[j].line);
 }
 

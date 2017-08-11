@@ -43,10 +43,14 @@ typedef struct {
 } State;
 
 /* Global data struct, to store each file */
-typedef struct {
+struct line {
+	struct line *next;
 	char *line;
 	size_t len;
-} Line;
+	short isTrue;
+};
+
+typedef struct line Line;
 
 typedef struct {
 	union input {
@@ -65,6 +69,8 @@ typedef struct {
 	char *memory;
 	size_t count;
 	size_t len;
+	Line *head;
+	Line *tail;
 } Folio;
 
 extern State state;
@@ -87,6 +93,9 @@ size_t deleteline(char *lineptr[], int line, size_t nlines);
 void settabs(char n[]);
 size_t insertline(char *lineptr[], char* line, size_t maxlines, size_t index, size_t nlines);
 void printtest(Folio folio);
+
+/* Hash table */
+Folio hashtable(Folio folio);
 
 /* Sort */
 void _qsort(void *lineptr[], int left, int right, compar fn, int ntab);

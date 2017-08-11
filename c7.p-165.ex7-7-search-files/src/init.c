@@ -28,6 +28,15 @@ Folio folio = { { { {
 	NULL,
 	0,
 	0,
+	NULL,
+	NULL,
+};
+
+Line lines = {
+	NULL,
+	NULL,
+	0,
+	0,
 };
 
 /*
