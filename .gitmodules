@@ -1,0 +1,3 @@
+[submodule "search_doubles"]
+	path = search_doubles
+	url = git@github.com:8i8/search_doubles.git
