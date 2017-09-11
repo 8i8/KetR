@@ -15,7 +15,7 @@
 
 #define MAXLINES	5000			/* Maxlines to be sorted */
 #define MAXLEN		1000			/* max length of any input line */
-#define ALLOCSIZE	5000000			/* size of available space */
+#define ALLOCSIZE	5000			/* size of available space */
 
 int readlines(char *lineptr[], int maxlines);
 int getline(char *, int);
@@ -23,7 +23,6 @@ char *alloc(int);
 void writelines(char *lineptr[], int nlines);
 void qsort(char *lineptr[], int left, int right);
 
-char *lineptr[MAXLINES];			/* Pointer to text lines */
 char allocbuf[ALLOCSIZE];			/* storage for alloc */
 char *allocp = allocbuf;			/* next free position */
 
@@ -32,7 +31,8 @@ char *allocp = allocbuf;			/* next free position */
  */
 int main(void)
 {
-	int nlines;	/* number of input lines to read */
+	char *lineptr[MAXLINES];		/* Pointer to text lines */
+	int nlines;				/* number of input lines to read */
 
 	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
 		qsort(lineptr, 0, nlines-1);
