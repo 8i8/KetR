@@ -4,14 +4,14 @@
  */
 #include "structs.c"
 
-#define NUMBER_BOOKS	10
+#define MAX_FILES	10
 
 int main(int argc, char *argv[])
 {
 	struct Folio *files;
 	int i, c, flags;
 
-	files = init_folio(NUMBER_BOOKS);
+	files = init_folio(MAX_FILES);
 
 	for (i = 1, flags = 0; i < argc; i++)
 		if (*argv[i] == '-') {
@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 					printf("usage: %s <file1> <file2> ...\n", argv[0]);
 			}
 		} else
-			if ((files = scan_files(files, argv[i], NUMBER_BOOKS)) == NULL)
+			if ((files = scan_files(files, argv[i], MAX_FILES)) == NULL)
 				printf("usage: %s <file1> <file2> ...\n", argv[0]);
 
 	init_screen();

@@ -28,15 +28,20 @@ void blank_screen(Screen *sc)
 
 void blit_screen(struct Folio *file)
 {
-	size_t i;
+	size_t i, j;
 	char *f_pt, *d_pt;
 	f_pt = file->content;
 	d_pt = screen.display;
 
-	for (i = 0; i < screen.len && i < file->len; i++)
-		*d_pt++ = *f_pt++;
-
-	*(d_pt-1) = '\0';
+	for (i = 0, j = 0; i < screen.len; i++) {
+		if (i < file->len && j < file->lines) {
+			*d_pt++ = *f_pt++;
+			if (*f_pt == '\n')
+				j++;
+		} else if (j < (unsigned)screen.row)
+			*d_pt++ = '\n', j++;
+	}
+	*d_pt = '\0';
 }
 
 void refresh_screen(void)

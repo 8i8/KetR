@@ -36,7 +36,7 @@ static size_t file_size(FILE *fp)
 }
 
 /*
- * read_file:	Transfer file onto program heap memory.
+ * read_file:	Transfer file onto programs heap memory.
  */
 int read_file(struct Folio *folio)
 {
