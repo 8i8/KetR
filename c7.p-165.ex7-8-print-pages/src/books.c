@@ -2,14 +2,14 @@
 
 static int num_of_files;
 
-struct Folio *init_folio(int num)
+struct Window *init_folio(int num)
 {
-	struct Folio *define_folio(struct Folio *folio);
-	struct Folio *book, *pt;
+	struct Window *define_folio(struct Window *folio);
+	struct Window *book, *pt;
 	size_t i;
 	num_of_files = num;
 
-	if ((pt = book = malloc(num * sizeof(struct Folio))) == NULL)
+	if ((pt = book = malloc(num * sizeof(struct Window))) == NULL)
 		printf("error: malloc failed in init_folio().\n");
 
 	for (i = 0; i < (unsigned)num; i++, book++)
@@ -18,7 +18,7 @@ struct Folio *init_folio(int num)
 	return pt;
 }
 
-struct Folio *define_folio(struct Folio *folio)
+struct Window *define_folio(struct Window *folio)
 {
 	folio->fp = NULL;
 	folio->name = NULL;
@@ -38,7 +38,7 @@ static size_t file_size(FILE *fp)
 /*
  * read_file:	Transfer file onto programs heap memory.
  */
-int read_file(struct Folio *folio)
+int read_file(struct Window *folio)
 {
 	int c, d;
 	char* pt;
@@ -69,7 +69,7 @@ int read_file(struct Folio *folio)
 /*
  * scan_files:	Treat every file in input list.
  */
-struct Folio *scan_files(struct Folio *book, char* file_name, int num_of_files)
+struct Window *scan_files(struct Window *book, char* file_name, int num_of_files)
 {
 	static int b_pt;
 	
@@ -85,7 +85,7 @@ struct Folio *scan_files(struct Folio *book, char* file_name, int num_of_files)
 	return book;
 }
 
-void free_folio(struct Folio *files, size_t num)
+void free_folio(struct Window *files, size_t num)
 {
 	size_t i;
 	for (i = 0; i < num; i++)

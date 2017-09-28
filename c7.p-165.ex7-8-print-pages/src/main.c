@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-	struct Folio *files;
+	struct Window *files;
 	int i, c, flags;
 
 	files = init_folio(MAX_FILES);
@@ -27,8 +27,12 @@ int main(int argc, char *argv[])
 				printf("usage: %s <file1> <file2> ...\n", argv[0]);
 
 	init_screen();
-	blit_screen(&files[0]);
-	refresh_screen();
+
+	c = START;
+	do {
+		get_input(files, c);
+		blit_screen();
+	} while ((c = getchar()) != EOF && c != 'q');
 
 	free_folio(files, argc-1-flags);
 	free_screen();

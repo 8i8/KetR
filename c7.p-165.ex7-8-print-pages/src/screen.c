@@ -1,5 +1,4 @@
 #include "structs.c"
-#include "print-files.h"
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -26,25 +25,53 @@ void blank_screen(Screen *sc)
 	*(sc->display+i) = '\0';
 }
 
-void blit_screen(struct Folio *file)
+char *advance_to(struct Window *file, size_t line)
+{
+	size_t i, j;
+	char *fp;
+	static size_t lines;
+	fp = file->content;
+
+	switch (line)
+	{
+		case 0: lines = 0;
+			break;
+		case 1: if (lines >= (unsigned)screen.row)
+				lines -= screen.row;
+			break;
+		case 2: if (lines < (file->lines)-screen.row)
+				lines += screen.row;
+			break;
+		default:
+			break;
+	}
+
+	for (i = 0i, j = 0; i < file->len && j < lines; i++)
+		if (*(fp++) == '\n')
+			j++;
+	return fp;
+}
+
+void draw_file(struct Window *file, size_t line)
 {
 	size_t i, j;
 	char *f_pt, *d_pt;
-	f_pt = file->content;
 	d_pt = screen.display;
+	/* TODO Pege numbering system required */
+	f_pt = advance_to(file, line);
 
-	for (i = 0, j = 0; i < screen.len; i++) {
-		if (i < file->len && j < file->lines) {
+	for (i = 0, j = 0; i < screen.len; i++)
+		if (j < (unsigned)screen.row-1) {
 			*d_pt++ = *f_pt++;
 			if (*f_pt == '\n')
 				j++;
-		} else if (j < (unsigned)screen.row)
+		} else if (j < (unsigned)screen.row-1)
 			*d_pt++ = '\n', j++;
-	}
+	*d_pt++ = '\n';
 	*d_pt = '\0';
 }
 
-void refresh_screen(void)
+void blit_screen(void)
 {
 	printf("%s", screen.display);
 }
@@ -56,7 +83,7 @@ void init_screen(void)
 
 	screen.display = malloc((screen.col * screen.row * sizeof(char))+1);
 	blank_screen(&screen);
-	refresh_screen();
+	blit_screen();
 }
 
 void free_screen(void)
