@@ -1,19 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#define XK_Left                          0xff51  /* Move left, left arrow */
-#define XK_Up                            0xff52  /* Move up, up arrow */
-#define XK_Right                         0xff53  /* Move right, right arrow */
-#define XK_Down                          0xff54  /* Move down, down arrow */
+#define OFFSET		1		/* Offset cursor and header line */
 
-enum move { START, UP, DOWN };
+enum move { START, UP, DOWN, RIGHT, LEFT };
+enum question { NO, YES };
 
-struct Window *init_folio(int num);
-struct Window *scan_files(struct Window *book, char* file_name, int num_of_files);
-void free_folio(struct Window *book, size_t num);
-void print_folio(struct Window *f);
-void init_screen(void);
-void free_screen(void);
-void draw_file(struct Window *file, size_t line);
+/* init */
+struct Screen *init_screen(void);
+struct Nav *init_nav(struct Nav *nav);
+struct Folio *init_folio(const unsigned int num);
+
+/* screen.c */
 void blit_screen(void);
-void get_input(struct Window *files, int c);
+void free_screen(void);
+int write_screen(
+		struct Folio *file,
+		const short key_pressed,
+		const short is_last);
+int get_row(void);
+
+/* folio.c */
+struct Folio *scan_files(
+		struct Folio *portfolio,
+		struct Nav *nav,
+		char* file_name,
+		const int num_of_files);
+void free_folio(struct Folio *files, const size_t num);
+
+/* input.c */
+int get_flags(char *argv);
+void get_files(char *argv, struct Folio *pf, struct Nav *nav, int input);
+void get_input(struct Folio *portfolio, struct Nav *nav, int c);
+int readchar(void);
+void free_nav(struct Nav *nav);
+int navigate(struct Folio *file, const short move, const short last);
+

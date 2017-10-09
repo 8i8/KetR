@@ -1,91 +1,143 @@
 #include "structs.c"
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <string.h>
 
-static Screen screen;
+#define FOUR_BYTES	30		/* Test for UTF-8 width */
+#define THREE_BYTES	14
+#define TWO_BYTES	6
 
-int get_dimentions(Screen *sc)
+enum inout { OUT, IN };
+
+static struct Screen screen;
+
+/**
+ * get_dimensions:	Get screen current dimentions from ioctl.
+ */
+int get_dimensions(struct Screen *sc)
 {
 	struct winsize win;
 	if ((ioctl(0, TIOCGWINSZ, &win)) == -1)
 		return 0;
 	sc->col = win.ws_col;
 	sc->row = win.ws_row;
-	sc->len = sc->col * sc->row;
+	sc->len = sc->col * sc->row * 4;	// * 4 for UTF-8 char
+	sc->current_len = 0;
 	return 1;
 }
 
-void blank_screen(Screen *sc)
+/**
+ * get_row: Returns screen row count.
+ */
+int get_row(void)
 {
-	int i;
-
-	for (i = 0; i < sc->row; i++)
-		*(sc->display+i) = '\n';
-	*(sc->display+i) = '\0';
+	return screen.row;
 }
 
-char *advance_to(struct Window *file, size_t line)
+/**
+ * utf8_word_length:	Return multi-char length (-1) in bytes, read from the
+ * initial UTF-8 char.
+ */
+unsigned utf8_wordlength(const unsigned char a)
 {
-	size_t i, j;
-	char *fp;
-	static size_t lines;
-	fp = file->content;
+	if	(a >> 3 == FOUR_BYTES)
+		return 3;
+	else if (a >> 4 == THREE_BYTES)
+		return 2;
+	else if (a >> 5 == TWO_BYTES)
+		return 1;
+	return 0;
+}
 
-	switch (line)
-	{
-		case 0: lines = 0;
-			break;
-		case 1: if (lines >= (unsigned)screen.row)
-				lines -= screen.row;
-			break;
-		case 2: if (lines < (file->lines)-screen.row)
-				lines += screen.row;
-			break;
-		default:
-			break;
+/**
+ * test_utf8:	Keep track of UTF-8 char count and status.
+ */
+unsigned test_utf8(const unsigned char a)
+{
+	static short unsigned count;
+
+	if (count) {
+		if(--count) 
+			return 0;
+		else
+			return 1;
+	} else if (a >> 7) {
+		count = utf8_wordlength(a);
+		if (count)
+			return 0;
 	}
-
-	for (i = 0i, j = 0; i < file->len && j < lines; i++)
-		if (*(fp++) == '\n')
-			j++;
-	return fp;
+	return 1;
 }
 
-void draw_file(struct Window *file, size_t line)
+/**
+ * write_screen:	Write one page of file into screen struct.
+ */
+int write_screen(
+		struct Folio *file,
+		const short key_pressed,
+		const short is_last)
 {
-	size_t i, j;
-	char *f_pt, *d_pt;
-	d_pt = screen.display;
-	/* TODO Pege numbering system required */
-	f_pt = advance_to(file, line);
+	struct Screen *sc = &screen;
+	size_t i, row, col;
+	char *f_pt, *d_pt, *count;
+	row = col = 0;
 
-	for (i = 0, j = 0; i < screen.len; i++)
-		if (j < (unsigned)screen.row-1) {
-			*d_pt++ = *f_pt++;
-			if (*f_pt == '\n')
-				j++;
-		} else if (j < (unsigned)screen.row-1)
-			*d_pt++ = '\n', j++;
-	*d_pt++ = '\n';
-	*d_pt = '\0';
+	if ((i = navigate(file, key_pressed, is_last)))
+		return i;
+
+	d_pt = count = sc->display;
+	f_pt = file->head;
+
+
+	/* -OFFSET for cursor line and page header */
+	for (i = 0 ; i < sc->len && row < sc->row-OFFSET; i++)
+		if (*f_pt != '\0') {
+			if (col < sc->col) {
+				col += test_utf8((unsigned)*f_pt);
+				*d_pt++ = *f_pt++;
+			} else {
+				if (*f_pt == '\n')
+					*d_pt++ = *f_pt++;
+				else
+					f_pt++;
+			}
+			if (*(f_pt-1) == '\n')
+				row++, col = 0;
+		} else
+			*d_pt++ = '\n', row++;
+
+	d_pt += sprintf(d_pt, "%s ~ Page %lu of %lu",
+					file->f_name,
+					file->cur_page,
+					file->total_pages);
+	sc->current_len = d_pt - count;
+
+	return 0;
 }
 
+/**
+ * blit_screen:	Write content of screen struct to STDOUT.
+ */
 void blit_screen(void)
 {
-	printf("%s", screen.display);
+	write(1, screen.display, screen.current_len);
 }
 
-void init_screen(void)
+/**
+ * init_screen:	assign screen memory.
+ */
+struct Screen *init_screen(void)
 {
-	if (!(get_dimentions(&screen)))
-		printf("error:	get_dimentions failed in init_screen\n");
+	if (!(get_dimensions(&screen)))
+		printf("error:	get_dimensions failed in init_screen\n");
 
-	screen.display = malloc((screen.col * screen.row * sizeof(char))+1);
-	blank_screen(&screen);
-	blit_screen();
+	screen.display = malloc((screen.len * sizeof(char))+1);
+
+	return &screen;
 }
 
+/**
+ * free_screen:	Get your free screen here.
+ */
 void free_screen(void)
 {
 	free(screen.display);
