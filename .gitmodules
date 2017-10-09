@@ -1,3 +1,6 @@
 [submodule "c7.p-165.ex7-7-search-files"]
 	path = c7.p-165.ex7-7-search-files
 	url = git@github.com:8i8/c7.p-165.ex7-7-search-files.git
+[submodule "c7.p-165.ex7-8-print-pages"]
+	path = c7.p-165.ex7-8-print-pages
+	url = git@github.com:8i8/c7.p-165.ex7-8-print-pages.git
