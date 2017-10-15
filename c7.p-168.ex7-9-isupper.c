@@ -13,7 +13,7 @@
 
 /**
  * func_isupper:	Is upper as a function uses less space than it would as
- * a macro, however it may be slighltly less efficeient as it will use a
+ * a macro, however it may be slightly less efficient as it will use a
  * function call.
  */
 int func_isupper(char c)

@@ -11,7 +11,7 @@
  * TODO There is an issue in this code, it is not possible to offset the
  * tabstop as requested in the question without writing a shell that can deal
  * with this functioning, as such I have decided to make the margin work as if
- * it were a pert of the text file.
+ * it were a part of the text file.
  */
 
 #undef _POSIX_C_SOURCE
