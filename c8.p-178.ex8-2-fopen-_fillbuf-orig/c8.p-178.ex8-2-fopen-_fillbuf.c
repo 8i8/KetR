@@ -1,8 +1,7 @@
 /*
  * Oringinal code form the book with slight modification to make it run.
  *
- * Exercise 8-2. Rewrite fopen and _fillbuf with fields instead of explicit bit
- * operations. Compare code size and execution speed.
+ * Preperation for Exercise 8-2.
  */
 #include <stdlib.h>
 #include <fcntl.h>
@@ -82,18 +81,22 @@ int main (int argc, char *argv[])
 {
 	FILE *fp;
 	int i;
+	size_t time;
 	char c[BUFSIZ], *c_pt;
 	c_pt = c;
+	time = SIZE_MAX;
 
 	fp = fopen(argv[--argc], "r");
 
-	while (!feof(fp))
-	{
-		for (i = 0; i < BUFSIZ && ((*c_pt = getc(fp)) != EOF); i++)
-			c_pt++;
-		write(1, c, i);
-		c_pt = c;
-	}
+	while(time--)
+		while (!feof(fp))
+		{
+			for (i = 0; i < BUFSIZ &&
+					((*c_pt = getc(fp)) != EOF); i++)
+				c_pt++;
+			write(1, c, i);
+			c_pt = c;
+		}
 
 	return 0;
 }
