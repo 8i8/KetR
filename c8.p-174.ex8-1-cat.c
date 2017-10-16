@@ -3,12 +3,11 @@
  * open, and close instead of their standard library equivalents. Perform
  * experiments to determine the relative speeds of the two versions.
  */
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <error.h>
 #include <stdint.h>
-
-#define BUFSIZ	4096
 
 /**
  * cat:	concatinate files version 1.
