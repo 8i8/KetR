@@ -2,8 +2,8 @@
  * Exercise 8-2. Rewrite fopen and _fillbuf with fields instead of explicit bit
  * operations. Compare code size and execution speed.
  *
- * The code size is similar and the execution time the same; Howerver the code
- * is far less readable.
+ * The code size is similar, slightly longer when using the bit field solution,
+ * the execution time the same; Howerver the code is far less readable.
  */
 #include <stdlib.h>
 #include <fcntl.h>
