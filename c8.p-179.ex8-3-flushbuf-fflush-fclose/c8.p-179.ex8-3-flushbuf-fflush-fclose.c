@@ -115,7 +115,7 @@ int _flushbuf(int a, FILE *fp)
 int fclose(FILE *fp)
 {
 	if ((fp->flag & (_READ | _WRITE)) == 0)
-		free(fp->base);
+		free(fp->base), close(fp->fd);
 	else
 		return -1;
 	return 0;
