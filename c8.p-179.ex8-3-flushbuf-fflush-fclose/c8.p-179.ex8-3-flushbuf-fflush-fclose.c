@@ -20,7 +20,7 @@ void init_iob()
 {
 	_iob[0].base = _iob[0].ptr = malloc(BUFSIZ);
 	_iob[1].base = _iob[1].ptr = malloc(BUFSIZ);
-	_iob[2].base = _iob[2].ptr = malloc(BUFSIZ);
+	_iob[2].base = _iob[2].ptr = malloc(1);
 };
 
 /**
@@ -90,14 +90,9 @@ int _flushbuf(int a, FILE *fp)
 	c = (char*)&a;
 	size_t len = fp->ptr - fp->base;
 
-	if((fp->flag & _WRITE) && (fp->flag & _UNBUF)) {
-		if ((fp->ptr - fp->base) > 0 ) {
-			pt = fp->base;
-			write(2, pt, len);
-		}
-		write(2, c, 1);
-	}
-	if (fp->flag & _WRITE) {
+	if((fp->flag & _WRITE) && (fp->flag & _UNBUF))
+		write(1, c, 1);
+	else if (fp->flag & _WRITE) {
 		if ((fp->ptr - fp->base) > 0 ) {
 			pt = fp->base;
 			write(1, pt, len);
