@@ -18,9 +18,9 @@ FILE _iob[OPEN_MAX] = {		/* stdin, stdout, stderr */
 
 void init_iob()
 {
-	short i;
-	for (i = 0; i < 3; i++)
-		_iob[i].base = _iob[i].ptr = malloc(BUFSIZ);
+	_iob[0].base = _iob[0].ptr = malloc(BUFSIZ);
+	_iob[1].base = _iob[1].ptr = malloc(BUFSIZ);
+	_iob[2].base = _iob[2].ptr = malloc(BUFSIZ);
 };
 
 /**
@@ -88,43 +88,78 @@ int _flushbuf(int a, FILE *fp)
 {
 	char *pt, *c;
 	c = (char*)&a;
-	if((fp->flag & _WRITE) != 0) {
+	size_t len = fp->ptr - fp->base;
+
+	if((fp->flag & _WRITE) && (fp->flag & _UNBUF)) {
 		if ((fp->ptr - fp->base) > 0 ) {
 			pt = fp->base;
-			write(1, pt++, fp->ptr - fp->base);
-			fp->ptr = fp->base;
+			write(2, pt, len);
+		}
+		write(2, c, 1);
+	}
+	if (fp->flag & _WRITE) {
+		if ((fp->ptr - fp->base) > 0 ) {
+			pt = fp->base;
+			write(1, pt, len);
 		}
 		write(1, c, 1);
-	} else
-		return -1;
+	}
 
+	fp->ptr = fp->base;
 	return 0;
 }
 
-void free_fp(FILE *fp)
+/**
+ * fclose:
+ */
+int fclose(FILE *fp)
 {
 	if ((fp->flag & (_READ | _WRITE)) == 0)
 		free(fp->base);
+	else
+		return -1;
+	return 0;
 }
 
-void free_iob(void)
+/**
+ * free_iob:	Used in conjuction with fclose() to release all FILE memory
+ * allocated.
+ */
+int free_iob(void)
 {
-	int i;
-	for (i = 0; i < OPEN_MAX; i++)
-		free_fp(&_iob[i]);
+	if ((fclose(&_iob[0])) || (fclose(&_iob[1])) || (fclose(&_iob[2])))
+		return -1;
+	return 0;
 }
 
+/**
+ * fflush:	Clear a files buffer.
+ */
+void fflush(FILE *fp)
+{
+	fp->ptr = fp->base;
+	fp->cnt = 0;
+}
+
+/**
+ * A program to test the use of a small FILE implementation, this requires that
+ * <stdio.h> not be used. Note that in normal circumstances the files used
+ * would be initialized by the system when the c program is run, here the
+ * init_iob function does this for us, to replace the systems code.
+ */
 int main (int argc, char *argv[])
 {
 	FILE *fp;
 	int c;
+	init_iob(); /* Imitates the systems opening of stdin stdout and stderr */
 
-	init_iob();
 	fp = fopen(argv[--argc], "r");
 
 	while ((c = getc(fp)) != EOF)
 		putchar(c);
 
+	fclose(fp);
+	write(2, "Done and dusted.\n", 17);
 	free_iob();
 
 	return 0;
