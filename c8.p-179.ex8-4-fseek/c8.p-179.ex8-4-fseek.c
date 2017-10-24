@@ -1,9 +1,15 @@
 /*
- * Exercise 8-3. Design and write _flushbuf, fflush, and fclose.
+ * Exercise 8-4. The standard library function int fseek(FILE *fp, long offset,
+ * int origin) is identical to lseek except that fp is a file pointer instead
+ * of a file descriptor and return value is an int status, not a position.
+ * Write fseek. Make sure that your fseek coordinates properly with the
+ * buffering done for the other functions of the library.
  */
 #include <stdlib.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <error.h>
 #include "syscalls.h"
 #define PERMS 0666	/* RW for owner, group, others */
 
@@ -36,7 +42,7 @@ FILE *fopen(char *name, char *mode)
 	int fd;
 	FILE *fp;
 
-	if (*mode != 'r' && *mode != 'w' && *mode != 'a')
+	if (mode != NULL && *mode != 'r' && *mode != 'w' && *mode != 'a')
 		return NULL;
 	for (fp = _iob; fp < _iob + OPEN_MAX; fp++)
 		if ((fp->flag & (_READ | _WRITE)) == 0)
@@ -46,11 +52,11 @@ FILE *fopen(char *name, char *mode)
 	if (*mode == 'w')
 		fd = creat(name, PERMS);
 	else if (*mode == 'a') {
-		if ((fd = open(name, O_WRONLY, 0)) == -1)
+		if ((fd = open(name, O_WRONLY, SEEK_SET)) == -1)
 			fd = creat(name, PERMS);
-		lseek(fd, 0L, 2);
+		lseek(fd, 0L, SEEK_END);
 	} else
-		fd = open(name, O_RDONLY, 0);
+		fd = open(name, O_RDONLY, SEEK_SET);
 	if (fd == -1)	/* couldn't access name */
 		return NULL;
 	fp->fd = fd;
@@ -142,24 +148,101 @@ void fflush(FILE *fp)
 }
 
 /**
- * A program to test the use of a small FILE implementation, this requires that
- * <stdio.h> not be used. Note that in normal circumstances the files used
- * would be initialized by the system when the c program is run, here the
- * init_iob function does this for us, to replace the systems code.
+ * check_negative_offset:	Returns -1 when a negative offset extends
+ * further than the beggining of the file. Returns the length of the file in
+ * the case that SEEK_END has been requested, to negate performing the same
+ * operation twice.
+ */
+int check_negative_offset(FILE *fp, long offset, int origin)
+{
+	long int cur, len;
+
+	if (origin == SEEK_SET) {
+		if (offset < 0)
+			return -1;
+	} else if (origin == SEEK_CUR) {
+		if (offset < 0 && offset < -(fp->ptr - fp->base))
+			return 1;
+	} else if (origin == SEEK_END) {
+		cur = lseek(fp->fd, 0, SEEK_CUR);
+		len = lseek(fp->fd, 0, SEEK_END);
+		/* If negative file length is bigger than the negative offset */
+		if (-len > offset) {
+			lseek(fp->fd, cur, SEEK_SET);
+			return -1;
+		} else
+			return len;
+	}
+	return 0;
+}
+
+/**
+ * fseek_offset:	Check that the value of the offset does not go out of
+ * the bounds of the current buffer.
+ */
+//int fseek_offset()
+//{
+//}
+
+/**
+ * fseek:	Wrapper arround the posix lseek() function.
+ */
+int fseek(FILE *fp, long offset, int origin)
+{
+	long int len;
+	len = 0;
+
+	if (fp->flag & (_UNBUF | _ERR | _EOF) ||
+			(len = check_negative_offset(fp, offset, origin)) < 0) {
+		error(0, 0, "error: check_negative_offset failed in %s.", __func__);
+		return -1;
+	}
+
+	if (origin == SEEK_SET && !(fp->flag & _UNBUF))
+		fp->ptr = fp->base+offset, fp->cnt = 0;
+	else if (origin == SEEK_CUR && !(fp->flag & _UNBUF))
+		if (len)
+			fflush(fp);
+		else
+			fp->ptr += offset, fp->cnt -= offset;
+	else if (origin == SEEK_END && !(fp->flag & _UNBUF)) {
+		fp->ptr = fp->base + len, fp->cnt = 0;
+		return 0;
+	} else
+		return -1;
+
+	if (!(lseek(fp->fd, offset, origin) >= 0))
+		return -1;
+
+	return 0;
+}
+
+/**
+ * main:	Test code for the _flushbuf, fflush, fclose and fseek functions.
  */
 int main (int argc, char *argv[])
 {
-	FILE *fp;
-	int c;
 	init_iob(); /* Imitates the systems opening of stdin stdout and stderr */
 
-	fp = fopen(argv[--argc], "r");
+	FILE *fp;
+	int c, i;
+	i = 1;
 
-	while ((c = getc(fp)) != EOF)
-		putchar(c);
+	if ((fp = fopen(argv[--argc], "r")) != NULL) {
 
-	fclose(fp);
-	write(2, "Done and dusted.\n", 17);
+		while ((c = getc(fp)) != EOF) {
+			putchar(c);
+			i++;
+			if (i == 5) {
+				//write(1, "\nHere\n", 6);
+				if (fseek(fp, -7, SEEK_SET))
+					error(0, 0, "error: fseek failed in %s.", __func__);
+			}
+		}
+
+		fclose(fp);
+	}
+
 	free_iob();
 
 	return 0;
