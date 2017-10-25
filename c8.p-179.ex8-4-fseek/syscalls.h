@@ -7,7 +7,7 @@
  */
 //#define NULL		0
 #define EOF		(-1)
-#define BUFSIZ		24
+#define BUFSIZ		12
 #define OPEN_MAX	20
 
 typedef struct _iobuf {

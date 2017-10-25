@@ -4,6 +4,10 @@
  * of a file descriptor and return value is an int status, not a position.
  * Write fseek. Make sure that your fseek coordinates properly with the
  * buffering done for the other functions of the library.
+ *
+ * The test conditions for this file are to generate and offset of both more
+ * than and less than, the size of the current input buffer BUFSIZ set from
+ * within syscalls.h
  */
 #include <stdlib.h>
 #include <ctype.h>
@@ -101,9 +105,9 @@ int _flushbuf(int a, FILE *fp)
 	c = (char*)&a;
 	size_t len = fp->ptr - fp->base;
 
-	if((fp->flag & _WRITE) && (fp->flag & _UNBUF))
+	if((fp->flag & (_READ | _WRITE)) && (fp->flag & _UNBUF))
 		write(1, c, 1);
-	else if (fp->flag & _WRITE) {
+	else if (fp->flag & (_READ | _WRITE)) {
 		if ((fp->ptr - fp->base) > 0 ) {
 			pt = fp->base;
 			write(1, pt, len);
@@ -143,26 +147,40 @@ int free_iob(void)
  */
 void fflush(FILE *fp)
 {
-	fp->ptr = fp->base;
 	fp->cnt = 0;
 }
 
 /**
+ * remaining_buf:	returns the current distance between the actual bufferd
+ * position of fp->fd and the current write position of fp->ptr.
+ */
+long remaining_buf(FILE *fp)
+{
+	return BUFSIZ - (fp->ptr - fp->base);
+}
+
+/**
  * check_negative_offset:	Returns -1 when a negative offset extends
- * further than the beggining of the file. Returns the length of the file in
+ * further than the beginning of the file. Returns the length of the file in
  * the case that SEEK_END has been requested, to negate performing the same
  * operation twice.
  */
 int check_negative_offset(FILE *fp, long offset, int origin)
 {
-	long int cur, len;
+	long cur, len;
 
 	if (origin == SEEK_SET) {
 		if (offset < 0)
 			return -1;
 	} else if (origin == SEEK_CUR) {
-		if (offset < 0 && offset < -(fp->ptr - fp->base))
+		/* If the offset is outside of the bounds of the current buffer */
+		if ((offset < 0 && offset < -(fp->ptr - fp->base)) ||
+				(offset > remaining_buf(fp))) {
+			cur = lseek(fp->fd, 0, SEEK_CUR);
+			if (cur + (offset - remaining_buf(fp)) < 0)
+				return -1;
 			return 1;
+		}
 	} else if (origin == SEEK_END) {
 		cur = lseek(fp->fd, 0, SEEK_CUR);
 		len = lseek(fp->fd, 0, SEEK_END);
@@ -177,39 +195,37 @@ int check_negative_offset(FILE *fp, long offset, int origin)
 }
 
 /**
- * fseek_offset:	Check that the value of the offset does not go out of
- * the bounds of the current buffer.
- */
-//int fseek_offset()
-//{
-//}
-
-/**
- * fseek:	Wrapper arround the posix lseek() function.
+ * fseek:	Wrapper around the posix lseek() function.
  */
 int fseek(FILE *fp, long offset, int origin)
 {
 	long int len;
 	len = 0;
 
-	if (fp->flag & (_UNBUF | _ERR | _EOF) ||
+	if (fp->flag & (_ERR | _EOF) ||
 			(len = check_negative_offset(fp, offset, origin)) < 0) {
 		error(0, 0, "error: check_negative_offset failed in %s.", __func__);
 		return -1;
 	}
 
-	if (origin == SEEK_SET && !(fp->flag & _UNBUF))
-		fp->ptr = fp->base+offset, fp->cnt = 0;
-	else if (origin == SEEK_CUR && !(fp->flag & _UNBUF))
-		if (len)
-			fflush(fp);
-		else
-			fp->ptr += offset, fp->cnt -= offset;
-	else if (origin == SEEK_END && !(fp->flag & _UNBUF)) {
-		fp->ptr = fp->base + len, fp->cnt = 0;
-		return 0;
-	} else
-		return -1;
+	if (!(fp->flag & _UNBUF)) {
+		if (origin == SEEK_SET)
+			fp->ptr = fp->base+offset, fp->cnt = 0;
+		else if (origin == SEEK_CUR)
+			if (!len) {
+				fp->ptr += offset, fp->cnt -= offset;
+				return 0;
+			} else {
+				lseek(fp->fd, offset - remaining_buf(fp), SEEK_CUR);
+				fflush(fp);
+				return 0;
+			}
+		else if (origin == SEEK_END) {
+			fp->ptr = fp->base + len, fp->cnt = 0;
+			return 0;
+		} else
+			return -1;
+	}
 
 	if (!(lseek(fp->fd, offset, origin) >= 0))
 		return -1;
@@ -229,13 +245,11 @@ int main (int argc, char *argv[])
 	i = 1;
 
 	if ((fp = fopen(argv[--argc], "r")) != NULL) {
-
 		while ((c = getc(fp)) != EOF) {
 			putchar(c);
-			i++;
-			if (i == 5) {
-				//write(1, "\nHere\n", 6);
-				if (fseek(fp, -7, SEEK_SET))
+			if (i++ == 20) {
+				//write(1, "\n~~~~\n", 6);
+				if (fseek(fp, -20, SEEK_CUR))
 					error(0, 0, "error: fseek failed in %s.", __func__);
 			}
 		}
