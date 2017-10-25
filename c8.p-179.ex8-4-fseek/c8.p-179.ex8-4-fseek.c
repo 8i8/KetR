@@ -147,6 +147,7 @@ int free_iob(void)
  */
 void fflush(FILE *fp)
 {
+	fp->ptr = fp->base;
 	fp->cnt = 0;
 }
 
@@ -247,9 +248,9 @@ int main (int argc, char *argv[])
 	if ((fp = fopen(argv[--argc], "r")) != NULL) {
 		while ((c = getc(fp)) != EOF) {
 			putchar(c);
-			if (i++ == 20) {
-				//write(1, "\n~~~~\n", 6);
-				if (fseek(fp, -20, SEEK_CUR))
+			if (i++ == 200) {
+				write(1, "\n~~~~\n", 6);
+				if (fseek(fp, 250, SEEK_CUR))
 					error(0, 0, "error: fseek failed in %s.", __func__);
 			}
 		}
