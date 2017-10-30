@@ -168,7 +168,7 @@ long remaining_buf(FILE *fp)
  */
 int check_negative_offset(FILE *fp, long offset, int origin)
 {
-	long cur, len;
+	long cur_pos, len;
 
 	if (origin == SEEK_SET) {
 		if (offset < 0)
@@ -177,17 +177,17 @@ int check_negative_offset(FILE *fp, long offset, int origin)
 		/* If the offset is outside of the bounds of the current buffer */
 		if ((offset < 0 && offset < -(fp->ptr - fp->base)) ||
 				(offset > remaining_buf(fp))) {
-			cur = lseek(fp->fd, 0, SEEK_CUR);
-			if (cur + (offset - remaining_buf(fp)) < 0)
+			cur_pos = lseek(fp->fd, 0, SEEK_CUR);
+			if (cur_pos + (offset - remaining_buf(fp)) < 0)
 				return -1;
 			return 1;
 		}
 	} else if (origin == SEEK_END) {
-		cur = lseek(fp->fd, 0, SEEK_CUR);
+		cur_pos = lseek(fp->fd, 0, SEEK_CUR);
 		len = lseek(fp->fd, 0, SEEK_END);
-		/* If negative file length is bigger than the negative offset */
+		/* If the file length when negative, is greater than the offset */
 		if (-len > offset) {
-			lseek(fp->fd, cur, SEEK_SET);
+			lseek(fp->fd, cur_pos, SEEK_SET);
 			return -1;
 		} else
 			return len;
@@ -250,14 +250,12 @@ int main (int argc, char *argv[])
 			putchar(c);
 			if (i++ == 200) {
 				write(1, "\n~~~~\n", 6);
-				if (fseek(fp, 250, SEEK_CUR))
+				if (fseek(fp, -250, SEEK_CUR))
 					error(0, 0, "error: fseek failed in %s.", __func__);
 			}
 		}
-
 		fclose(fp);
 	}
-
 	free_iob();
 
 	return 0;
