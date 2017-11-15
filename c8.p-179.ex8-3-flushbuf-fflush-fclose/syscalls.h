@@ -1,6 +1,8 @@
 /*
  * Exercise 8-3. Design and write _flushbuf, fflush, and fclose.
  */
+#include <linux/ip.h>
+#include <linux/types.h>
 //#define NULL		0
 #define EOF		(-1)
 #define BUFSIZ		24
