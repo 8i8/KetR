@@ -7,9 +7,9 @@
 #define DEBUG		0
 
 #define MAX_IN		1000
-#define MAX_OUT		10	
+#define MAX_OUT		10
 
-enum state { RUN, AUG, FIN, ERR }; 
+enum state { RUN, AUG, FIN, ERR };
 
 static void utoa(size_t n, char s[]);
 static char* iterate(unsigned h1, char *s, size_t ofs, size_t nel, size_t len);
@@ -93,7 +93,7 @@ int main(void)
  */
 
 /*
- * counter:	count with given radix, radix = nel+1. 
+ * counter:	count with given radix, radix = nel+1.
  * 		ofs being the offset to display which ever charter is desired.
  */
 static int placecount(char *s, size_t ofs, size_t nel, size_t pos, size_t len)
@@ -108,7 +108,7 @@ static int placecount(char *s, size_t ofs, size_t nel, size_t pos, size_t len)
 	/*
 	 * If the character is not the upper most, augment pos.
 	 */
-	else if (s[pos] < (int)(nel+ofs-1))   
+	else if (s[pos] < (int)(nel+ofs-1))
 		s[pos]++;
 	/*
 	 * It is time to move to next place value.
@@ -156,7 +156,7 @@ static int unitcount(unsigned h1, char *s, size_t ofs, size_t nel, size_t pos, s
 		if ((h2 = hash(s)) == h1) {
 			e = FIN;
 			utoa(h2, str);
-			write(1, "match -> ", 9); 
+			write(1, "match -> ", 9);
 			write(1, "\"", 2);
 			write(1, s, strlen(s)+1);
 			write(1, "\"", 2);
@@ -168,7 +168,7 @@ static int unitcount(unsigned h1, char *s, size_t ofs, size_t nel, size_t pos, s
 		if (DEBUG) {
 			utoa(h2, str);
 			puts("\033[H\033[J");
-			write(1, "debug match -> ", 15); 
+			write(1, "debug match -> ", 15);
 			write(1, "\"", 2);
 			write(1, s, strlen(s)+1);
 			write(1, "\"", 2);
@@ -222,14 +222,14 @@ static char* iterate(unsigned h1, char *s, size_t ofs, size_t nel, size_t len)
 }
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  utoa  
+ *  utoa
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 static void __reverse(char s1[]);
 
 /*
  * Transform a value of the unsigned int type into a string.
- */ 
+ */
 static void utoa(size_t n, char s[])
 {
 	size_t i;

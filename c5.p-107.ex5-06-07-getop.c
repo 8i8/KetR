@@ -30,13 +30,13 @@
 #define PRINT	1010
 #define SWAP	1011
 
-static int16_t getop(char []);
-static void push(double);
-static double pop(void);
-static void printStack(void);
-static void swapStack(void);
-static void duplicate(void);
-static void emptyStack(void);
+int16_t getop(char []);
+void push(double);
+double pop(void);
+void printStack(void);
+void swapStack(void);
+void duplicate(void);
+void emptyStack(void);
 
 int main(void)
 {
@@ -140,13 +140,13 @@ int main(void)
  */
 #define MAXVAL	100		/* Maximum depth of val stack */
 
-static size_t sp = 0;		/* Next free stack position */
-static double val[MAXVAL];	/* value stack */
+size_t sp = 0;		/* Next free stack position */
+double val[MAXVAL];	/* value stack */
 
 /*
  * push: push f onto value stack
  */
-static void push(double f)
+void push(double f)
 {
 	if (sp < MAXVAL) {
 		val[sp++] = f;
@@ -158,7 +158,7 @@ static void push(double f)
 /*
  * pop: pop and return top value from stack.
  */
-static double pop(void)
+double pop(void)
 {
 	if (sp > 0)
 		return val[--sp];
@@ -171,7 +171,7 @@ static double pop(void)
 /*
  * Output the contents of the stack to the terminal.
  */
-static void printStack(void)
+void printStack(void)
 {
 	size_t i;
 
@@ -182,7 +182,7 @@ static void printStack(void)
 /*
  * Swap the two top most elements in the stack.
  */
-static void swapStack(void)
+void swapStack(void)
 {
 	double temp;
 
@@ -199,7 +199,7 @@ static void swapStack(void)
 /*
  * Copy and make a new the top most stack value.
  */
-static void duplicate(void)
+void duplicate(void)
 {
 	if (sp > 0)
 		push(val[sp-1]);
@@ -208,7 +208,7 @@ static void duplicate(void)
 /*
  * Empty the stack.
  */
-static void emptyStack(void)
+void emptyStack(void)
 {
 	sp = 0;
 }
@@ -223,16 +223,16 @@ static void emptyStack(void)
 #define NUMBER	'0'	/* A signal that a number was found. */
 #define BUFSIZE	100
 
-static char getch(void);
-static void ungetch(char);
-static int8_t isToken(void);
-static int16_t readToken(void);
-static char tokenBuffer(char c);
+char getch(void);
+void ungetch(char);
+int8_t isToken(void);
+int16_t readToken(void);
+char tokenBuffer(char c);
 
 /*
  * getop: get next operator or numeric operand.
  */
-static int16_t getop(char *s)
+int16_t getop(char *s)
 {
 	char c;
 
@@ -292,13 +292,13 @@ static int16_t getop(char *s)
  *  Input buffer
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char buf[BUFSIZE];	/* buffer for ungetch */
-static size_t bufp = 0;		/* next free position in buf */
+char buf[BUFSIZE];	/* buffer for ungetch */
+size_t bufp = 0;		/* next free position in buf */
 
 /*
  * Get a (possibly pushed back) character.
  */
-static char getch(void)
+char getch(void)
 {
 	return (bufp > 0) ? buf[--bufp] : (char)getchar();
 }
@@ -306,7 +306,7 @@ static char getch(void)
 /*
  * Push character back on input.
  */
-static void ungetch(char c)
+void ungetch(char c)
 {
 	if (bufp >= BUFSIZE)
 		printf("ungetch: too many characters\n");
@@ -318,14 +318,14 @@ static void ungetch(char c)
  *  Text token buffer
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-static char bufText[BUFSIZE];
-static size_t bufpT = 0;
-static int8_t token = 0;
+char bufText[BUFSIZE];
+size_t bufpT = 0;
+int8_t token = 0;
 
 /*
  * Boolean switch showing availability of token.
  */
-static int8_t isToken(void)
+int8_t isToken(void)
 {
 	if (token) {
 		token = 0;
@@ -337,7 +337,7 @@ static int8_t isToken(void)
 /*
  * Push text onto stack.
  */
-static void pushChar(char c)
+void pushChar(char c)
 {
 	if (bufpT >= BUFSIZE)
 		printf("pushChar: text buffer full\n");
@@ -350,7 +350,7 @@ static void pushChar(char c)
 /*
  * Empty text token buffer.
  */
-static void clearText(void)
+void clearText(void)
 {
 	bufpT = 0;
 	bufText[bufpT] = '\0';
@@ -359,7 +359,7 @@ static void clearText(void)
 /*
  * Read the text buffer.
  */
-static int16_t readToken(void)
+int16_t readToken(void)
 {
 	if (!strcmp(bufText, "sin")) {
 		clearText();
@@ -399,7 +399,7 @@ static int16_t readToken(void)
 /*
  * Buffer text input.
  */
-static char tokenBuffer(char c)
+char tokenBuffer(char c)
 {
 	char d;
 

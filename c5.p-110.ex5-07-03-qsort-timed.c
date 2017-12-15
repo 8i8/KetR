@@ -66,7 +66,6 @@ int main(void)
 			printf("Error: input to big to sort\n");
 			return 1;
 		}
-
 	}
 
 	clock_gettime(CLOCK_METHOD, &end);

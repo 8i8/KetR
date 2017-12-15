@@ -1,13 +1,15 @@
 /*
  * Exercise 8-5. Modify the fsize program to print the other information
  * contained in the inode entry.
+ *
+ * http://man7.org/linux/man-pages/man2/getdents.2.html
  */
 #define NAME_MAX	14	/* Longest filename compomponent */
 				/* System dependant */
 typedef struct {		/* Portable directory entry: */
 	long ino;		/* inode nunmber */
 	char name[NAME_MAX+1];	/* name + '\0' terminator */
-} Dirent;			   
+} Dirent;
 
 typedef struct {		/* Minimal DIR: no buffering etc. */
 	int fd;			/* file descriptor for directory */

@@ -134,10 +134,16 @@ static int getword(char *word, int lim, struct status *state)
 	} else if (c == '\\' && state->prepros)
 		state->skip = true;
 
-	if (state->strlit || state->comment || state->prepros || (!isalpha(c) && c != '_')) {
+	if (
+		state->strlit
+		|| state->comment
+		|| state->prepros
+		|| (!isalpha(c) && c != '_'))
+	{
 		*w = '\0';
 		return c;
 	}
+
 	for ( ; --lim > 0; w++)
 		if (!isalnum(*w = getch()) && *w != '_') {
 			ungetch(*w);
