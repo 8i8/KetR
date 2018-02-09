@@ -127,7 +127,7 @@ static char *day_name(		register int_fast16_t year,
 }
 
 /*
- * day_of_year:	set day of year from a givem month & day number.
+ * day_of_year:	set day of year from a given month & day number.
  */
 static int day_of_year(		const register int_fast16_t year,
 				const register uint_fast8_t month,
@@ -243,8 +243,6 @@ int main(int argc, char* argv[])
 		input_date(year, month, day++);
 	}
 
-
-		
 	return 0;
 }
 
