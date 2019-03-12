@@ -39,6 +39,7 @@ static int getfloat(double *pn)
 {
 	int c, sign;
 	double power;
+	power = 0;
 
 	while (isspace(c = getch()))
 		;

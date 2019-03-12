@@ -84,7 +84,7 @@ int main (int argc, char *argv[])
 	size_t time;
 	char c[BUFSIZ], *c_pt;
 	c_pt = c;
-	time = SIZE_MAX;
+	time = 1000000;
 
 	fp = fopen(argv[--argc], "r");
 

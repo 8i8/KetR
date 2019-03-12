@@ -13,9 +13,7 @@ int main(void)
 	while ((a = getchar()) != EOF)
 	{
 		// The workings ...
-		if ((a == ' ') && (b == ' '))
-			;
-		else 
+		if ((a != ' ') || (b != ' '))
 			printf("%c", a);
 		b = a;
 	}

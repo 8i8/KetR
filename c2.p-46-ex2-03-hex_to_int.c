@@ -95,7 +95,7 @@ int ipow(int base, int exp)
 	while (exp)
 	{
 		if (exp & 1)
-	    		result *= base;
+			result *= base;
 		exp >>= 1;
 		base *= base;
 	}

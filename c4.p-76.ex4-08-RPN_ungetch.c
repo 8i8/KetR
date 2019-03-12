@@ -36,7 +36,7 @@ static void push(int, double);
 static double pop(void);
 static void printStack(void);
 static void printTopTwo(void);
-static void printOutput(size_t i);
+static void printOutput(int i);
 static void swapStack(void);
 static void duplicate(void);
 static void printVarStack(void);
@@ -448,7 +448,7 @@ static void printTopTwo(void)
 /*
  * Print loop for stack output to terminal.
  */
-static void printOutput(size_t i)
+static void printOutput(int i)
 {
 	char s[FLOAT_LEN];
 
