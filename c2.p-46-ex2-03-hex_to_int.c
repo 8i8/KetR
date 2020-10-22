@@ -87,6 +87,9 @@ int myPow(int base, int exp)
  * I will be broaching bitwise operation in the next section, until then here
  * is another solution to the above function that is much more succinct. I will
  * aspire to its full understanding.
+ *
+ * Note, the right shift in this function is implimentation defined and as such
+ * this code is not reasonable.
  */
 int ipow(int base, int exp)
 {
